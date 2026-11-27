@@ -583,6 +583,124 @@ public sealed class Mp4Tests
         return result;
     }
 
+    [Fact]
+    public void WriteTags_FragmentedFile_CorrectsTheFragmentOffsets()
+    {
+        // A fragmented file stores absolute file offsets after moov: the base data offset of a track fragment and
+        // the position of each fragment in the random access index. Resizing moov moves them.
+        var original = BuildFragmentedFile(File.ReadAllBytes(GetTestFilePath("basic.m4a")), sidxBeforeMoov: false);
+        var originalBase = ReadFragmentOffsets(original, out var originalMoofOffsets);
+        Assert.Equal("FRAGMENT"u8.ToArray(), original.AsSpan((int)originalBase, 8).ToArray());
+
+        var written = WriteMp4(original, new MediaTagInfo { Title = "A considerably longer title than the original" });
+
+        var newMoof = FindTopLevelAtom(written, "moof");
+        Assert.NotEqual(FindTopLevelAtom(original, "moof"), newMoof);
+
+        var newBase = ReadFragmentOffsets(written, out var newMoofOffsets);
+        Assert.NotEqual(originalBase, newBase);
+        Assert.Equal("FRAGMENT"u8.ToArray(), written.AsSpan((int)newBase, 8).ToArray());
+        Assert.HasCount(originalMoofOffsets.Length, newMoofOffsets);
+        Assert.All(originalMoofOffsets, offset => Assert.Equal(FindTopLevelAtom(original, "moof"), offset));
+        Assert.All(newMoofOffsets, offset => Assert.Equal(newMoof, offset));
+        Assert.Equal("A considerably longer title than the original", ReadMp4(written).Title);
+    }
+
+    [Fact]
+    public void WriteTags_SegmentIndexBeforeMoov_IsRefused()
+    {
+        // The references of a segment index are relative to its end, so an index before moov would span the resized moov.
+        var original = BuildFragmentedFile(File.ReadAllBytes(GetTestFilePath("basic.m4a")), sidxBeforeMoov: true);
+
+        using var input = new MemoryStream(original);
+        using var output = new MemoryStream();
+        var result = MediaFile.WriteTags(input, output, new MediaTagInfo { Title = "A considerably longer title than the original" }, MediaFormat.Mp4);
+
+        Assert.False(result.IsSuccess);
+        Assert.Equal(MediaTagError.UnsupportedFormat, result.Error);
+    }
+
+    /// <summary>
+    /// Appends a movie fragment, whose track fragment header has an explicit base data offset, and a random access
+    /// index in 32-bit and 64-bit form, to a faststart file.
+    /// </summary>
+    private static byte[] BuildFragmentedFile(byte[] source, bool sidxBeforeMoov)
+    {
+        var faststart = BuildFaststartFile(source, out _);
+        using var output = new MemoryStream();
+        if (sidxBeforeMoov)
+        {
+            var moovPosition = (int)FindTopLevelAtom(faststart, "moov");
+            output.Write(faststart, 0, moovPosition);
+
+            // version 0, reference_ID, timescale, earliest_presentation_time, first_offset, reserved, reference_count 0
+            output.Write(CreateAtom("sidx", new byte[24]));
+            output.Write(faststart, moovPosition, faststart.Length - moovPosition);
+        }
+        else
+        {
+            output.Write(faststart);
+        }
+
+        var moofPosition = output.Length;
+
+        var mfhd = CreateAtom("mfhd", [0, 0, 0, 0, 0, 0, 0, 1]);
+        var tfhdPayload = new byte[16];
+        BinaryPrimitives.WriteUInt32BigEndian(tfhdPayload, 0x000001); // base-data-offset-present
+        BinaryPrimitives.WriteUInt32BigEndian(tfhdPayload.AsSpan(4), 1);
+        var trunPayload = new byte[12];
+        BinaryPrimitives.WriteUInt32BigEndian(trunPayload, 0x000001); // data-offset-present
+        var traf = CreateAtom("traf", [.. CreateAtom("tfhd", tfhdPayload), .. CreateAtom("trun", trunPayload)]);
+        var moof = CreateAtom("moof", [.. mfhd, .. traf]);
+
+        // The base data offset points at the payload of the mdat that follows moof
+        var basePosition = moofPosition + moof.Length + 8;
+        var tfhdInMoof = moof.AsSpan().IndexOf("tfhd"u8) + 4;
+        BinaryPrimitives.WriteUInt64BigEndian(moof.AsSpan(tfhdInMoof + 8), (ulong)basePosition);
+        output.Write(moof);
+        output.Write(CreateAtom("mdat", "FRAGMENT"u8.ToArray()));
+
+        // tfra version 1: time(8), moof_offset(8), traf/trun/sample numbers(1 each)
+        var tfra64 = new byte[16 + 19];
+        tfra64[0] = 1;
+        BinaryPrimitives.WriteUInt32BigEndian(tfra64.AsSpan(4), 1);
+        BinaryPrimitives.WriteUInt32BigEndian(tfra64.AsSpan(12), 1);
+        BinaryPrimitives.WriteUInt64BigEndian(tfra64.AsSpan(16 + 8), (ulong)moofPosition);
+        tfra64[32] = tfra64[33] = tfra64[34] = 1;
+
+        // tfra version 0: time(4), moof_offset(4), traf number(2), trun number(1), sample number(1)
+        var tfra32 = new byte[16 + 12];
+        BinaryPrimitives.WriteUInt32BigEndian(tfra32.AsSpan(4), 1);
+        BinaryPrimitives.WriteUInt32BigEndian(tfra32.AsSpan(8), 0b01_00_00);
+        BinaryPrimitives.WriteUInt32BigEndian(tfra32.AsSpan(12), 1);
+        BinaryPrimitives.WriteUInt32BigEndian(tfra32.AsSpan(16 + 4), (uint)moofPosition);
+        tfra32[25] = tfra32[26] = tfra32[27] = 1;
+
+        var mfroPayload = new byte[8];
+        var mfraContent = (byte[])[.. CreateAtom("tfra", tfra64), .. CreateAtom("tfra", tfra32)];
+        BinaryPrimitives.WriteUInt32BigEndian(mfroPayload.AsSpan(4), (uint)(8 + mfraContent.Length + 16));
+        output.Write(CreateAtom("mfra", [.. mfraContent, .. CreateAtom("mfro", mfroPayload)]));
+        return output.ToArray();
+    }
+
+    /// <summary>Reads the base data offset of the track fragment and the moof offsets of the random access index.</summary>
+    private static long ReadFragmentOffsets(byte[] file, out long[] moofOffsets)
+    {
+        var moof = (int)FindTopLevelAtom(file, "moof");
+        var tfhd = file.AsSpan(moof).IndexOf("tfhd"u8) + moof + 4;
+        var baseOffset = (long)BinaryPrimitives.ReadUInt64BigEndian(file.AsSpan(tfhd + 8));
+
+        var mfra = (int)FindTopLevelAtom(file, "mfra");
+        var tfra64 = mfra + 8 + 8;
+        var tfra32 = tfra64 + 16 + 19 + 8;
+        moofOffsets =
+        [
+            (long)BinaryPrimitives.ReadUInt64BigEndian(file.AsSpan(tfra64 + 16 + 8)),
+            BinaryPrimitives.ReadUInt32BigEndian(file.AsSpan(tfra32 + 16 + 4)),
+        ];
+        return baseOffset;
+    }
+
     private static long ReadFirstChunkOffset(byte[] file)
     {
         var stco = IndexOf(file, "stco"u8);

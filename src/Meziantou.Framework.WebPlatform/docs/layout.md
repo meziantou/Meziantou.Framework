@@ -2824,7 +2824,8 @@ documents (see [Paged media](#paged-media-csslayoutpaged-layoutenginepagedcs)).
     when its block size is definite (a specified block size, an item stretched in a single-line flex container or a grid
     with a definite block size, a column flex item with a definite flex basis and block size, a stretched item of a grid
     whose rows have a fixed track sizing function, `GridItemRows.HasFixedRows`: as in Blink, a row that is neither
-    intrinsic nor flexible does not grow with its items): its contents then overflow it
+    intrinsic nor flexible does not grow with its items; the rows of a subgrid, sized by its parent grid, are fixed when
+    the rows of the parent are, `SubgridAxisInput.FixedTracks`): its contents then overflow it
     in the next fragmentainers. As in Blink, an item of a single-line column flex container that is shorter than its
     contents in the container is as tall as them once the container is in a fragmentation context, when it cannot shrink and
     its flex basis is content-based, or when its block size is automatic and it cannot shrink or its minimum block size is

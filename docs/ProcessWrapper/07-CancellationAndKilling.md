@@ -17,6 +17,11 @@ When the token is canceled, the process and all its descendants are killed, and 
 `OperationCanceledException`. The validation does not run for a canceled process. When the token is already canceled,
 [ExecuteAsync](cref:Meziantou.Framework.ProcessWrapper.ExecuteAsync) throws without starting the process.
 
+Once the token is canceled, the instance no longer waits for the end of the redirected streams. A process can start a
+background child that inherits its standard output, such as `sh -c "sleep 60 & echo started"`: once the process
+exits, the child no longer belongs to its process tree, so it is not killed. The instance still completes as soon as the
+process exits, even though the child keeps the stream open, and the output written after that point is not read.
+
 ## Kill a process
 
 [ExecuteAsync](cref:Meziantou.Framework.ProcessWrapper.ExecuteAsync) returns as soon as the process is started, so you can kill it while it runs:

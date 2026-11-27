@@ -196,23 +196,11 @@ public class ProcessInstance
         {
             await process.WaitForExitAsync(CancellationToken.None).ConfigureAwait(false);
 
-            try
-            {
-                await _inputStreamTask.ConfigureAwait(false);
-            }
-            catch (Exception ex)
-            {
-                inputStreamException = ex;
-            }
-
-            try
-            {
-                await _outputStreamTask.ConfigureAwait(false);
-            }
-            catch (Exception ex)
-            {
-                outputStreamException = ex;
-            }
+            // A process can start a child that inherits its standard streams and outlives it. Killing the
+            // process tree does not reach such a child once it is reparented, so the streams may only reach
+            // their end when the child exits. Stop waiting for them once the execution is canceled.
+            inputStreamException = await WaitForStreamTaskAsync(_inputStreamTask, _cancellationToken).ConfigureAwait(false);
+            outputStreamException = await WaitForStreamTaskAsync(_outputStreamTask, _cancellationToken).ConfigureAwait(false);
 
             exitCode = new ProcessExitCode(process.ExitCode);
             exitDate = DateTimeOffset.UtcNow;
@@ -252,6 +240,26 @@ public class ProcessInstance
         }
 
         return new ProcessCompletion(exitCode, exitDate, inputStreamException, outputStreamException);
+    }
+
+    private static async Task<Exception?> WaitForStreamTaskAsync(Task task, CancellationToken cancellationToken)
+    {
+        try
+        {
+            await task.WaitAsync(cancellationToken).ConfigureAwait(false);
+            return null;
+        }
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested && !task.IsCompleted)
+        {
+            // The task ends when the process is disposed, which closes the streams. Nobody awaits it
+            // anymore, so observe its exception to not raise TaskScheduler.UnobservedTaskException.
+            _ = task.ContinueWith(t => _ = t.Exception, CancellationToken.None, TaskContinuationOptions.OnlyOnFaulted | TaskContinuationOptions.ExecuteSynchronously, TaskScheduler.Default);
+            return null;
+        }
+        catch (Exception ex)
+        {
+            return ex;
+        }
     }
 
     private protected virtual ProcessResult CreateProcessResult(ProcessExitCode exitCode, DateTimeOffset exitDate)

@@ -1582,6 +1582,26 @@ public class ProcessWrapperTests
     }
 
     [Fact]
+    public async Task ExecuteBufferedAsync_WhenCanceledWhileOrphanedChildHoldsTheOutput_ThrowsPromptly()
+    {
+        if (OperatingSystem.IsWindows())
+            return;
+
+        // sh exits immediately, but the background sleep inherits its standard output and keeps it open.
+        // Killing the process tree does not reach sleep once it is reparented.
+        using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(1));
+        var stopwatch = Stopwatch.StartNew();
+        await Assert.ThrowsAnyAsync<OperationCanceledException>(async () =>
+        {
+            _ = await ProcessWrapper.Create("/bin/sh")
+                .WithArguments("-c", "sleep 60 & echo started")
+                .ExecuteBufferedAsync(cts.Token);
+        });
+
+        Assert.True(stopwatch.Elapsed < TimeSpan.FromSeconds(30), $"Cancellation took {stopwatch.Elapsed}");
+    }
+
+    [Fact]
     public async Task ReusableConfiguration()
     {
         var baseCommand = CreateEchoBase();

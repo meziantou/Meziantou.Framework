@@ -10,6 +10,9 @@ destination directory:
 
 - its path is rooted, or goes up with `..` (the "zip slip" attack);
 - it is a symbolic link whose target is absolute or outside of the directory;
+- it is a symbolic link whose target goes up with `..` after a link, a file, or a path that does not exist yet: on
+  disk, `..` goes up from the target of the link, so a link `b` to `.` followed by a link `c` to `b/..` would point to the
+  parent of the directory;
 - it is a hard link to a file outside of the directory;
 - it would be written through a link, such as a link the archive created before it to a directory.
 

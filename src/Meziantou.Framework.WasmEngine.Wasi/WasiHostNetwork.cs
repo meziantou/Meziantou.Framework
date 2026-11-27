@@ -88,6 +88,12 @@ public sealed class WasiHostNetwork : WasiNetwork
     /// <summary>Returns the size of a buffer as the component set it: Linux doubles the size it is given, for its bookkeeping.</summary>
     private static int GetBufferSize(int value) => OperatingSystem.IsLinux() || OperatingSystem.IsAndroid() ? value / 2 : value;
 
+    /// <summary>The hop limit of the system for a socket that does not set one (macOS reports -1 for it).</summary>
+    private const int DefaultHopLimit = 64;
+
+    /// <summary>Returns the hop limit of a socket: the default hop limit of the system when the socket does not set one.</summary>
+    private static int GetHopLimit(Socket socket) => socket.Ttl is var ttl and > 0 ? ttl : DefaultHopLimit;
+
     private void Check(IPEndPoint endPoint, WasiSocketAddressUse use)
     {
         if (_options.AddressCheck?.Invoke(endPoint, use) != true)
@@ -239,7 +245,7 @@ public sealed class WasiHostNetwork : WasiNetwork
 
         public override int HopLimit
         {
-            get => socket.Ttl;
+            get => GetHopLimit(socket);
             set => socket.Ttl = (short)Math.Clamp(value, 1, 255);
         }
 
@@ -323,7 +329,12 @@ public sealed class WasiHostNetwork : WasiNetwork
             var replacement = CreateSocket(_socket.AddressFamily, SocketType.Dgram, ProtocolType.Udp);
             try
             {
-                replacement.Ttl = _socket.Ttl;
+                // A socket that does not set its hop limit keeps the default of the system
+                if (_socket.Ttl > 0)
+                {
+                    replacement.Ttl = _socket.Ttl;
+                }
+
                 replacement.ReceiveBufferSize = GetBufferSize(_socket.ReceiveBufferSize);
                 replacement.SendBufferSize = GetBufferSize(_socket.SendBufferSize);
                 if (OperatingSystem.IsWindows())
@@ -364,7 +375,7 @@ public sealed class WasiHostNetwork : WasiNetwork
 
         public override int HopLimit
         {
-            get => _socket.Ttl;
+            get => GetHopLimit(_socket);
             set => _socket.Ttl = (short)Math.Clamp(value, 1, 255);
         }
 

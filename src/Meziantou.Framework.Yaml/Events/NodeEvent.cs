@@ -17,6 +17,13 @@ public abstract partial class NodeEvent : ParsingEvent
     /// <value></value>
     public string? Tag { get; }
 
+    /// <summary>
+    /// Gets a value indicating whether <see cref="Tag"/> is a tag that a parser resolved, such as the local tag
+    /// <c>!!a</c> of <c>!&lt;!!a&gt;</c>, rather than a shorthand given by code, such as <c>!!str</c> for
+    /// <c>tag:yaml.org,2002:str</c>. The emitter expands a shorthand, but writes a resolved tag as it is.
+    /// </summary>
+    internal bool IsTagResolved { get; init; }
+
     /// <summary>Gets a value indicating whether this instance is canonical.</summary>
     /// <value></value>
     public abstract bool IsCanonical { get; }

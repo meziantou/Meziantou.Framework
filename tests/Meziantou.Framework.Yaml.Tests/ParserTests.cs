@@ -82,6 +82,33 @@ public class ParserTests : ParserTestHelper
         Assert.Equal(ReadEventsWithPositions(Parser.CreateParser(new StringReader(yaml))), ReadEventsWithPositions(Parser.CreateParser(reader)));
     }
 
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void StreamReaderParser_DeepCollections_ReportTheSameEventsAsTheStringParser(bool flow)
+    {
+        // More than 16 levels: the reader keeps the stack of its collections in an array, which the tokens before an
+        // incomplete token change
+        var builder = new StringBuilder();
+        for (var i = 0; i < 24; i++)
+        {
+            if (flow)
+            {
+                builder.Append(CultureInfo.InvariantCulture, $"{new string(' ', i % 3)}[ item{i}, {{ key{i}: value{i} }},\n");
+            }
+            else
+            {
+                builder.Append(CultureInfo.InvariantCulture, $"{new string(' ', 4 * i)}key{i}:\n{new string(' ', 4 * i + 2)}- item{i}\n{new string(' ', 4 * i + 2)}-\n");
+            }
+        }
+
+        builder.Append(flow ? new string(']', 24) + "\n" : new string(' ', 96) + "last\n");
+        var yaml = builder.ToString();
+        using var reader = CreateTrickleStreamReader(yaml);
+
+        Assert.Equal(ReadEventsWithPositions(Parser.CreateParser(new StringReader(yaml))), ReadEventsWithPositions(Parser.CreateParser(reader)));
+    }
+
     private static StreamReader CreateTrickleStreamReader(string yaml)
     {
         // The byte order mark of the document, if any, is kept as a character, like the string parser sees it

@@ -54,7 +54,7 @@ public class YamlMapping : YamlContainer, IDictionary<YamlNode, YamlNode?>, ILis
                 _mappingStart.IsImplicit,
                 _mappingStart.Style,
                 _mappingStart.Start,
-                _mappingStart.End);
+                _mappingStart.End) { IsTagResolved = _mappingStart.IsTagResolved };
         }
     }
 
@@ -84,7 +84,7 @@ public class YamlMapping : YamlContainer, IDictionary<YamlNode, YamlNode?>, ILis
                 _mappingStart.IsImplicit,
                 value,
                 _mappingStart.Start,
-                _mappingStart.End);
+                _mappingStart.End) { IsTagResolved = _mappingStart.IsTagResolved };
         }
     }
 
@@ -102,7 +102,7 @@ public class YamlMapping : YamlContainer, IDictionary<YamlNode, YamlNode?>, ILis
                 value,
                 _mappingStart.Style,
                 _mappingStart.Start,
-                _mappingStart.End);
+                _mappingStart.End) { IsTagResolved = _mappingStart.IsTagResolved };
         }
     }
 

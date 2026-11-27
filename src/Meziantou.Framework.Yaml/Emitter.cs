@@ -293,7 +293,7 @@ public partial class Emitter : IEmitter
             // dropping it would change how the scalar resolves.
             if (!string.IsNullOrEmpty(nodeEvent.Tag) && (_isCanonical || nodeEvent.IsCanonical || nodeEvent.Tag == "!"))
             {
-                AnalyzeTag(nodeEvent.Tag);
+                AnalyzeTag(nodeEvent.Tag, nodeEvent.IsTagResolved);
             }
             return;
         }
@@ -529,7 +529,7 @@ public partial class Emitter : IEmitter
     }
 
     /// <summary>Check if a tag is valid.</summary>
-    private void AnalyzeTag(string tag)
+    private void AnalyzeTag(string tag, bool isResolved)
     {
         // The non-specific tag is always written as "!", even when a %TAG directive redefines the primary handle. Its
         // verbatim form "!<!>" is invalid.
@@ -545,8 +545,9 @@ public partial class Emitter : IEmitter
         // tag is not expanded: the parser resolves "!m!b" with "%TAG !m! !m!!a-" to "!m!!a-b", which still starts with
         // the handle, and expanding it again would not load back. Nor is a tag that a local prefix resolves to: with
         // "%TAG ! !!a-", the parser resolves "!b" to "!!a-b", which is not the shorthand "!!a-b". A shorthand needs a
-        // non-empty suffix: "!!" alone is invalid.
-        if (tag is ['!', ..] && !IsResolvedFromLocalPrefix(tag))
+        // non-empty suffix: "!!" alone is invalid. A tag that a parser resolved is not a shorthand: the verbatim tag
+        // "!<!!a>" is the local tag "!!a", which expanding would turn into "tag:yaml.org,2002:a".
+        if (!isResolved && tag is ['!', ..] && !IsResolvedFromLocalPrefix(tag))
         {
             foreach (var directive in _tagDirectives)
             {

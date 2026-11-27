@@ -551,8 +551,8 @@ internal sealed class Utf8YamlTokenSource
         {
             Utf8YamlTokenKind.DocumentStart => new DocumentStart(Version, TagDirectives, IsImplicit, Start, End),
             Utf8YamlTokenKind.DocumentEnd => new DocumentEnd(IsImplicit, Start, End),
-            Utf8YamlTokenKind.MappingStart => new MappingStart(Anchor, tag, string.IsNullOrEmpty(tag), IsFlow ? YamlStyle.Flow : YamlStyle.Block, Start, End),
-            Utf8YamlTokenKind.SequenceStart => new SequenceStart(Anchor, tag, string.IsNullOrEmpty(tag), IsFlow ? YamlStyle.Flow : YamlStyle.Block, Start, End),
+            Utf8YamlTokenKind.MappingStart => new MappingStart(Anchor, tag, string.IsNullOrEmpty(tag), IsFlow ? YamlStyle.Flow : YamlStyle.Block, Start, End) { IsTagResolved = true },
+            Utf8YamlTokenKind.SequenceStart => new SequenceStart(Anchor, tag, string.IsNullOrEmpty(tag), IsFlow ? YamlStyle.Flow : YamlStyle.Block, Start, End) { IsTagResolved = true },
             Utf8YamlTokenKind.MappingEnd => new MappingEnd(Start, End),
             Utf8YamlTokenKind.SequenceEnd => new SequenceEnd(Start, End),
             Utf8YamlTokenKind.Alias => new AnchorAlias(Anchor!, Start, End),
@@ -565,7 +565,7 @@ internal sealed class Utf8YamlTokenSource
             var style = ScalarStyle;
             var isPlainImplicit = (style is ScalarStyle.Plain && tag is null) || tag == Constants.DefaultHandle;
             var isQuotedImplicit = !isPlainImplicit && tag is null;
-            return new Scalar(Anchor, tag, ScalarValue, style, isPlainImplicit, isQuotedImplicit, Start, End);
+            return new Scalar(Anchor, tag, ScalarValue, style, isPlainImplicit, isQuotedImplicit, Start, End) { IsTagResolved = true };
         }
     }
 

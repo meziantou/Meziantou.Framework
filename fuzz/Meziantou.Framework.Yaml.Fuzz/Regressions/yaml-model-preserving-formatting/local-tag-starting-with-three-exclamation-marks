@@ -1,0 +1,6 @@
+!<tag:yaml.org,2002:st'r> foo   : #lala
+  d
+? # lala
+ - seq1
+::
+  !<!!!strbar> baz

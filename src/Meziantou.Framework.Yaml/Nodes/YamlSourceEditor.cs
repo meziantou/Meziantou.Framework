@@ -11,6 +11,8 @@ namespace Meziantou.Framework.Yaml.Nodes;
 /// </summary>
 internal static class YamlSourceEditor
 {
+    private const char ByteOrderMark = '\uFEFF';
+
     /// <summary>The state of a node, recorded before its first change: its event, its location and its children.</summary>
     public static YamlNodeSnapshot CaptureCurrent(IYamlModelNode node)
     {
@@ -181,42 +183,79 @@ internal static class YamlSourceEditor
             builder.Append(crlf ? text.Replace("\n", "\r\n", StringComparison.Ordinal) : text);
             position = edit.End;
 
-            // The lines of spaces after a text of several lines, which can end with a block scalar, are empty lines. They keep
-            // their line breaks without their spaces: a block scalar written again with a smaller indentation would read the
-            // spaces as its content.
+            // A text of several lines can end with a block scalar written again with a smaller indentation, which would read
+            // the lines of spaces and the comments that follow as its content
             if (text.Contains('\n', StringComparison.Ordinal))
             {
                 var limit = i + 1 < edits.Count ? edits[i + 1].Start : source.Length;
-                position = AppendEmptyLines(builder, source, position, limit);
+                position = AppendLinesAfterEdit(builder, source, position, limit, edit.Start - LineStart(source, edit.Start));
             }
         }
 
         builder.Append(source, position, source.Length - position);
         return builder.ToString();
 
-        // Appends the line breaks of the lines that have only spaces, and returns the start of the first other line
-        static int AppendEmptyLines(StringBuilder builder, string source, int position, int limit)
+        // Appends the lines of spaces and the comments that follow an edit, and returns the start of the first other line.
+        // A line of spaces keeps only its line break, and a comment is moved left to the column of the next line with
+        // content, or of the edited node when no such line follows: no block scalar of the edit is that far left.
+        static int AppendLinesAfterEdit(StringBuilder builder, string source, int position, int limit, int column)
         {
-            while (position < limit)
+            var lines = new List<(int Start, int Content, int End)>();
+            var target = column;
+            var current = position;
+            while (current < limit)
             {
-                var end = position;
-                while (end < limit && source[end] is ' ' or '\t')
+                var content = current;
+                while (content < limit && source[content] is ' ' or '\t')
                 {
-                    end++;
+                    content++;
                 }
 
-                if (end == limit && limit == source.Length)
-                    return end;
+                // The spaces at the end of the input are an empty line; before the next edit, they are its indentation
+                if (content == limit)
+                {
+                    if (limit == source.Length)
+                    {
+                        lines.Add((current, content, content));
+                        current = content;
+                    }
 
-                if (end == limit || source[end] is not ('\r' or '\n'))
-                    return position;
+                    break;
+                }
 
-                var lineEnd = source[end] == '\r' && end + 1 < limit && source[end + 1] == '\n' ? end + 2 : end + 1;
-                builder.Append(source, end, lineEnd - end);
-                position = lineEnd;
+                var isComment = source[content] == '#' && (current > 0 && source[current - 1] is '\r' or '\n');
+                if (source[content] is not ('\r' or '\n') && !isComment)
+                {
+                    // The rest of the line of the edit, or a line with content
+                    if (current > 0 && source[current - 1] is '\r' or '\n')
+                    {
+                        target = content - current;
+                    }
+
+                    break;
+                }
+
+                var lineBreak = source.AsSpan(content, limit - content).IndexOfAny('\r', '\n');
+                var end = lineBreak < 0 ? limit : content + lineBreak;
+                end = end < limit && source[end] == '\r' && end + 1 < limit && source[end + 1] == '\n' ? end + 2 : Math.Min(end + 1, limit);
+                if (lineBreak < 0 && limit < source.Length)
+                    break;
+
+                lines.Add((current, content, end));
+                current = end;
             }
 
-            return position;
+            foreach (var (start, content, end) in lines)
+            {
+                if (content < end && source[content] == '#')
+                {
+                    builder.Append(source, start, Math.Min(content - start, target));
+                }
+
+                builder.Append(source, content, end - content);
+            }
+
+            return current;
         }
 
         // The text ends with a line break, or with a last line of spaces after one: a kept block scalar at the end of the
@@ -236,7 +275,7 @@ internal static class YamlSourceEditor
             if (SnapshotOf(snapshot.Contents) is not { } previous || document.Contents is null || previous.End.Index <= previous.Start.Index)
                 return false;
 
-            edits.Add(new Edit(previous.Start.Index, previous.End.Index, Emit(document.Contents, previous.Start.Column, inFlow: false)));
+            edits.Add(new Edit(previous.Start.Index, previous.End.Index, Emit(document.Contents, ColumnOf(source, previous.Start), inFlow: false)));
             return true;
         }
 
@@ -258,7 +297,7 @@ internal static class YamlSourceEditor
             // node changed. Otherwise the copy is written in the flow style, which is valid where the alias was.
             if (IsChanged(node) || node.AliasTarget is not YamlNode target || IsChanged(target) || target.Anchor is null || s_liveNodes?.Contains(target) is not true)
             {
-                edits.Add(new Edit(aliasStart.Index, node.AliasEnd!.Value.Index, Emit(node, aliasStart.Column, inFlow: true)));
+                edits.Add(new Edit(aliasStart.Index, node.AliasEnd!.Value.Index, Emit(node, ColumnOf(source, aliasStart), inFlow: true)));
             }
 
             return;
@@ -269,7 +308,7 @@ internal static class YamlSourceEditor
             case YamlValue value:
                 if (!ReferenceEquals(value.Scalar, snapshot.Header))
                 {
-                    edits.Add(new Edit(snapshot.Start.Index, snapshot.End.Index, Emit(value, snapshot.Start.Column, inFlow)));
+                    edits.Add(new Edit(snapshot.Start.Index, snapshot.End.Index, Emit(value, ColumnOf(source, snapshot.Start), inFlow)));
                 }
 
                 return;
@@ -277,7 +316,7 @@ internal static class YamlSourceEditor
             case YamlMapping mapping:
                 if (!ReferenceEquals(mapping.MappingStart, snapshot.Header))
                 {
-                    ReplaceNode(node, inFlow, edits);
+                    ReplaceNode(node, source, inFlow, edits);
                     return;
                 }
 
@@ -300,7 +339,7 @@ internal static class YamlSourceEditor
                 if (flow || !TryAddMappingEntryEdits(mapping, snapshot, source, edits))
                 {
                     edits.RemoveRange(mappingEditCount, edits.Count - mappingEditCount);
-                    ReplaceNode(node, inFlow, edits);
+                    ReplaceNode(node, source, inFlow, edits);
                 }
 
                 return;
@@ -308,7 +347,7 @@ internal static class YamlSourceEditor
             case YamlSequence sequence:
                 if (!ReferenceEquals(sequence.SequenceStart, snapshot.Header))
                 {
-                    ReplaceNode(node, inFlow, edits);
+                    ReplaceNode(node, source, inFlow, edits);
                     return;
                 }
 
@@ -327,7 +366,7 @@ internal static class YamlSourceEditor
                 if (flowSequence || !TryAddSequenceItemEdits(sequence, snapshot, source, edits))
                 {
                     edits.RemoveRange(sequenceEditCount, edits.Count - sequenceEditCount);
-                    ReplaceNode(node, inFlow, edits);
+                    ReplaceNode(node, source, inFlow, edits);
                 }
 
                 return;
@@ -360,10 +399,10 @@ internal static class YamlSourceEditor
             return false;
 
         // Every original entry starts its own line, at the indentation of the mapping
-        var column = StartOf(keys[0]).Column;
+        var column = ColumnOf(source, StartOf(keys[0]));
         foreach (var key in keys)
         {
-            if (key.AliasStart is not null || !StartsLine(source, StartOf(key).Index) || StartOf(key).Column != column)
+            if (key.AliasStart is not null || !StartsLine(source, StartOf(key).Index) || ColumnOf(source, StartOf(key)) != column)
                 return false;
         }
 
@@ -577,7 +616,7 @@ internal static class YamlSourceEditor
         }
         else
         {
-            text = Emit(value, snapshot.Start.Column, inFlow: false);
+            text = Emit(value, ColumnOf(source, snapshot.Start), inFlow: false);
             if (end == start && (start == 0 || source[start - 1] is not (' ' or '\t' or '\n' or '\r')))
             {
                 text = " " + text;
@@ -588,10 +627,10 @@ internal static class YamlSourceEditor
         return true;
     }
 
-    private static void ReplaceNode(YamlNode node, bool inFlow, List<Edit> edits)
+    private static void ReplaceNode(YamlNode node, string source, bool inFlow, List<Edit> edits)
     {
         var snapshot = SnapshotOf(node)!;
-        edits.Add(new Edit(snapshot.Start.Index, snapshot.End.Index, Emit(node, snapshot.Start.Column, inFlow)));
+        edits.Add(new Edit(snapshot.Start.Index, snapshot.End.Index, Emit(node, ColumnOf(source, snapshot.Start), inFlow)));
     }
 
     // Whether the node or one of its descendants changed since it was loaded
@@ -651,6 +690,18 @@ internal static class YamlSourceEditor
     }
 
     private static bool StartsLine(string source, int index) => source.AsSpan(LineStart(source, index), index - LineStart(source, index)).IsWhiteSpace();
+
+    // The column of a node, as indentation: the byte order marks before it on its line are not counted, which the column
+    // of its mark counts after the first one of the stream
+    private static int ColumnOf(string source, Mark mark)
+    {
+        var lineStart = LineStart(source, mark.Index);
+        var prefix = source.AsSpan(lineStart, mark.Index - lineStart);
+        if (!prefix.Contains(ByteOrderMark))
+            return mark.Column;
+
+        return prefix.Length - prefix.Count(ByteOrderMark);
+    }
 
     private static int LineStart(string source, int index)
     {
@@ -757,7 +808,7 @@ internal static class YamlSourceEditor
                 break;
 
             case YamlValue { Scalar: { Value.Length: 0, Style: ScalarStyle.Plain or ScalarStyle.Any, Tag: null } scalar } value:
-                value.Scalar = new Scalar(scalar.Anchor, scalar.Tag, "null", ScalarStyle.Plain, scalar.IsPlainImplicit, scalar.IsQuotedImplicit, scalar.Start, scalar.End);
+                value.Scalar = new Scalar(scalar.Anchor, scalar.Tag, "null", ScalarStyle.Plain, scalar.IsPlainImplicit, scalar.IsQuotedImplicit, scalar.Start, scalar.End) { IsTagResolved = scalar.IsTagResolved };
                 break;
         }
     }
@@ -790,7 +841,7 @@ internal static class YamlSourceEditor
 
             case YamlValue value when value.Scalar.Style is ScalarStyle.Literal or ScalarStyle.Folded:
                 var scalar = value.Scalar;
-                value.Scalar = new Scalar(scalar.Anchor, scalar.Tag, scalar.Value, ScalarStyle.DoubleQuoted, scalar.IsPlainImplicit, scalar.IsQuotedImplicit, scalar.Start, scalar.End);
+                value.Scalar = new Scalar(scalar.Anchor, scalar.Tag, scalar.Value, ScalarStyle.DoubleQuoted, scalar.IsPlainImplicit, scalar.IsQuotedImplicit, scalar.Start, scalar.End) { IsTagResolved = scalar.IsTagResolved };
                 break;
         }
     }

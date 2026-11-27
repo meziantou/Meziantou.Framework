@@ -372,6 +372,18 @@ public sealed class Utf8YamlReaderTests
         Assert.Equal(expected, ReadEvents(Encoding.UTF8.GetBytes(yaml)));
     }
 
+    [Theory]
+    [InlineData("% TAG !e! tag:example.com,2000:\n--- !e!a b\n")]
+    [InlineData("%\t YAML 1.2\n--- a\n")]
+    [InlineData("%\n--- a\n")]
+    public void Read_DirectiveWithoutName_Throws(string yaml)
+    {
+        // The name follows the '%', like the scanner reads it: "% TAG" does not declare the handle
+        Assert.Throws<SyntaxErrorException>(() => YamlTestSuite.ReadEvents(new Parser<StringLookAheadBuffer>(new StringLookAheadBuffer(yaml))));
+        var exception = Assert.Throws<SyntaxErrorException>(() => ReadEvents(Encoding.UTF8.GetBytes(yaml)));
+        Assert.Contains("Expected a directive name", exception.Message, StringComparison.Ordinal);
+    }
+
     [Fact]
     public void Read_DeeperThanMaxDepth_Throws()
     {

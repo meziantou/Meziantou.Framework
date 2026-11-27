@@ -155,6 +155,13 @@ public ref struct Utf8YamlReader
             _lineNumber = state._data.LineNumber;
             _charOffset = state._data.CharOffset;
             RestoreState(in state);
+
+            // The state shares the entries of a deep stack. The caller reads the block again from the same state after an
+            // incomplete token, so the reader must not change them.
+            if (stopsAtIncompleteToken && _stackOverflow is not null)
+            {
+                _stackOverflow = (int[])_stackOverflow.Clone();
+            }
         }
         else
         {
@@ -792,6 +799,11 @@ public ref struct Utf8YamlReader
     private void ValidateDirective(int start, int end)
     {
         var line = _buffer[(start + 1)..end];
+
+        // The name follows the '%': "% TAG" is not a %TAG directive
+        if (line.IsEmpty || line[0] is (byte)' ' or (byte)'\t')
+            throw CreateError(start + 1, "Expected a directive name");
+
         var index = 0;
         var name = NextParameter(line, ref index);
         var first = NextParameter(line, ref index);

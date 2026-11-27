@@ -49,7 +49,7 @@ public class YamlSequence : YamlContainer, IList<YamlNode>
                 _sequenceStart.IsImplicit,
                 _sequenceStart.Style,
                 _sequenceStart.Start,
-                _sequenceStart.End);
+                _sequenceStart.End) { IsTagResolved = _sequenceStart.IsTagResolved };
         }
     }
 
@@ -79,7 +79,7 @@ public class YamlSequence : YamlContainer, IList<YamlNode>
                 _sequenceStart.IsImplicit,
                 value,
                 _sequenceStart.Start,
-                _sequenceStart.End);
+                _sequenceStart.End) { IsTagResolved = _sequenceStart.IsTagResolved };
         }
     }
 
@@ -97,7 +97,7 @@ public class YamlSequence : YamlContainer, IList<YamlNode>
                 value,
                 _sequenceStart.Style,
                 _sequenceStart.Start,
-                _sequenceStart.End);
+                _sequenceStart.End) { IsTagResolved = _sequenceStart.IsTagResolved };
         }
     }
 

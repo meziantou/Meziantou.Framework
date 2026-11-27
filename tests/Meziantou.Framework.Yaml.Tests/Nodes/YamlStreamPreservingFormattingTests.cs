@@ -131,14 +131,33 @@ public sealed class YamlStreamPreservingFormattingTests
     [InlineData("? d\n: 23\nfoo: |\n   x\n   ")]
     [InlineData("? d\n: 23\nfoo: |\n   x\n   \n  \nb: 2\n")]
     [InlineData("? d\n: 23\nfoo: |+\n   x\n  \n ")]
-    public void RewrittenMapping_KeepsTheEmptyLinesOfABlockScalar(string yaml)
+    [InlineData("? d\n: 23\nfoo: |\n   x\n  # comment\n")]
+    [InlineData("? d\n: 23\nkeep: |+\n   # Trail\n  # comments.\n")]
+    [InlineData("? d\n: 23\nfoo: |\n   x\n  # comment\n\n   # other\nb: 2\n")]
+    public void RewrittenMapping_KeepsTheValueOfABlockScalar(string yaml)
     {
         // The explicit key cannot be edited in place: the mapping is written again, with its block scalar at another
-        // indentation. The lines of spaces after it are empty lines of the scalar.
+        // indentation. The lines of spaces after it are empty lines of the scalar, and the comments are not its content.
         var stream = Load(yaml);
         Root(stream)["d"] = new YamlValue("changed");
         var result = stream.ToStringPreservingFormatting();
 
+        AssertSameData(stream, result);
+    }
+
+    [Theory]
+    [InlineData("\uFEFFa:\nb:\n", "\uFEFFa: new\nb: null\n")]
+    [InlineData("\uFEFF\uFEFFa:\nb:\n", "\uFEFF\uFEFFa: new\nb: null\n")]
+    [InlineData("\uFEFF\uFEFF? x\n: 1\nb: 2\n", "\uFEFF\uFEFFx: new\nb: 2\n")]
+    public void RewrittenMapping_AfterByteOrderMarks_IsNotIndented(string yaml, string expected)
+    {
+        // A byte order mark before the mapping is not indentation: the next entries stay at the start of their line
+        var stream = Load(yaml);
+        var root = Root(stream);
+        root[root.First().Key] = new YamlValue("new");
+        var result = stream.ToStringPreservingFormatting();
+
+        Assert.Equal(expected, result);
         AssertSameData(stream, result);
     }
 

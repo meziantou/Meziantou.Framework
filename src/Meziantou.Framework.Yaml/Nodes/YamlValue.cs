@@ -108,7 +108,7 @@ public class YamlValue : YamlNode
                 _scalar.IsPlainImplicit,
                 _scalar.IsQuotedImplicit,
                 _scalar.Start,
-                _scalar.End);
+                _scalar.End) { IsTagResolved = _scalar.IsTagResolved };
         }
     }
 
@@ -145,7 +145,7 @@ public class YamlValue : YamlNode
                 _scalar.IsPlainImplicit,
                 _scalar.IsQuotedImplicit,
                 _scalar.Start,
-                _scalar.End);
+                _scalar.End) { IsTagResolved = _scalar.IsTagResolved };
         }
     }
 
@@ -165,7 +165,7 @@ public class YamlValue : YamlNode
                 value,
                 _scalar.IsQuotedImplicit,
                 _scalar.Start,
-                _scalar.End);
+                _scalar.End) { IsTagResolved = _scalar.IsTagResolved };
         }
     }
 
@@ -182,7 +182,7 @@ public class YamlValue : YamlNode
                 _scalar.IsPlainImplicit,
                 value,
                 _scalar.Start,
-                _scalar.End);
+                _scalar.End) { IsTagResolved = _scalar.IsTagResolved };
         }
     }
 
@@ -199,7 +199,7 @@ public class YamlValue : YamlNode
                 _scalar.IsPlainImplicit,
                 _scalar.IsQuotedImplicit,
                 _scalar.Start,
-                _scalar.End);
+                _scalar.End) { IsTagResolved = _scalar.IsTagResolved };
         }
     }
 }

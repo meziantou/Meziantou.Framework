@@ -12,7 +12,8 @@ using Meziantou.Framework.DependencyScanning;
 
 // Finds what a pull request changes that needs a closer review:
 // - dependencies: a dependency that no file of the base revision references (a version bump does not count),
-// - tests: a file of tests/ that is modified, deleted or renamed (adding files does not count).
+// - tests: a file of tests/ that is deleted, renamed, or modified with lines removed or changed (adding files or lines
+//   does not count).
 // The pr-review-labels workflow runs it on the merge commit of the pull request with a token that can write, so it
 // must only read the files of the pull request, never run them.
 string? baseRevision = null;
@@ -75,7 +76,7 @@ if (changedTests.Count is 0)
 }
 else
 {
-    summary.AppendLine(CultureInfo.InvariantCulture, $"- `review:tests`: {changedTests.Count} files of tests/ modified, deleted or renamed");
+    summary.AppendLine(CultureInfo.InvariantCulture, $"- `review:tests`: {changedTests.Count} files of tests/ with removed or changed lines");
     foreach (var (status, path) in changedTests)
     {
         summary.AppendLine($"  - {status} `{path}`");
@@ -90,15 +91,35 @@ return 0;
 static List<(string Status, string Path)> GetChangedTests(FullPath rootPath, string baseRevision, string headRevision)
 {
     // Without rename detection, a renamed file is a deleted file and an added file, so it is reported
-    var output = RunGit(rootPath, ["diff", "--name-status", "--no-renames", "-z", baseRevision, headRevision, "--", "tests/"]);
-    var parts = output.Split('\0', StringSplitOptions.RemoveEmptyEntries);
+    string[] diffArguments = ["--no-renames", "-z", baseRevision, headRevision, "--", "tests/"];
+
+    // A modified file is reported only when it loses lines: a changed line is a deleted line and an added line, while
+    // appending tests to an existing file only adds lines. Git reports "-" for the line counts of a binary file.
+    var filesWithDeletedLines = new HashSet<string>(StringComparer.Ordinal);
+    foreach (var line in RunGit(rootPath, ["diff", "--numstat", .. diffArguments]).Split('\0', StringSplitOptions.RemoveEmptyEntries))
+    {
+        var columns = line.Split('\t', 3);
+        if (columns.Length is 3 && columns[1] is not "0")
+        {
+            filesWithDeletedLines.Add(columns[2]);
+        }
+    }
+
+    var parts = RunGit(rootPath, ["diff", "--name-status", .. diffArguments]).Split('\0', StringSplitOptions.RemoveEmptyEntries);
     var result = new List<(string Status, string Path)>();
     for (var i = 0; i + 1 < parts.Length; i += 2)
     {
-        var status = parts[i];
-        if (status is not "A")
+        var (status, path) = (parts[i], parts[i + 1]);
+        var isChanged = status switch
         {
-            result.Add((status, parts[i + 1]));
+            "A" => false,
+            "D" => true,
+            _ => filesWithDeletedLines.Contains(path),
+        };
+
+        if (isChanged)
+        {
+            result.Add((status, path));
         }
     }
 

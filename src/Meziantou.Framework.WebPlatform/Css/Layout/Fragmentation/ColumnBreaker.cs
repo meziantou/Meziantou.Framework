@@ -80,7 +80,9 @@ internal static partial class ColumnBreaker
 
         // (the pages of another inline size, laid out again from a break: the content before it is in the previous pages, and the
         // first page starts with the space of the break, e.g. a repeated table header)
-        var resumes = flow.IsPaged && baseIndex > 0 && start > Epsilon;
+        // (also from the start of the strip, after content kept at the start of the first page: the anchor of the page, e.g. the
+        // rest of a paragraph after a sliced line box, is at the start of the strip of the new inline size)
+        var resumes = flow.IsPaged && ((baseIndex > 0 && start > Epsilon) || flow.ResumeLeadingBlockSize > Epsilon);
         var startDisplayOffset = resumes ? GetDisplayOffsetAt(flow, start) - flow.ResumeShift + flow.ResumeLeadingBlockSize : 0;
         map.Add(map.Count == 0 ? double.NegativeInfinity : start, baseIndex, start - startDisplayOffset, isBreak: true, startSequence);
         if (flow.IsPaged && baseIndex > 0)
@@ -90,7 +92,9 @@ internal static partial class ColumnBreaker
 
         // (at the start of the flow, the contents pulled before it by a negative margin may have a forced break, see GetForcedBreakBefore)
         var cursorStart = start <= Epsilon ? GetForcedBreakBefore(flow, start) : start;
-        var cursor = new FlowCursor(flow, map, cursorStart, end, baseIndex, flow.NextGeneration(), canBreakBefore: false, includesStart: start <= Epsilon);
+        // (a flow laid out again after content kept at the start of the first page can be pushed to the next page: the page is not
+        // empty, see LayoutEngine.CarriedContent)
+        var cursor = new FlowCursor(flow, map, cursorStart, end, baseIndex, flow.NextGeneration(), canBreakBefore: resumes && flow.ResumeLeadingBlockSize > Epsilon, includesStart: start <= Epsilon);
         if (cursorStart < start)
         {
             cursor.SetOrigin(start);
@@ -158,6 +162,12 @@ internal static partial class ColumnBreaker
 
         /// <summary>Whether the break slices monolithic content that does not fit in an empty page (see <see cref="FragmentationFlow.SlicesMonolithicContent"/>).</summary>
         public bool IsMonolithicSlice { get; init; }
+
+        /// <summary>
+        /// Whether parallel flows of the flow continue after the break (e.g. the items of a grid or flex container that is the
+        /// box of the flow): the position of the break can be the end of the flow while its contents are not all placed.
+        /// </summary>
+        public bool HasUnfinishedFlows { get; init; }
     }
 
     /// <summary>The progress of the breaker in a parallel flow (see <see cref="FlowCursor"/>, <see cref="NestedColumnsCursor"/>).</summary>
@@ -511,11 +521,15 @@ internal static partial class ColumnBreaker
                 }
             }
 
-            // The boxes that are broken by the end of the fragmentainer
+            // The boxes that are broken by the end of the fragmentainer. A box whose own block is not finished grows the box of the
+            // flow (its contents are pushed by the breaks); a box that is finished but whose flow continues only overflows it.
+            var hasUnfinishedBoxes = false;
             foreach (var item in _advanced)
             {
                 var itemAppeal = item.Appeal;
-                var isItemUnfinished = !TryFinishBox(item, blockSize, ref shortage) || !item.IsFlowDone;
+                var isBoxUnfinished = !TryFinishBox(item, blockSize, ref shortage);
+                hasUnfinishedBoxes |= isBoxUnfinished;
+                var isItemUnfinished = isBoxUnfinished || !item.IsFlowDone;
                 if (isItemUnfinished && item.Avoid)
                 {
                     itemAppeal = Worst(itemAppeal, BreakAppeal.Avoid);
@@ -920,7 +934,7 @@ internal static partial class ColumnBreaker
                 _flow.AddMonolithicSlice(_index);
             }
 
-            return new AdvanceResult(IsFinished: false, position, displayOffset, appeal, shortage) { ContentEnd = endBeforeBreak + next.CloneEndEdges, IsMonolithicSlice = isMonolithicSlice };
+            return new AdvanceResult(IsFinished: false, position, displayOffset, appeal, shortage) { ContentEnd = endBeforeBreak + next.CloneEndEdges, IsMonolithicSlice = isMonolithicSlice, HasUnfinishedFlows = hasUnfinishedBoxes };
 
             // Records a possible break that fits: the latest one of the best appeal is chosen. The parallel flows that start before the
             // break and are broken by the end of the fragmentainer lower its appeal
@@ -1476,7 +1490,9 @@ internal static partial class ColumnBreaker
             item.Appeal = result.Appeal == BreakAppeal.Forced || (result.Appeal == BreakAppeal.OrphansWidows && !item.IsDefiniteBox) ? BreakAppeal.Perfect : result.Appeal;
             item.AdvancedIndex = _index;
             item.IsMonolithicSlice = result.IsMonolithicSlice;
-            item.IsContentPlaced = result.IsFinished || (!item.IsMonolithic && result.Position >= item.IntrinsicEnd - Epsilon);
+            // (the contents of the box are not placed while its parallel flows continue, e.g. the items of a grid item that is a grid
+            // container: the box grows with them)
+            item.IsContentPlaced = result.IsFinished || (!item.IsMonolithic && result.Position >= item.IntrinsicEnd - Epsilon && !result.HasUnfinishedFlows);
             if (item.Appeal != BreakAppeal.LastResort)
                 return;
 

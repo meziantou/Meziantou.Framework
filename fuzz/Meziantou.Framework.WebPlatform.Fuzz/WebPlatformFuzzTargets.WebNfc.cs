@@ -30,6 +30,10 @@ public static partial class WebPlatformFuzzTargets
     /// </summary>
     public static void NdefMessageTarget(ReadOnlySpan<byte> data)
     {
+        // A JSON node decodes its strings when they are read: invalid UTF-8 would throw then, in the description of the message
+        if (!System.Text.Unicode.Utf8.IsValid(data))
+            return;
+
         JsonNode? json;
         try
         {

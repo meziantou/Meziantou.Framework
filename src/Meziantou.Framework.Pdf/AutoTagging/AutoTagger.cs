@@ -167,6 +167,15 @@ internal static class AutoTagger
                 continue;
             }
 
+            // An inline image cut by the end of the content (no EI) has all the bytes after ID as its data: anything written
+            // after it, a marked-content operator or a line break, would be read as data and change the image. It is the last
+            // operation: it is copied as it is, outside of marked content.
+            if (name == "BI" && reader.Position >= data.Length && !EndsWithEndInlineImage(data.AsSpan(operation.Start, operation.End - operation.Start)))
+            {
+                output.Add(operation with { IsLast = true });
+                break;
+            }
+
             var paints = TextOperators.Contains(name) || name is "Do" or "BI" or "sh";
             if (!paints)
             {
@@ -207,7 +216,10 @@ internal static class AutoTagger
             }
 
             // The bytes of an operation can end with its operator: a new line separates it from the next one
-            writer.WriteNewLine();
+            if (!segment.IsLast)
+            {
+                writer.WriteNewLine();
+            }
         }
 
         page.Dictionary[PdfNames.Contents] = document.Objects.Add(new PdfStream(new PdfDictionary(), writer.ToArray()));
@@ -216,6 +228,16 @@ internal static class AutoTagger
     /// <summary>An operation of the content: its bytes in the original content, or a marked-content operator to write.</summary>
     private sealed record Segment(int Start, int End, string? Name, PdfObject[] Operands)
     {
+        /// <summary>Gets whether nothing can be written after the segment (an inline image cut by the end of the content).</summary>
+        public bool IsLast { get; init; }
+
         public static Segment Operator(string name, params PdfObject[] operands) => new(0, 0, name, operands);
+    }
+
+    /// <summary>Indicates whether the bytes of an inline image end with its EI operator.</summary>
+    private static bool EndsWithEndInlineImage(ReadOnlySpan<byte> operation)
+    {
+        operation = operation.TrimEnd(" \t\r\n\f\0"u8);
+        return operation.EndsWith("EI"u8);
     }
 }

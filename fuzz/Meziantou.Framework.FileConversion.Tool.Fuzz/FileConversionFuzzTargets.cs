@@ -730,7 +730,9 @@ public static class FileConversionFuzzTargets
     {
         try
         {
-            return Compression.ArchiveFile.Open(new MemoryStream(data.ToArray(), writable: false));
+            // The memory of the decoders is limited, as in the Compression targets: the default (2 GB) allows the model of a PPMd
+            // entry that the fuzzing process cannot allocate (OutOfMemoryException)
+            return Compression.ArchiveFile.Open(new MemoryStream(data.ToArray(), writable: false), new Compression.ArchiveReaderOptions { MaxMemoryUsage = 16 << 20 });
         }
         catch (Exception ex) when (ex is InvalidDataException or IOException or NotSupportedException)
         {

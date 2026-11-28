@@ -287,10 +287,7 @@
     "total": 12
   },
   "css/css-values/calc-infinity-nan-computed.html": {
-    "total": 73,
-    "failures": {
-      "Property width value 'calc(infinity * 1px + infinity * 1%)'": "FAIL"
-    }
+    "total": 73
   },
   "css/css-values/calc-infinity-nan-serialize-angle.html": {
     "total": 30

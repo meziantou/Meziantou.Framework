@@ -146,6 +146,16 @@ public sealed class LocatorTests
     }
 
     [Fact]
+    public async Task GetByText_DoesNotFindTheElementsOfANoscriptElement()
+    {
+        // The text of the div leaves out its noscript element, whose elements (parsed without scripting) are not found either
+        await using var host = new ComponentTestHost();
+        var page = await RenderMarkupAsync(host, "<div id=\"outer\">Ada <noscript><span id=\"inner\">Ada</span></noscript></div>");
+
+        Assert.Equal("outer", page.GetByText("Ada").GetAttribute("id"));
+    }
+
+    [Fact]
     public async Task GetByText_CollapsesTheWhiteSpaceAndRemovesTheZeroWidthSpaces()
     {
         await using var host = new ComponentTestHost();

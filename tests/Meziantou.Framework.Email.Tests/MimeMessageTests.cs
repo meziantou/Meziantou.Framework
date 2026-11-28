@@ -153,6 +153,15 @@ public sealed class MimeMessageTests
     }
 
     [Fact]
+    public void ContentId_EncodedWordIsNotDecoded()
+    {
+        // =?utf-8?B?YQpi?= is "a\nb": a msg-id has no encoded words, its text is the identifier
+        var message = MimeMessage.Load(Encoding.ASCII.GetBytes("Content-ID: <=?utf-8?B?YQpi?=@example.com>\r\n\r\nbody"));
+
+        Assert.Equal("=?utf-8?B?YQpi?=@example.com", message.Body.ContentId);
+    }
+
+    [Fact]
     public void QuotedPrintable_RoundTrip()
     {
         var text = "Ligne avec é et = et une fin d'espace \r\n" + new string('x', 200) + "\r\nfin\t";

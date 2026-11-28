@@ -319,7 +319,10 @@ public sealed partial class PdfInteractiveForm
                 break;
 
             Remove(container, item, node);
-            if (parent is null || parent.Get<PdfArray>(PdfNames.Kids) is { Count: > 0 })
+
+            // Only a field whose last kid was removed is removed in turn: a parent without /Kids is not a field that holds the
+            // node (a malformed /Parent can be a page, whose removal from its own parent would remove it from the page tree)
+            if (parent?.Get<PdfArray>(PdfNames.Kids) is not { Count: 0 })
                 break;
 
             item = node[PdfNames.Parent]!;

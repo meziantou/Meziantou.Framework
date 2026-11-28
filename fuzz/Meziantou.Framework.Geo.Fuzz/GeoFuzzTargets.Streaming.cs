@@ -194,16 +194,16 @@ public static partial class GeoFuzzTargets
             var isFeatureCollection = false;
             foreach (var property in document.RootElement.EnumerateObject())
             {
-                if (property.NameEquals("type"))
+                if (NameEquals(property, "type"))
                 {
                     types++;
                     isFeatureCollection = property.Value.ValueKind is JsonValueKind.String && property.Value.ValueEquals("FeatureCollection");
                 }
-                else if (property.NameEquals("features"))
+                else if (NameEquals(property, "features"))
                 {
                     features++;
                 }
-                else if (property.NameEquals("name"))
+                else if (NameEquals(property, "name"))
                 {
                     names++;
                 }
@@ -213,8 +213,22 @@ public static partial class GeoFuzzTargets
         }
         catch (Exception ex) when (ex is JsonException or ArgumentException or InvalidOperationException)
         {
-            // Invalid JSON, or an escaped unpaired surrogate in a member name
+            // Invalid JSON, or an escaped unpaired surrogate in the type
             return false;
+        }
+
+        // A member name with an escaped unpaired surrogate cannot be unescaped (InvalidOperationException): it is none of the
+        // names, and the other members are still counted
+        static bool NameEquals(JsonProperty property, string name)
+        {
+            try
+            {
+                return property.NameEquals(name);
+            }
+            catch (Exception ex) when (ex is ArgumentException or InvalidOperationException)
+            {
+                return false;
+            }
         }
     }
 }

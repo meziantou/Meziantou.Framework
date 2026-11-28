@@ -9,11 +9,11 @@ description: "The results of the web-platform-tests of css/css-values, and why t
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 254 | 270 | 0 | 94% |
+| [Stable](#stable-tests) | 255 | 270 | 0 | 94% |
 | [Tentative](#tentative-tests) | 20 | 22 | 0 | 91% |
 | [Reftests](#reftests) | 211 | 214 | 0 | 99% |
 | [Crash tests](#crash-tests) | 22 | 22 | 0 | 100% |
-| **All** | **507** | **528** | **0** | **96%** |
+| **All** | **508** | **528** | **0** | **96%** |
 
 ## Failure reasons
 
@@ -22,8 +22,8 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 - **BUG**: 2
 - **TEST BUG**: 13
 - **NOT IMPLEMENTED**: 4
-- **REQUIRES**: 2
-  - `layout`: 2
+- **REQUIRES**: 1
+  - `layout`: 1
 
 ## Stable tests
 
@@ -71,7 +71,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`calc-in-color-001.html`](https://wpt.fyi/results/css/css-values/calc-in-color-001.html) | Pass | 1 / 1 |  |  |
 | [`calc-in-font-feature-settings.html`](https://wpt.fyi/results/css/css-values/calc-in-font-feature-settings.html) | Pass | 1 / 1 |  |  |
 | [`calc-in-media-queries-with-mixed-units.html`](https://wpt.fyi/results/css/css-values/calc-in-media-queries-with-mixed-units.html) | Pass | 12 / 12 |  |  |
-| [`calc-infinity-nan-computed.html`](https://wpt.fyi/results/css/css-values/calc-infinity-nan-computed.html) | Fail | 72 / 73 | REQUIRES(layout) | `width`/`margin-left` with infinite percentages resolve only against the containing block |
+| [`calc-infinity-nan-computed.html`](https://wpt.fyi/results/css/css-values/calc-infinity-nan-computed.html) | Pass | 73 / 73 |  |  |
 | [`calc-infinity-nan-serialize-angle.html`](https://wpt.fyi/results/css/css-values/calc-infinity-nan-serialize-angle.html) | Pass | 30 / 30 |  |  |
 | [`calc-infinity-nan-serialize-length.html`](https://wpt.fyi/results/css/css-values/calc-infinity-nan-serialize-length.html) | Pass | 41 / 41 |  |  |
 | [`calc-infinity-nan-serialize-number.html`](https://wpt.fyi/results/css/css-values/calc-infinity-nan-serialize-number.html) | Pass | 31 / 31 |  |  |

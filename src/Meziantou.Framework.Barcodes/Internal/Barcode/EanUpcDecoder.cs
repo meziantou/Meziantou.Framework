@@ -119,18 +119,26 @@ internal static class EanUpcDecoder
         return null;
     }
 
-    // Each digit is 7 modules wide: the digits of the symbol have the width of 7 of its modules, within a module
+    // Each digit is 7 modules wide and each guard as wide as its modules (1 per run): the digits and the guards of the
+    // symbol have the width of their modules, within a module. The guards are matched on their own scale, so without this
+    // the bars of another symbology with as many runs, such as a Code 39 symbol of 4 characters, can read as a symbol.
     private static bool HasRegularDigits(ScanLine line, int start, int runCount, int modules, int leftDigits, int rightStart, int rightDigits)
     {
         var moduleWidth = line.GetWidth(start, runCount) / modules;
+        bool HasWidth(int position, int count, int expectedModules) => Math.Abs((line.GetWidth(position, count) / moduleWidth) - expectedModules) <= 1;
+
         for (var i = 0; i < leftDigits + rightDigits; i++)
         {
             var position = i < leftDigits ? start + 3 + (i * 4) : start + rightStart + ((i - leftDigits) * 4);
-            if (Math.Abs((line.GetWidth(position, 4) / moduleWidth) - 7) > 1)
+            if (!HasWidth(position, 4, 7))
                 return false;
         }
 
-        return true;
+        // The start guard, then the middle guard (the end guard of UPC-E, 6 runs) and the end guard
+        var middleGuard = rightDigits > 0 ? 5 : 6;
+        return HasWidth(start, 3, 3)
+            && HasWidth(start + 3 + (leftDigits * 4), middleGuard, middleGuard)
+            && (rightDigits is 0 || HasWidth(start + rightStart + (rightDigits * 4), 3, 3));
     }
 
     private static bool ReadRightDigits(ScanLine line, int start, Span<char> digits)

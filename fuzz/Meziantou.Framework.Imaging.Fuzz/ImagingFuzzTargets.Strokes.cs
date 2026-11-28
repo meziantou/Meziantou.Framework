@@ -110,11 +110,15 @@ public static partial class ImagingFuzzTargets
 
         var path = builder.Build();
         var cap = (LineCap)((style / 3) % 3);
-        if (dashes.Length != 0 && cap != LineCap.Butt)
+        if (dashes.Length != 0)
         {
-            penWidth = Math.Min(penWidth, Math.Min(9.5, Math.Max(1.5, 8 * dashes.Sum())));
+            if (cap != LineCap.Butt)
+            {
+                penWidth = Math.Min(penWidth, Math.Min(9.5, Math.Max(1.5, 8 * dashes.Sum())));
+            }
 
-            // (a pattern of at least 2 pixels: each dash adds two caps)
+            // (a pattern of at least 2 pixels: each dash adds two caps, and the time of a dashed stroke grows with its number
+            // of dashes, which a wide pen over the whole canvas draws all: 0.125px dashes of a 64px pen take a minute)
             var patternLength = dashes.Sum();
             if (patternLength is > 0 and < 2)
             {

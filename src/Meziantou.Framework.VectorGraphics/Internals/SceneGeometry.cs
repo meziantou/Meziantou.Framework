@@ -11,6 +11,38 @@ internal static class SceneGeometry
     /// </remarks>
     public static SceneBounds? GetBounds(SceneElement element, Func<SceneText, SceneBounds?> measureText, bool applyClips = true)
     {
+        s_depth++;
+        try
+        {
+            return GetBoundsCore(element, measureText, applyClips);
+        }
+        finally
+        {
+            EndCall();
+        }
+    }
+
+    // The bounds of the clipping paths, computed once per call: a chain of clipping paths can share its links (clip-path
+    // attributes of a clipping path and of its shapes), and computing them again for each reference takes a time exponential
+    // in the length of the chain. A clipping path that is reached while it is being computed is in a cycle with every
+    // clipping path computed meanwhile, and cuts itself in any order: the bounds of each one do not depend on where it is
+    // reached from.
+    [ThreadStatic]
+    private static Dictionary<SceneClipPath, SceneBounds?>? s_clipBounds;
+
+    [ThreadStatic]
+    private static int s_depth;
+
+    private static void EndCall()
+    {
+        if (--s_depth == 0)
+        {
+            s_clipBounds?.Clear();
+        }
+    }
+
+    private static SceneBounds? GetBoundsCore(SceneElement element, Func<SceneText, SceneBounds?> measureText, bool applyClips)
+    {
         if (!(element.Opacity > 0))
             return null;
 
@@ -44,29 +76,50 @@ internal static class SceneGeometry
     /// <remarks>The rectangle of a shape of the content is its own, without its stroke. A clipping path that cuts itself leaves nothing visible.</remarks>
     public static SceneBounds? GetClipBounds(SceneClipPath clipPath, Func<SceneText, SceneBounds?> measureText)
     {
-        s_clipPaths ??= new(ReferenceEqualityComparer.Instance);
-        if (!s_clipPaths.Add(clipPath))
-            return null;
-
+        s_depth++;
         try
         {
-            if (GetClipContentBounds(clipPath.Content, measureText) is not { } bounds)
+            s_clipBounds ??= new(ReferenceEqualityComparer.Instance);
+            if (s_clipBounds.TryGetValue(clipPath, out var cached))
+                return cached;
+
+            s_clipPaths ??= new(ReferenceEqualityComparer.Instance);
+            if (!s_clipPaths.Add(clipPath))
                 return null;
 
-            if (clipPath.ClippingPath is { } outer)
+            SceneBounds? result;
+            try
             {
-                if (GetClipBounds(outer, measureText) is not { } outerBounds)
-                    return null;
-
-                bounds = Intersect(bounds, outerBounds);
+                result = ComputeClipBounds(clipPath, measureText);
+            }
+            finally
+            {
+                s_clipPaths.Remove(clipPath);
             }
 
-            return bounds.Width > 0 && bounds.Height > 0 ? bounds : null;
+            s_clipBounds[clipPath] = result;
+            return result;
         }
         finally
         {
-            s_clipPaths.Remove(clipPath);
+            EndCall();
         }
+    }
+
+    private static SceneBounds? ComputeClipBounds(SceneClipPath clipPath, Func<SceneText, SceneBounds?> measureText)
+    {
+        if (GetClipContentBounds(clipPath.Content, measureText) is not { } bounds)
+            return null;
+
+        if (clipPath.ClippingPath is { } outer)
+        {
+            if (GetClipBounds(outer, measureText) is not { } outerBounds)
+                return null;
+
+            bounds = Intersect(bounds, outerBounds);
+        }
+
+        return bounds.Width > 0 && bounds.Height > 0 ? bounds : null;
     }
 
     // The geometry an element adds to a clipping path, in the coordinates of its parent: the interiors of the shapes,

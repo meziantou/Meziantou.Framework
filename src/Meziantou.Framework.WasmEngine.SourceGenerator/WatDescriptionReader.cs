@@ -841,7 +841,7 @@ internal static class WatDescriptionReader
                             throw new WasmDescriptionException("malformed escape", position);
 
                         var digits = RemoveUnderscores(text.Substring(position + 1, end - position - 1));
-                        if (digits.Length == 0 || !int.TryParse(digits, NumberStyles.AllowHexSpecifier, CultureInfo.InvariantCulture, out var codePoint) || codePoint > 0x10FFFF || codePoint is >= 0xD800 and <= 0xDFFF)
+                        if (digits.Length == 0 || !int.TryParse(digits, NumberStyles.AllowHexSpecifier, CultureInfo.InvariantCulture, out var codePoint) || codePoint is < 0 or > 0x10FFFF or (>= 0xD800 and <= 0xDFFF))
                             throw new WasmDescriptionException("malformed escape: invalid code point", position);
 
                         result.AddRange(Encoding.UTF8.GetBytes(char.ConvertFromUtf32(codePoint)));

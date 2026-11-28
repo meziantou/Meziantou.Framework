@@ -382,7 +382,7 @@ internal static class SExpressionReader
                         throw new WatException("malformed escape", position);
 
                     var digits = text[(position + 1)..end].Replace("_", "", StringComparison.Ordinal);
-                    if (digits.Length == 0 || !int.TryParse(digits, NumberStyles.AllowHexSpecifier, CultureInfo.InvariantCulture, out var codePoint) || codePoint > 0x10FFFF || codePoint is >= 0xD800 and <= 0xDFFF)
+                    if (digits.Length == 0 || !int.TryParse(digits, NumberStyles.AllowHexSpecifier, CultureInfo.InvariantCulture, out var codePoint) || codePoint is < 0 or > 0x10FFFF or (>= 0xD800 and <= 0xDFFF))
                         throw new WatException("malformed escape: invalid code point", position);
 
                     var length = Encoding.UTF8.GetBytes(char.ConvertFromUtf32(codePoint), buffer);

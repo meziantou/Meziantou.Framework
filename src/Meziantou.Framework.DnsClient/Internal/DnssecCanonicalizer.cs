@@ -63,7 +63,8 @@ internal static class DnssecCanonicalizer
         if (normalized.Length is 0)
             return "";
 
-        var index = normalized.IndexOf('.', StringComparison.Ordinal);
+        // An escaped dot (\.) is a character of its label, not a separator
+        var index = DnsName.IndexOfUnescapedDot(normalized);
         return index < 0 ? "" : normalized[(index + 1)..];
     }
 
@@ -73,13 +74,10 @@ internal static class DnssecCanonicalizer
         if (normalized.Length is 0)
             return 0;
 
-        var count = 1;
-        foreach (var ch in normalized)
+        var count = 0;
+        foreach (var _ in DnsName.EnumerateLabels(normalized))
         {
-            if (ch == '.')
-            {
-                count++;
-            }
+            count++;
         }
 
         return count;

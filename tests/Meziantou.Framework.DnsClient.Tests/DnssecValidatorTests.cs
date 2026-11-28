@@ -278,6 +278,18 @@ public sealed class DnssecValidatorTests
         Assert.Empty(DnssecCanonicalizer.ComputeNsec3Hash("www.example.com", rejected));
     }
 
+    [Theory]
+    [InlineData("www.example.com", "example.com", 3)]
+    [InlineData(@"a\.b.example.com", "example.com", 3)]
+    [InlineData(@"x\..y", "y", 2)]
+    [InlineData(@"a\\.b", "b", 2)]
+    public void GetParentNameAndCountLabels_IgnoreEscapedDots(string name, string parent, int labels)
+    {
+        Assert.Equal(parent, DnssecCanonicalizer.GetParentName(name));
+        Assert.Equal(labels, DnssecCanonicalizer.CountLabels(name));
+        Assert.NotEmpty(DnssecCanonicalizer.ComputeNsec3Hash(DnssecCanonicalizer.GetParentName(name), new DnsNsec3Record { HashAlgorithm = 1 }));
+    }
+
     [Fact]
     public void GetSignedData_UsesWildcardOwnerWhenRrsigLabelsAreLowerThanOwnerLabels()
     {

@@ -801,6 +801,24 @@ public sealed class PdfNavigationTests
     }
 
     [Fact]
+    public void FlatteningAWidgetWhoseParentIsAPageKeepsThePage()
+    {
+        // A malformed widget: its /Parent, which is its field, is a page, which has no /Kids
+        var file = new HandWrittenPdf()
+            .Add(1, "<< /Type /Catalog /Pages 2 0 R /AcroForm << /Fields [5 0 R] >> >>")
+            .Add(2, "<< /Type /Pages /Kids [3 0 R 4 0 R] /Count 2 /MediaBox [0 0 100 100] >>")
+            .Add(3, "<< /Type /Page /Parent 2 0 R /Annots [5 0 R] >>")
+            .Add(4, "<< /Type /Page /Parent 2 0 R >>")
+            .Add(5, "<< /Type /Annot /Subtype /Widget /FT /Btn /T (check) /Rect [0 0 10 10] /P 3 0 R /Parent 3 0 R >>");
+        var document = PdfDocument.Open(file.ToArray());
+
+        document.FlattenAnnotations(new PdfAnnotationFlattenOptions { Filter = _ => true });
+
+        Assert.Empty(document.Pages[0].Annotations);
+        Assert.Equal(2, PdfDocument.Open(document.ToByteArray()).Pages.Count);
+    }
+
+    [Fact]
     public void Example_ApplyRedactions()
     {
         var document = new PdfDocument();

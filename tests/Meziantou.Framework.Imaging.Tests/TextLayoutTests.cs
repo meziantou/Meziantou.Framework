@@ -1068,6 +1068,38 @@ public sealed class TextLayoutTests
         }
     }
 
+    [Fact]
+    public void OptimalLineBreakingEndsALineAfterAViramaThatMeasuresAsTheBreakBeforeIt()
+    {
+        // A line can end before or after a Balinese virama after a symbol; the paragraph shapes the virama with the symbol,
+        // so both breaks measure the same, and the line that ends before it is narrower once it is shaped alone. Optimal
+        // breaking ends the line after it, as greedy breaking does (fuzz regression).
+        var style = new TextStyle(Font.Load(FontType1Writer.Sample().WritePfb()), 16);
+        foreach (var text in (string[])["AAAA /᭄A A", "AO /᭄A AO", "A A A /᭄X Y"])
+        {
+            for (var width = 20; width < 160; width++)
+            {
+                var greedy = TextLayout.Create(text, style, new TextLayoutOptions { MaxWidth = width });
+                var optimal = TextLayout.Create(text, style, new TextLayoutOptions { MaxWidth = width, LineBreakStrategy = TextLineBreakStrategy.Optimal });
+                if (greedy.Lines.Any(line => line.Width > width))
+                    continue;
+
+                Assert.True(GetRoom(optimal) <= GetRoom(greedy) + 1e-9, $"{text} in {width}");
+
+                double GetRoom(TextLayout layout)
+                {
+                    var room = 0.0;
+                    for (var i = 0; i < layout.LineCount - 1; i++)
+                    {
+                        room += (width - layout.Lines[i].Width) * (width - layout.Lines[i].Width);
+                    }
+
+                    return room;
+                }
+            }
+        }
+    }
+
     [Theory]
     [InlineData(TextLineBreakStrategy.Greedy)]
     [InlineData(TextLineBreakStrategy.Optimal)]

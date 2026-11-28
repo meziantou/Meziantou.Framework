@@ -362,9 +362,10 @@ internal sealed class ArchitectureDiagramParser
     /// <summary>Reads an identifier: letters, digits, <c>_</c> and <c>-</c> inside, which is not a keyword.</summary>
     private string ReadId(string what)
     {
+        // A dash is only inside an identifier: an identifier that starts with one could not be written back
         var start = _scanner.Position;
         var end = start;
-        while (end < _scanner.Text.Length && (char.IsAsciiLetterOrDigit(_scanner.Text[end]) || _scanner.Text[end] is '_' or '-'))
+        while (end < _scanner.Text.Length && (char.IsAsciiLetterOrDigit(_scanner.Text[end]) || _scanner.Text[end] is '_' || (_scanner.Text[end] is '-' && end > start)))
         {
             end++;
         }

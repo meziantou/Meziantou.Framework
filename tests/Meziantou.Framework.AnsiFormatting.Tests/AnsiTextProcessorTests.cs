@@ -312,6 +312,19 @@ public class AnsiTextProcessorTests
     }
 
     [Fact]
+    public void ParseTextWithAnsiStyles_StyleThatComesBackAfterAStyleWithoutTextContinuesTheRun()
+    {
+        // Red, blue without text, red again: one red run (fuzz regression)
+        var parsed = AnsiTextProcessor.ParseTextWithAnsiStyles("\u001b[31ma\u001b[34m\u001b[31mb\u001b[0mc");
+
+        Assert.Equal("abc", parsed.Text);
+        Assert.Collection(
+            parsed.Runs,
+            run => Assert.Equal((0, 2, true), (run.Start, run.End, run.Style.Foreground is not null)),
+            run => Assert.Equal((2, 3, AnsiTextProcessor.AnsiStyle.None), (run.Start, run.End, run.Style)));
+    }
+
+    [Fact]
     public void ParseTextWithAnsiStyles_OscSequenceWithBellTerminator()
     {
         var parsed = AnsiTextProcessor.ParseTextWithAnsiStyles("a\u001b]0;title\u0007b");

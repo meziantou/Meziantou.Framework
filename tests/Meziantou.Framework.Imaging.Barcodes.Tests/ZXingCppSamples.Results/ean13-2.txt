@@ -59,10 +59,8 @@
 989-d!.webp	180	symbol 0	missing
 989-e!.webp	0	symbol 0	read
 989-e!.webp	180	symbol 0	read
-989-f!.webp	0	symbol 0	missing
-989-f!.webp	0	unexpected	UpcE	17804419
-989-f!.webp	180	symbol 0	missing
-989-f!.webp	180	unexpected	UpcE	17804419
+989-f!.webp	0	symbol 0	read
+989-f!.webp	180	symbol 0	read
 989-g!.webp	0	symbol 0	missing
 989-g!.webp	180	symbol 0	missing
 989-h!.webp	0	symbol 0	read

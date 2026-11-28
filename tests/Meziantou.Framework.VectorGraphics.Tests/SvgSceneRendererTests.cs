@@ -802,6 +802,27 @@ public sealed class SvgSceneRendererTests
     }
 
     [Fact]
+    public void BoundsOfAChainOfClippingPathsThatShareTheirLinks()
+    {
+        // Each clipping path is cut by the previous one, and so are the two shapes of its content: computing each reference
+        // again would take 3^60 steps (fuzz regression)
+        var previous = new SceneClipPath();
+        previous.Content.Add(new SceneRectangle(0, 0, 100, 100));
+        for (var i = 0; i < 60; i++)
+        {
+            var clipPath = new SceneClipPath { ClippingPath = previous };
+            clipPath.Content.Add(new SceneRectangle(i % 2, 0, 50, 50) { ClippingPath = previous });
+            clipPath.Content.Add(new SceneRectangle(10, 10, 50, 50) { ClippingPath = previous });
+            previous = clipPath;
+        }
+
+        var rectangle = new SceneRectangle(0, 0, 200, 200) { ClippingPath = previous };
+
+        Assert.Equal(new SceneBounds(1, 0, 59, 60), rectangle.GetBounds(_ => null));
+        Assert.Equal(new SceneBounds(1, 0, 59, 60), previous.GetBounds(_ => null));
+    }
+
+    [Fact]
     public void FilterRegionsOfGroupsIgnoreTheirOwnClips()
     {
         // The clip of the group wraps its filtered output: the shadow, 60 units right of the rectangle, is in the clip

@@ -535,6 +535,8 @@ public sealed class CssomTests
     [InlineData("link-parameters: param(--a: 1000000000000000000000x 1000000000000000000000% 1000000000000000000000)")] // Large numbers of dimensions, percentages and integers
     [InlineData("link-parameters: param(--a: 999999999999999918052x 999999999999999918052 1234567890123456.5)")] // Numbers just below 1e21, with more than 15 significant digits
     [InlineData("link-parameters: param(--a: p(-->(x) <!-- y))")] // The CDO and CDC tokens are serialized as their text
+    [InlineData("link-parameters: param(--a: 1e400rotate(0) -1e400x 1e400)")] // Numbers too large for a double, not serialized as an identifier (Infinity)
+    [InlineData("width: 1e400px")]
     [InlineData("link-parameters: param(--a: a\\ )")] // An escaped space at the end of the value is not trimmed: the backslash would escape the )
     [InlineData("link-parameters: param(--a: f(a\\ ) [a\\ ] (a\\ ))")] // An escaped space at the end of a function or a block
     [InlineData("link-parameters: param(--a: var(--b, a\\ ))")] // An escaped space at the end of the fallback of var()

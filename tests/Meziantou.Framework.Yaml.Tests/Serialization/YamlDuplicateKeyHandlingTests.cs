@@ -248,6 +248,32 @@ public sealed class YamlDuplicateKeyHandlingTests
         Assert.Throws<InvalidOperationException>(() => Deserialize<DuplicateKeyInvalidPopulateModel>("Value: 1\n", new YamlSerializerOptions(), useSourceGeneration));
     }
 
+    // A type created by its constructor matches its keys and reports the exceptions of their values in the same way
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void ConstructorObject_MemberExceptions_AreReportedAtTheirKey(bool useSourceGeneration)
+    {
+        var options = new YamlSerializerOptions();
+        var result = Deserialize<DuplicateKeyConstructorConverterModel>("Name: a\nOther: 2\nIgnored: 3\n", options, useSourceGeneration)!;
+        Assert.Equal("a", result.Name);
+        Assert.Equal(2, result.Other);
+
+        var parameterException = Assert.Throws<YamlException>(() => Deserialize<DuplicateKeyConstructorConverterModel>("Other: 2\nName: throw\n", options, useSourceGeneration));
+        Assert.IsType<InvalidOperationException>(parameterException.InnerException);
+        Assert.Equal(1, parameterException.Start.Line);
+
+        var memberException = Assert.Throws<YamlException>(() => Deserialize<DuplicateKeyConstructorConverterModel>("Name: a\nCount: -1\n", options, useSourceGeneration));
+        Assert.IsType<InvalidOperationException>(memberException.InnerException);
+        Assert.Equal(1, memberException.Start.Line);
+
+        var mergedException = Assert.Throws<YamlException>(() => Deserialize<DuplicateKeyConstructorConverterModel>("Name: a\n<<: {Count: -1}\n", options, useSourceGeneration));
+        Assert.IsType<InvalidOperationException>(mergedException.InnerException);
+
+        Assert.Throws<YamlException>(() => Deserialize<DuplicateKeyConstructorConverterModel>("Name: a\nName: b\n", options, useSourceGeneration));
+        Assert.Equal("b", Deserialize<DuplicateKeyConstructorConverterModel>("name: b\n", options with { PropertyNameCaseInsensitive = true }, useSourceGeneration)!.Name);
+    }
+
     private static void AssertDuplicateKeysAroundMergeKeys<T>(YamlSerializerOptions options, bool useSourceGeneration)
         where T : IDictionary<string, int>
     {
@@ -330,6 +356,52 @@ internal sealed class DuplicateKeyInvalidPopulateModel
 {
     [YamlObjectCreationHandling(YamlObjectCreationHandling.Populate)]
     public int Value { get; }
+}
+
+internal sealed class DuplicateKeyConstructorConverterModel(string name)
+{
+    [YamlConverter(typeof(DuplicateKeyThrowingStringConverter))]
+    public string Name { get; } = name;
+
+    public int Other { get; set; }
+
+    [YamlConverter(typeof(DuplicateKeyThrowingIntConverter))]
+    public int Count { get; set; }
+
+    [YamlIgnore]
+    public int Ignored { get; set; }
+}
+
+// Throws an exception that is not a YamlException for "throw"
+internal sealed class DuplicateKeyThrowingStringConverter : YamlConverter<string>
+{
+    public override string? Read(YamlReader reader)
+    {
+        var value = reader.GetScalarValue();
+        if (value is "throw")
+            throw new InvalidOperationException("The value cannot be read.");
+
+        reader.Read();
+        return value;
+    }
+
+    public override void Write(YamlWriter writer, string value) => writer.WriteScalar(value);
+}
+
+// Throws an exception that is not a YamlException for a negative value
+internal sealed class DuplicateKeyThrowingIntConverter : YamlConverter<int>
+{
+    public override int Read(YamlReader reader)
+    {
+        var value = int.Parse(reader.GetScalarValue(), CultureInfo.InvariantCulture);
+        if (value < 0)
+            throw new InvalidOperationException("The value cannot be negative.");
+
+        reader.Read();
+        return value;
+    }
+
+    public override void Write(YamlWriter writer, int value) => writer.WriteScalar(value.ToString(CultureInfo.InvariantCulture));
 }
 
 // More members than the bits of the index of a key
@@ -487,6 +559,7 @@ internal sealed class DuplicateKeyLargeModel
 [YamlSerializable(typeof(DuplicateKeyPopulatedDictionaryModel))]
 [YamlSerializable(typeof(DuplicateKeyThrowingSetterModel))]
 [YamlSerializable(typeof(DuplicateKeyInvalidPopulateModel))]
+[YamlSerializable(typeof(DuplicateKeyConstructorConverterModel))]
 internal sealed partial class DuplicateKeyHandlingContext : YamlSerializerContext
 {
     public DuplicateKeyHandlingContext(YamlSerializerOptions options)

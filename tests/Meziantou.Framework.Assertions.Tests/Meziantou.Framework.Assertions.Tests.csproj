@@ -9,7 +9,7 @@
 
   <ItemGroup>
     <!-- Compiles the assemblies read by the architecture tests -->
-    <PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="5.9.0" />
+    <PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="5.12.0" />
   </ItemGroup>
 
   <ItemGroup>

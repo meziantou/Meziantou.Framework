@@ -86,12 +86,34 @@ public sealed class MsQuicConnectionTests
         await WaitUntilAsync(() => client.IsDatagramSendEnabled);
         Assert.True(client.MaxDatagramSendSize > 1000);
 
-        var exception = await Assert.ThrowsAsync<MsQuicException>(() => client.SendDatagramAsync(new byte[client.MaxDatagramSendSize + 1]));
+        // Path MTU discovery can raise the maximum between reading it and sending the datagram
+        MsQuicException? exception = null;
+        for (var attempt = 0; exception is null; attempt++)
+        {
+            Assert.True(attempt < 10);
+            var maxSize = client.MaxDatagramSendSize;
+            try
+            {
+                await client.SendDatagramAsync(new byte[maxSize + 1]);
+                Assert.True(client.MaxDatagramSendSize > maxSize);
+            }
+            catch (MsQuicException ex)
+            {
+                exception = ex;
+            }
+        }
+
         Assert.Equal(MsQuicError.DatagramTooLarge, exception.Error);
 
         var payload = RandomNumberGenerator.GetBytes(client.MaxDatagramSendSize);
         await client.SendDatagramAsync(payload);
-        Assert.Equal(payload, await server.ReceiveDatagramAsync().AsTask().WaitAsync(TimeSpan.FromSeconds(10)));
+        using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(10));
+        byte[] received;
+        do
+        {
+            received = await server.ReceiveDatagramAsync(timeout.Token);
+        }
+        while (!received.AsSpan().SequenceEqual(payload));
     }
 
     [Fact]

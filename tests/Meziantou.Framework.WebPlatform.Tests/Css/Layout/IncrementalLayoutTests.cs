@@ -142,6 +142,24 @@ public sealed class IncrementalLayoutTests : IDisposable
     }
 
     [Fact]
+    public void SvgPresentationAttributeChange_PatchesTheBoxes()
+    {
+        // The presentation attributes only declare the properties of their element: the other styles are kept
+        var document = Parse("<style>[stroke-width='5'] { fill: red }</style><div id=log></div><svg width=300 height=100><g id=g font-size=10><rect id=rect x=10 y=10 width=40 height=40 stroke-width=20/><text id=text x=190 y=50>X</text></g></svg>");
+        var engine = document.GetStyleEngine();
+        var log = document.GetStyleEngine().GetStyle(Find(document, "#log"));
+        AssertIncremental(document, () => Find(document, "#rect").SetAttribute("fill", "none"));
+        Assert.Equal("none", engine.GetStyle(Find(document, "#rect")).GetComputedValue("fill"));
+        AssertIncremental(document, () => Find(document, "#g").SetAttribute("font-size", "30"));
+        Assert.Equal("30px", engine.GetStyle(Find(document, "#text")).GetComputedValue("font-size"));
+        AssertIncremental(document, () => Find(document, "#rect").SetAttribute("stroke-width", "5"));
+        Assert.Equal("rgb(255, 0, 0)", engine.GetStyle(Find(document, "#rect")).GetComputedValue("fill"));
+        AssertIncremental(document, () => Find(document, "#text").SetAttribute("display", "none"));
+        AssertIncremental(document, () => Find(document, "#text").RemoveAttribute("display"));
+        Assert.Same(log, engine.GetStyle(Find(document, "#log")));
+    }
+
+    [Fact]
     public void ListItems_KeepTheirCountersWhenTheyDoNotChange()
     {
         var document = Parse("<style>.on { color: green }</style><ol><li id=a>a<li>b<li>c</ol>");

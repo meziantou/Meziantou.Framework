@@ -482,8 +482,9 @@ internal sealed partial class StyleEngine
                 default:
                     // The other attributes may change the states of other elements (e.g. disabled, href, lang, dir), the
                     // presentational hints of other elements (e.g. the attributes of a table, of a body element) or the style
-                    // sheets: only the data and ARIA attributes are invalidated element by element
-                    if (!name.StartsWith("data-", StringComparison.Ordinal) && !name.StartsWith("aria-", StringComparison.Ordinal))
+                    // sheets: only the data and ARIA attributes are invalidated element by element, and the presentation attributes
+                    // of the SVG elements, which only declare the properties of their element (as its style attribute)
+                    if (!name.StartsWith("data-", StringComparison.Ordinal) && !name.StartsWith("aria-", StringComparison.Ordinal) && !(element is SvgElement && PresentationalHints.IsSvgPresentationAttribute(element, name)))
                         return false;
 
                     break;

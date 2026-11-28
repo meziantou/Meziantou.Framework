@@ -826,6 +826,35 @@ public class YamlSerializerApiTests
         Assert.Equal(values, YamlSerializer.Deserialize<List<string>>(expectedFlow));
     }
 
+    // The text is buffered while it is written: what was written before an error still reaches the writer
+    [Fact]
+    public void Serialize_WritesTheTextBeforeAnErrorToTheWriter()
+    {
+        var options = new YamlSerializerOptions { Converters = [new FailingValueConverter()] };
+        List<FailingValue> values = [new("a"), new("b"), new("fail"), new("c")];
+
+        using var writer = new StringWriter();
+        var exception = Assert.Throws<InvalidOperationException>(() => YamlSerializer.Serialize(writer, values, options));
+
+        Assert.Equal("Cannot write 'fail'", exception.Message);
+        Assert.Equal("- a\n- b", writer.ToString());
+    }
+
+    private sealed record FailingValue(string Name);
+
+    private sealed class FailingValueConverter : YamlConverter<FailingValue>
+    {
+        public override FailingValue? Read(YamlReader reader) => throw new NotSupportedException();
+
+        public override void Write(YamlWriter writer, FailingValue value)
+        {
+            if (value.Name == "fail")
+                throw new InvalidOperationException("Cannot write 'fail'");
+
+            writer.WriteScalar(value.Name);
+        }
+    }
+
     private sealed class BufferedDocument
     {
         public List<long>? Numbers { get; set; }

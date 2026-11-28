@@ -1342,12 +1342,11 @@ public static class YamlSerializer
             {
                 yamlWriter.WriteTrailingNewLine();
             }
-
-            yamlWriter.CompleteBufferedOutput();
         }
         finally
         {
-            yamlWriter.ReleaseBufferedOutput();
+            // The text written before an error reaches the writer too, as it does when the text is not buffered
+            yamlWriter.CompleteBufferedOutput();
         }
     }
 

@@ -2347,6 +2347,7 @@ public sealed partial class YamlSerializerContextGenerator
         builder.AppendLine("                    continue;");
         builder.AppendLine("                }");
         builder.AppendLine("                var matched = false;");
+        EmitBeginMemberReads(builder, "                ");
         foreach (var member in readCandidates)
         {
             builder.Append("                if (!matched && ").Append(GetShouldReadMemberExpression(member, sourceGenerationOptions)).Append(" && global::System.String.Equals(mergeKey, ").Append(member.SerializedNameExpressionForRead)
@@ -2374,12 +2375,12 @@ public sealed partial class YamlSerializerContextGenerator
                 indexByType,
                 extensionData is not null ? "ReadAndStoreExtensionData(mergeKey, mergeKeyStart, mergeKeyEnd);" : "reader.Skip();",
                 preferredObjectCreationHandling,
-                sourceGenerationOptions,
-                keySpan: "mergeKeyStart, mergeKeyEnd");
+                sourceGenerationOptions);
 
             builder.AppendLine("                }");
         }
 
+        EmitEndMemberReads(builder, "                ", "mergeKeyStart, mergeKeyEnd");
         builder.AppendLine("                if (!matched)");
         builder.AppendLine("                {");
         if (extensionData is not null)
@@ -2420,11 +2421,11 @@ public sealed partial class YamlSerializerContextGenerator
 
         // A duplicate key is detected once the key is matched: in the block of its member, or with the keys that name no member
         builder.AppendLine("            var matched = false;");
+        EmitBeginMemberReads(builder, "            ");
         for (var memberIndex = 0; memberIndex < readCandidates.Length; memberIndex++)
         {
             var member = readCandidates[memberIndex];
-            builder.Append("            if (!matched && ").Append(GetShouldReadMemberExpression(member, sourceGenerationOptions)).Append(" && global::System.String.Equals(key, ").Append(member.SerializedNameExpressionForRead)
-                .Append(", " + propertyNameComparisonExpression + "))");
+            builder.Append("            if (!matched && ").Append(GetShouldReadMemberExpression(member, sourceGenerationOptions)).Append(" && ").Append(GetMemberNameMatchExpression(sourceGenerationOptions, index, memberIndex)).Append(')');
             builder.AppendLine();
             builder.AppendLine("            {");
             builder.AppendLine("                matched = true;");
@@ -2457,11 +2458,11 @@ public sealed partial class YamlSerializerContextGenerator
                 indexByType,
                 extensionData is not null ? "ReadAndStoreExtensionData(key, keyLocation.Start, keyLocation.End);" : "reader.Skip();",
                 preferredObjectCreationHandling,
-                sourceGenerationOptions,
-                keySpan: "keyLocation.Start, keyLocation.End");
+                sourceGenerationOptions);
             builder.AppendLine("            }");
         }
 
+        EmitEndMemberReads(builder, "            ", "keyLocation.Start, keyLocation.End");
         builder.AppendLine("            if (!matched)");
         builder.AppendLine("            {");
         EmitObjectDuplicateKeyCheckWithLazySet(builder, duplicateKeyHandling, propertyNameComparerExpression);
@@ -3895,6 +3896,7 @@ public sealed partial class YamlSerializerContextGenerator
             var dictMergeEnabledExpression = GetMergeEnabledExpression(sourceGenerationOptions);
             var duplicateKeyHandling = GetDuplicateKeyHandling(sourceGenerationOptions);
             var dictionaryKeyIsString = dictionaryKeyType.SpecialType == SpecialType.System_String;
+            var dictionaryHasKeysOfMapping = HasKeysOfMapping(typeSymbol);
             if ((dictionaryKeyIsString &&
                  (dictPropertyNameComparerExpression.Contains("options.", StringComparison.Ordinal) ||
                   dictMergeEnabledExpression.Contains("options.", StringComparison.Ordinal))) ||
@@ -3907,8 +3909,16 @@ public sealed partial class YamlSerializerContextGenerator
                 builder.Append("        ").Append(GetDictionaryVariableDeclaration(typeSymbol, "string", valueTypeName, dictPropertyNameComparerExpression)).AppendLine(";");
                 builder.Append("        var mergeEnabled = ").Append(dictMergeEnabledExpression).AppendLine(";");
                 builder.AppendLine("        global::System.Collections.Generic.HashSet<string>? explicitKeys = null;");
-                // Duplicate keys are detected whether or not the schema enables merge keys.
-                builder.Append("        global::System.Collections.Generic.HashSet<string>? seenKeys = reader.RentKeySet(").Append(dictPropertyNameComparerExpression).AppendLine(");");
+                // Duplicate keys are detected whether or not the schema enables merge keys. The keys of a dictionary that
+                // finds them as the set does are the keys of the mapping until a merge key adds others.
+                if (dictionaryHasKeysOfMapping)
+                {
+                    builder.AppendLine("        global::System.Collections.Generic.HashSet<string>? seenKeys = null;");
+                }
+                else
+                {
+                    builder.Append("        global::System.Collections.Generic.HashSet<string>? seenKeys = reader.RentKeySet(").Append(dictPropertyNameComparerExpression).AppendLine(");");
+                }
             }
             else
             {
@@ -3946,6 +3956,15 @@ public sealed partial class YamlSerializerContextGenerator
             {
                 builder.AppendLine("            if (isMergeKey)");
                 builder.AppendLine("            {");
+                if (dictionaryHasKeysOfMapping)
+                {
+                    builder.AppendLine("                if (seenKeys is null)");
+                    builder.AppendLine("                {");
+                    builder.Append("                    seenKeys = reader.RentKeySet(").Append(dictPropertyNameComparerExpression).AppendLine(");");
+                    builder.AppendLine("                    seenKeys.UnionWith(dictionary.Keys);");
+                    builder.AppendLine("                }");
+                }
+
                 builder.AppendLine("                if (explicitKeys is null)");
                 builder.AppendLine("                {");
                 builder.Append("                    explicitKeys = reader.RentKeySet(").Append(dictPropertyNameComparerExpression).AppendLine(");");
@@ -4009,7 +4028,9 @@ public sealed partial class YamlSerializerContextGenerator
             // key that is skipped is not read, so it can be a value that the converter rejects
             if (dictionaryKeyIsString)
             {
-                builder.AppendLine("            if (seenKeys is not null && !seenKeys.Add(key))");
+                builder.AppendLine(dictionaryHasKeysOfMapping
+                    ? "            if (seenKeys is null ? dictionary.ContainsKey(key) : !seenKeys.Add(key))"
+                    : "            if (seenKeys is not null && !seenKeys.Add(key))");
                 builder.AppendLine("            {");
                 EmitDuplicateKeyHandlingBeforeValue(builder, duplicateKeyHandling, "key", "                ");
                 builder.AppendLine("            }");
@@ -5541,13 +5562,22 @@ public sealed partial class YamlSerializerContextGenerator
             var memberPropertyNameComparerExpression = GetPropertyNameComparerExpression(sourceGenerationOptions);
             var memberMergeEnabledExpression = GetMergeEnabledExpression(sourceGenerationOptions);
             var duplicateKeyHandling = GetDuplicateKeyHandling(sourceGenerationOptions);
+            var memberDictionaryHasKeysOfMapping = HasKeysOfMapping(member.Type);
             if (dictionaryKeyType.SpecialType == SpecialType.System_String)
             {
                 builder.Append("                    ").Append(GetDictionaryVariableDeclaration(member.Type, "string", valueTypeName, memberPropertyNameComparerExpression)).AppendLine(";");
                 builder.Append("                    var dictionaryMergeEnabled = ").Append(memberMergeEnabledExpression).AppendLine(";");
                 builder.AppendLine("                    global::System.Collections.Generic.HashSet<string>? dictionaryExplicitKeys = null;");
-                // Duplicate keys are detected whether or not the schema enables merge keys.
-                builder.Append("                    global::System.Collections.Generic.HashSet<string>? dictionarySeenKeys = reader.RentKeySet(").Append(memberPropertyNameComparerExpression).AppendLine(");");
+                // Duplicate keys are detected whether or not the schema enables merge keys. The keys of a dictionary that
+                // finds them as the set does are the keys of the mapping until a merge key adds others.
+                if (memberDictionaryHasKeysOfMapping)
+                {
+                    builder.AppendLine("                    global::System.Collections.Generic.HashSet<string>? dictionarySeenKeys = null;");
+                }
+                else
+                {
+                    builder.Append("                    global::System.Collections.Generic.HashSet<string>? dictionarySeenKeys = reader.RentKeySet(").Append(memberPropertyNameComparerExpression).AppendLine(");");
+                }
                 builder.AppendLine("                    global::Meziantou.Framework.Yaml.Serialization.YamlConverter? dictionaryMergeConverter = null;");
             }
             else
@@ -5586,6 +5616,15 @@ public sealed partial class YamlSerializerContextGenerator
             {
                 builder.AppendLine("                        if (entryIsMergeKey)");
                 builder.AppendLine("                        {");
+                if (memberDictionaryHasKeysOfMapping)
+                {
+                    builder.AppendLine("                            if (dictionarySeenKeys is null)");
+                    builder.AppendLine("                            {");
+                    builder.Append("                                dictionarySeenKeys = reader.RentKeySet(").Append(memberPropertyNameComparerExpression).AppendLine(");");
+                    builder.AppendLine("                                dictionarySeenKeys.UnionWith(dictionary.Keys);");
+                    builder.AppendLine("                            }");
+                }
+
                 builder.AppendLine("                            if (dictionaryExplicitKeys is null)");
                 builder.AppendLine("                            {");
                 builder.Append("                                dictionaryExplicitKeys = reader.RentKeySet(").Append(memberPropertyNameComparerExpression).AppendLine(");");
@@ -5651,7 +5690,9 @@ public sealed partial class YamlSerializerContextGenerator
             // key that is skipped is not read, so it can be a value that the converter rejects
             if (dictionaryKeyType.SpecialType == SpecialType.System_String)
             {
-                builder.AppendLine("                        if (dictionarySeenKeys is not null && !dictionarySeenKeys.Add(entryKey))");
+                builder.AppendLine(memberDictionaryHasKeysOfMapping
+                    ? "                        if (dictionarySeenKeys is null ? dictionary.ContainsKey(entryKey) : !dictionarySeenKeys.Add(entryKey))"
+                    : "                        if (dictionarySeenKeys is not null && !dictionarySeenKeys.Add(entryKey))");
                 builder.AppendLine("                        {");
                 EmitDuplicateKeyHandlingBeforeValue(builder, duplicateKeyHandling, "entryKey", "                            ");
                 builder.AppendLine("                        }");
@@ -5698,8 +5739,7 @@ public sealed partial class YamlSerializerContextGenerator
         Dictionary<ITypeSymbol, int> indexByType,
         string readOnlyFallbackStatement,
         string? preferredObjectCreationHandling,
-        SourceGenerationOptionsModel sourceGenerationOptions,
-        string keySpan)
+        SourceGenerationOptionsModel sourceGenerationOptions)
     {
         var memberTypeName = member.Type.ToDisplayString(FullyQualifiedNullableFormat);
         var memberTypeOfName = member.Type.ToDisplayString(FullyQualifiedTypeFormat);
@@ -5710,35 +5750,35 @@ public sealed partial class YamlSerializerContextGenerator
 
         if (explicitPopulate)
         {
-            EmitPopulateObjectMemberValue(builder, member, memberTypeName, memberTypeOfName, declaringTypeName, indexByType, readOnlyFallbackStatement, canAssign, canPopulateValueType, explicitPopulate: true, indent: "                ", sourceGenerationOptions, keySpan);
+            EmitPopulateObjectMemberValue(builder, member, memberTypeName, memberTypeOfName, declaringTypeName, indexByType, readOnlyFallbackStatement, canAssign, canPopulateValueType, explicitPopulate: true, indent: "                ", sourceGenerationOptions);
             return;
         }
 
         if (explicitReplace)
         {
-            EmitReplaceObjectMemberValue(builder, member, indexByType, readOnlyFallbackStatement, canAssign, indent: "                ", sourceGenerationOptions, keySpan);
+            EmitReplaceObjectMemberValue(builder, member, indexByType, readOnlyFallbackStatement, canAssign, indent: "                ", sourceGenerationOptions);
             return;
         }
 
         if (string.Equals(preferredObjectCreationHandling, "Populate", StringComparison.Ordinal))
         {
-            EmitPopulateObjectMemberValue(builder, member, memberTypeName, memberTypeOfName, declaringTypeName, indexByType, readOnlyFallbackStatement, canAssign, canPopulateValueType, explicitPopulate: false, indent: "                ", sourceGenerationOptions, keySpan);
+            EmitPopulateObjectMemberValue(builder, member, memberTypeName, memberTypeOfName, declaringTypeName, indexByType, readOnlyFallbackStatement, canAssign, canPopulateValueType, explicitPopulate: false, indent: "                ", sourceGenerationOptions);
             return;
         }
 
         if (string.Equals(preferredObjectCreationHandling, "Replace", StringComparison.Ordinal))
         {
-            EmitReplaceObjectMemberValue(builder, member, indexByType, readOnlyFallbackStatement, canAssign, indent: "                ", sourceGenerationOptions, keySpan);
+            EmitReplaceObjectMemberValue(builder, member, indexByType, readOnlyFallbackStatement, canAssign, indent: "                ", sourceGenerationOptions);
             return;
         }
 
         builder.AppendLine("                if (preferredObjectCreationHandling == global::Meziantou.Framework.Yaml.YamlObjectCreationHandling.Populate)");
         builder.AppendLine("                {");
-        EmitPopulateObjectMemberValue(builder, member, memberTypeName, memberTypeOfName, declaringTypeName, indexByType, readOnlyFallbackStatement, canAssign, canPopulateValueType, explicitPopulate: false, indent: "                    ", sourceGenerationOptions, keySpan);
+        EmitPopulateObjectMemberValue(builder, member, memberTypeName, memberTypeOfName, declaringTypeName, indexByType, readOnlyFallbackStatement, canAssign, canPopulateValueType, explicitPopulate: false, indent: "                    ", sourceGenerationOptions);
         builder.AppendLine("                }");
         builder.AppendLine("                else");
         builder.AppendLine("                {");
-        EmitReplaceObjectMemberValue(builder, member, indexByType, readOnlyFallbackStatement, canAssign, indent: "                    ", sourceGenerationOptions, keySpan);
+        EmitReplaceObjectMemberValue(builder, member, indexByType, readOnlyFallbackStatement, canAssign, indent: "                    ", sourceGenerationOptions);
         builder.AppendLine("                }");
     }
 
@@ -5754,8 +5794,7 @@ public sealed partial class YamlSerializerContextGenerator
         bool canPopulateValueType,
         bool explicitPopulate,
         string indent,
-        SourceGenerationOptionsModel sourceGenerationOptions,
-        string keySpan)
+        SourceGenerationOptionsModel sourceGenerationOptions)
     {
         builder.Append(indent).AppendLine("if (reader.TokenType == global::Meziantou.Framework.Yaml.Serialization.YamlTokenType.Scalar && global::Meziantou.Framework.Yaml.Serialization.YamlScalar.IsNull(reader))");
         builder.Append(indent).AppendLine("{");
@@ -5763,7 +5802,7 @@ public sealed partial class YamlSerializerContextGenerator
         {
             // A null scalar replaces the value, as it does with YamlObjectCreationHandling.Replace: it is read by a custom
             // converter, assigns null to a member accepting it, and is rejected by a non-nullable value type.
-            EmitCatchMemberReadExceptions(builder, indent + "    ", keySpan, () => EmitReadMemberValueWithCustomConverter(builder, member, indexByType, sourceGenerationOptions));
+            EmitFlaggedMemberRead(builder, indent + "    ", () => EmitReadMemberValueWithCustomConverter(builder, member, indexByType, sourceGenerationOptions));
         }
         else
         {
@@ -5802,7 +5841,7 @@ public sealed partial class YamlSerializerContextGenerator
         }
         else if (canAssign)
         {
-            EmitCatchMemberReadExceptions(builder, indent + "        ", keySpan, () => EmitReadMemberValueWithCustomConverter(builder, member, indexByType, sourceGenerationOptions));
+            EmitFlaggedMemberRead(builder, indent + "        ", () => EmitReadMemberValueWithCustomConverter(builder, member, indexByType, sourceGenerationOptions));
         }
         else
         {
@@ -5814,7 +5853,7 @@ public sealed partial class YamlSerializerContextGenerator
         builder.Append(indent).AppendLine("    {");
         if (member.Type.IsValueType)
         {
-            EmitCatchMemberReadExceptions(builder, indent + "        ", keySpan, () =>
+            EmitFlaggedMemberRead(builder, indent + "        ", () =>
             {
                 builder.Append(indent).Append("        var currentValue = ").Append(member.AccessExpression("instance")).AppendLine(";");
                 builder.Append(indent).Append("        var populatedValue = memberConverter.Populate(reader, typeof(").Append(memberTypeOfName).AppendLine("), currentValue!);");
@@ -5832,7 +5871,7 @@ public sealed partial class YamlSerializerContextGenerator
             builder.Append(indent).AppendLine("        {");
             if (canAssign)
             {
-                EmitCatchMemberReadExceptions(builder, indent + "            ", keySpan, () => EmitReadMemberValueWithCustomConverter(builder, member, indexByType, sourceGenerationOptions));
+                EmitFlaggedMemberRead(builder, indent + "            ", () => EmitReadMemberValueWithCustomConverter(builder, member, indexByType, sourceGenerationOptions));
             }
             else
             {
@@ -5841,7 +5880,7 @@ public sealed partial class YamlSerializerContextGenerator
             builder.Append(indent).AppendLine("        }");
             builder.Append(indent).AppendLine("        else");
             builder.Append(indent).AppendLine("        {");
-            EmitCatchMemberReadExceptions(builder, indent + "            ", keySpan, () =>
+            EmitFlaggedMemberRead(builder, indent + "            ", () =>
             {
                 builder.Append(indent).Append("            var populatedValue = memberConverter.Populate(reader, typeof(").Append(memberTypeOfName).AppendLine("), currentValue!);");
                 if (canAssign)
@@ -5864,17 +5903,48 @@ public sealed partial class YamlSerializerContextGenerator
         string readOnlyFallbackStatement,
         bool canAssign,
         string indent,
-        SourceGenerationOptionsModel sourceGenerationOptions,
-        string keySpan)
+        SourceGenerationOptionsModel sourceGenerationOptions)
     {
         if (canAssign)
         {
-            EmitCatchMemberReadExceptions(builder, indent, keySpan, () => EmitReadMemberValueWithCustomConverter(builder, member, indexByType, sourceGenerationOptions));
+            EmitFlaggedMemberRead(builder, indent, () => EmitReadMemberValueWithCustomConverter(builder, member, indexByType, sourceGenerationOptions));
         }
         else
         {
             builder.Append(indent).Append(readOnlyFallbackStatement).AppendLine();
         }
+    }
+
+    /// <summary>
+    /// Emits the start of the block that reads the value of the member a key names. Like <see cref="EmitCatchMemberReadExceptions"/>,
+    /// the block reports an exception other than a <c>YamlException</c> at the key, but only while <c>readsMemberValue</c>
+    /// is set by <see cref="EmitFlaggedMemberRead"/>: one handler per key costs less than one around each read of each member.
+    /// </summary>
+    private static void EmitBeginMemberReads(StringBuilder builder, string indent)
+    {
+        builder.Append(indent).AppendLine("var readsMemberValue = false;");
+        builder.Append(indent).AppendLine("try");
+        builder.Append(indent).AppendLine("{");
+    }
+
+    /// <summary>Emits the end of the block started by <see cref="EmitBeginMemberReads"/>.</summary>
+    private static void EmitEndMemberReads(StringBuilder builder, string indent, string keySpan)
+    {
+        builder.Append(indent).AppendLine("}");
+        builder.Append(indent).AppendLine("catch (global::System.Exception exception) when (readsMemberValue && exception is not global::Meziantou.Framework.Yaml.YamlException)");
+        builder.Append(indent).AppendLine("{");
+        builder.Append(indent).Append("    throw new global::Meziantou.Framework.Yaml.YamlException(reader.SourceName, ").Append(keySpan).AppendLine(", exception.Message, exception);");
+        builder.Append(indent).AppendLine("}");
+    }
+
+    /// <summary>Emits the read of a member value whose exceptions the block of <see cref="EmitBeginMemberReads"/> reports.</summary>
+    private static void EmitFlaggedMemberRead(StringBuilder builder, string indent, Action emitRead)
+    {
+        builder.Append(indent).AppendLine("readsMemberValue = true;");
+        builder.Append(indent).AppendLine("{");
+        emitRead();
+        builder.Append(indent).AppendLine("}");
+        builder.Append(indent).AppendLine("readsMemberValue = false;");
     }
 
     /// <summary>

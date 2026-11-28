@@ -618,6 +618,50 @@ public sealed class YamlScalarTests
         Assert.Equal("\"" + value + "\"\n", YamlSerializer.Serialize(value));
     }
 
+    // The parsers of the other values are not run for a long word or a text with an inner space: the strings that read as
+    // another value are still quoted, the others are plain, and every string reads back as itself
+    [Theory]
+    [InlineData("Infinity", true)]
+    [InlineData("NaN", true)]
+    [InlineData("FALSE", true)]
+    [InlineData("Infinityy", false)]
+    [InlineData("Oankee Yilo", false)]
+    [InlineData("Falsehood", false)]
+    [InlineData("Nairobi", false)]
+    [InlineData("893 tango street", false)]
+    [InlineData("12 34", false)]
+    [InlineData("1.5 kg", false)]
+    [InlineData("1 _", true)]
+    [InlineData("007  __", true)]
+    [InlineData("43532", true)]
+    [InlineData("-1.5e3", true)]
+    [InlineData("+12", true)]
+    [InlineData(" 12", true)]
+    [InlineData("12 ", true)]
+    [InlineData("true ", true)]
+    [InlineData("\ttrue", true)]
+    public void Serialize_StringsThatReadAsAnotherValue_AreQuoted(string value, bool quoted)
+    {
+        var yaml = YamlSerializer.Serialize(new List<string> { value });
+
+        Assert.Equal(quoted, yaml.StartsWith("- \"", StringComparison.Ordinal) || yaml.StartsWith("- '", StringComparison.Ordinal));
+        Assert.Equal(value, Assert.Single(YamlSerializer.Deserialize<List<object>>(yaml)!));
+        Assert.Equal(value, Assert.Single(YamlSerializer.Deserialize<List<object>>(yaml, new YamlSerializerOptions { UseSchema = true })!));
+    }
+
+    [Theory]
+    [InlineData("2001-12-14 21:59:43.10 -5")]
+    [InlineData("2001-12-14 21:59:43.10")]
+    public void Serialize_ExtendedSchema_QuotesTimestampsWithSpaces(string value)
+    {
+        var options = new YamlSerializerOptions { UseSchema = true, Schema = YamlSchemaKind.Extended };
+
+        var yaml = YamlSerializer.Serialize(new List<object> { value }, options);
+
+        Assert.StartsWith("- \"", yaml, StringComparison.Ordinal);
+        Assert.Equal(value, Assert.Single(YamlSerializer.Deserialize<List<object>>(yaml, options)!));
+    }
+
     // The typed converters read the bytes of most scalars without decoding them: they read the values that the parsers of
     // the text give, whatever the spelling
     [Theory]

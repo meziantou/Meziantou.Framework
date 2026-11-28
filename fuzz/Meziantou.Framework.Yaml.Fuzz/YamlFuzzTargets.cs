@@ -1368,7 +1368,28 @@ public static class YamlFuzzTargets
             yield return FuzzSeed.FromText(id + "-options", [(byte)(index * 37), (byte)(index * 101)], yaml);
             index++;
         }
+
+        // With each handling of the duplicate keys, without and with the schema
+        foreach (var (id, yaml) in DeserializeEdgeCases)
+        {
+            for (var handling = 0; handling < 3; handling++)
+            {
+                yield return FuzzSeed.FromText(id + "-" + handling.ToString(CultureInfo.InvariantCulture), [(byte)(handling << 3), 0], yaml);
+                yield return FuzzSeed.FromText(id + "-schema-" + handling.ToString(CultureInfo.InvariantCulture), [(byte)((handling << 3) | 0b100), 0], yaml);
+            }
+        }
     }
+
+    // The plain scalars that the untyped converter resolves from their bytes, the keys of a mapping that are checked for
+    // duplicates with merge keys, and the strings that the writer quotes, or not, without running every parser
+    private static readonly (string Id, string Yaml)[] DeserializeEdgeCases =
+    [
+        ("plain-scalars", "- 0\n- -5\n- +7\n- 007\n- 1234567890123456789\n- 18446744073709551615\n- 1_000\n- _12\n- +_1\n- _x\n- 0x1F\n- .5\n- -.inf\n- true\n- FALSE\n- tru\n- nullx\n- +foo\n- ~x\n- ~\n- Null\n- Infinity\n- 12 monkeys\n- café\n"),
+        ("plain-keys", "0: a\n_12: b\ntrue: c\nnullx: d\n+foo: e\n1_000: f\n"),
+        ("merge-and-duplicate-keys", "a: 1\n<<: {a: 2, b: 3}\nb: 4\n"),
+        ("duplicate-keys-around-merge", "a: 1\na: 2\n<<: {a: 9, c: 3}\na: 5\n"),
+        ("quoted-strings", "- \"1 _\"\n- \"007  __\"\n- \"_12\"\n- \"Infinity\"\n- \"NaN\"\n- \"43532\"\n- \" 12\"\n- \"true \"\n- \"893 tango street\"\n- \"Oankee Yilo\"\n- \"Infinityy\"\n- \"2001-12-14 21:59:43.10 -5\"\n"),
+    ];
 
     /// <summary>
     /// Each case with the default emitter, and with settings that vary from one case to the next. The outputs of the

@@ -51,9 +51,12 @@ internal sealed class YamlUntypedObjectConverter : YamlConverter
                 reader.Read();
                 var comparer = options.PropertyNameCaseInsensitive ? UntypedKeyComparer.IgnoreCase : UntypedKeyComparer.Ordinal;
                 var dict = new Dictionary<object, object?>(comparer);
-                var mergeEnabled = YamlMergeKey.IsEnabled(options);
-                HashSet<object>? explicitKeys = mergeEnabled ? new HashSet<object>(comparer) : null;
-                HashSet<object>? seenKeys = options.DuplicateKeyHandling == YamlDuplicateKeyHandling.LastWins ? null : new HashSet<object>(comparer);
+                var checksDuplicates = options.DuplicateKeyHandling != YamlDuplicateKeyHandling.LastWins;
+
+                // Until a merge key adds the keys of other mappings, the keys of the dictionary are the keys that the mapping
+                // declares: the sets of the explicit keys and of the seen keys are only created at the first merge key
+                HashSet<object>? explicitKeys = null;
+                HashSet<object>? seenKeys = null;
                 if (reader.ReferenceReader is not null && mappingAnchor is not null)
                 {
                     reader.ReferenceReader.Register(mappingAnchor, dict);
@@ -66,8 +69,17 @@ internal sealed class YamlUntypedObjectConverter : YamlConverter
                         throw YamlThrowHelper.ThrowExpectedScalarKey(reader);
                     }
 
-                    if (YamlMergeKey.IsMergeKey(reader))
+                    if (!reader.IsNotMergeKeyText() && YamlMergeKey.IsMergeKey(reader))
                     {
+                        if (explicitKeys is null)
+                        {
+                            explicitKeys = new HashSet<object>(dict.Keys, comparer);
+                            if (checksDuplicates)
+                            {
+                                seenKeys = new HashSet<object>(dict.Keys, comparer);
+                            }
+                        }
+
                         reader.Read();
                         ReadAndApplyMerge(reader, dict, explicitKeys);
                         continue;
@@ -75,24 +87,24 @@ internal sealed class YamlUntypedObjectConverter : YamlConverter
 
                     // Keys are resolved like values, so "1" and "'1'" are distinct keys, while "1" and "0x1" are
                     // the same integer.
-                    var keyText = reader.ScalarValue ?? string.Empty;
-                    var key = YamlScalar.ResolveObject(reader) ?? throw YamlThrowHelper.ThrowNotSupported(reader, "A null mapping key cannot be deserialized into 'object'.");
-                    reader.Read();
-
-                    explicitKeys?.Add(key);
-
-                    var wasSeen = seenKeys is not null && !seenKeys.Add(key);
-                    if (wasSeen && options.DuplicateKeyHandling == YamlDuplicateKeyHandling.Error)
+                    var key = YamlScalar.ResolveMappingKey(reader) ?? throw YamlThrowHelper.ThrowNotSupported(reader, "A null mapping key cannot be deserialized into 'object'.");
+                    if (checksDuplicates && (seenKeys is null ? dict.ContainsKey(key) : !seenKeys.Add(key)))
                     {
-                        throw YamlThrowHelper.ThrowDuplicateMappingKey(reader, keyText);
-                    }
+                        var keyText = reader.ScalarValue ?? string.Empty;
+                        reader.Read();
+                        if (options.DuplicateKeyHandling == YamlDuplicateKeyHandling.Error)
+                        {
+                            throw YamlThrowHelper.ThrowDuplicateMappingKey(reader, keyText);
+                        }
 
-                    if (wasSeen && options.DuplicateKeyHandling == YamlDuplicateKeyHandling.FirstWins)
-                    {
+                        // FirstWins
+                        explicitKeys?.Add(key);
                         reader.Skip();
                         continue;
                     }
 
+                    reader.Read();
+                    explicitKeys?.Add(key);
                     var value = Read(reader, typeof(object));
                     dict[key] = value;
                 }

@@ -459,6 +459,78 @@ public static class YamlScalar
         return true;
     }
 
+    // Resolves a plain scalar without tag from its bytes, when they are its value: a word that is not null nor a boolean is a
+    // string, as only a scalar that starts with a digit or a dot, after an optional sign, can be a number. A decimal integer
+    // and a floating-point number in decimal notation are read without decoding the scalar. Returns false for the other
+    // forms, which the parsers of the characters read.
+    private static bool TryResolvePlainObjectFast(YamlReader reader, bool isKey, out object? result)
+    {
+        result = null;
+        if (!reader.TryGetRawUtf8Scalar(out var utf8))
+            return false;
+
+        // The bytes of a plain scalar have no surrounding spaces
+        if (utf8.IsEmpty)
+            return true;
+
+        var first = utf8[0];
+        var c = first is (byte)'+' or (byte)'-' && utf8.Length > 1 ? utf8[1] : first;
+
+        // The integer parsers remove the underscores first: "_12" and "+_1" are integers
+        if (char.IsAsciiDigit((char)c) || c is (byte)'.' or (byte)'_' || first == '_')
+        {
+            if (TryParseInt64Fast(reader, out var integer))
+            {
+                result = integer;
+                return true;
+            }
+
+            // A fraction or an exponent is not an integer of any base, so the parsers of the characters would read it as a
+            // floating-point number. The underscores, which they remove, and the base prefixes are left to them.
+            if (utf8.IndexOfAny((byte)'.', (byte)'e', (byte)'E') >= 0 &&
+                utf8.IndexOfAny((byte)'_', (byte)'x', (byte)'o') < 0 &&
+                !IsBinaryPrefixed(utf8) &&
+                double.TryParse(utf8, NumberStyles.Float, CultureInfo.InvariantCulture, out var floating))
+            {
+                result = floating;
+                return true;
+            }
+
+            return false;
+        }
+
+        switch (first)
+        {
+            case (byte)'~' when utf8.Length == 1:
+                return true;
+
+            case (byte)'n' or (byte)'N' when utf8.SequenceEqual("null"u8) || utf8.SequenceEqual("Null"u8) || utf8.SequenceEqual("NULL"u8):
+                return true;
+
+            case (byte)'t' or (byte)'T' when utf8.SequenceEqual("true"u8) || utf8.SequenceEqual("True"u8) || utf8.SequenceEqual("TRUE"u8):
+                result = true;
+                return true;
+
+            case (byte)'f' or (byte)'F' when utf8.SequenceEqual("false"u8) || utf8.SequenceEqual("False"u8) || utf8.SequenceEqual("FALSE"u8):
+                result = false;
+                return true;
+        }
+
+        result = isKey ? reader.GetKeyString() : reader.ScalarValue ?? string.Empty;
+        return true;
+    }
+
+    // "0b1e1", after an optional sign: the integer parsers read the digits after the prefix in base 2
+    private static bool IsBinaryPrefixed(ReadOnlySpan<byte> utf8)
+    {
+        if (utf8.Length > 0 && utf8[0] is (byte)'+' or (byte)'-')
+        {
+            utf8 = utf8[1..];
+        }
+
+        return utf8.Length >= 2 && utf8[0] == '0' && utf8[1] == 'b';
+    }
+
     // A number that starts with a digit or a dot, optionally after a sign, without underscore or surrounding spaces
     private static bool TryGetSimpleNumber(YamlReader reader, out ReadOnlySpan<byte> utf8)
     {
@@ -815,7 +887,12 @@ public static class YamlScalar
 
     /// <summary>Resolves the current scalar token to the CLR value implied by the scalar style, tag, and schema options.</summary>
     /// <param name="reader">The reader positioned on a scalar token.</param>
-    public static object? ResolveObject(YamlReader reader)
+    public static object? ResolveObject(YamlReader reader) => ResolveObject(reader, isKey: false);
+
+    /// <summary>Resolves a mapping key like <see cref="ResolveObject(YamlReader)"/>: a key that reads as a string shares its value with the earlier keys of the same text.</summary>
+    internal static object? ResolveMappingKey(YamlReader reader) => ResolveObject(reader, isKey: true);
+
+    private static object? ResolveObject(YamlReader reader, bool isKey)
     {
         if (reader.Options.UseSchema || HasCoreScalarTag(reader))
         {
@@ -837,7 +914,12 @@ public static class YamlScalar
 
         if (!IsPlainStyle(reader.ScalarStyle) || HasStringTag(reader))
         {
-            return reader.ScalarValue ?? string.Empty;
+            return isKey ? reader.GetKeyString() : reader.ScalarValue ?? string.Empty;
+        }
+
+        if (reader.Tag is null && TryResolvePlainObjectFast(reader, isKey, out var resolved))
+        {
+            return resolved;
         }
 
         var text = reader.ScalarValue.AsSpan();

@@ -25,9 +25,14 @@ internal sealed class Utf8TextWriter : TextWriter
     private char[] _chars = [];
     private int _charCount;
 
-    // The encoded bytes: a block written to the stream, or the whole text when there is no stream
+    // The encoded bytes: a block written to the stream, or the last segment of the text when there is no stream
     private byte[] _bytes = [];
     private int _byteCount;
+
+    // The segments of the text before _bytes, when there is no stream. The text grows by segments, which are copied once by
+    // ToArray, instead of being copied to a larger array each time the buffer is full.
+    private List<(byte[] Buffer, int Count)>? _segments;
+    private int _segmentsByteCount;
 
     private Utf8TextWriter()
     {
@@ -79,6 +84,17 @@ internal sealed class Utf8TextWriter : TextWriter
     {
         ArrayPool<char>.Shared.Return(writer._chars);
         ArrayPool<byte>.Shared.Return(writer._bytes);
+        if (writer._segments is { } segments)
+        {
+            foreach (var segment in segments)
+            {
+                ArrayPool<byte>.Shared.Return(segment.Buffer);
+            }
+
+            segments.Clear();
+            writer._segmentsByteCount = 0;
+        }
+
         writer._chars = [];
         writer._bytes = [];
         writer._charCount = 0;
@@ -134,7 +150,23 @@ internal sealed class Utf8TextWriter : TextWriter
     }
 
     /// <summary>Gets the bytes of the text, which <see cref="Flush"/> encoded.</summary>
-    public byte[] ToArray() => _bytes.AsSpan(0, _byteCount).ToArray();
+    public byte[] ToArray()
+    {
+        // Every byte of the result is written: it is not cleared first, which matters for a text on the large object heap
+        var result = unsafe(GC.AllocateUninitializedArray<byte>(_segmentsByteCount + _byteCount));
+        var offset = 0;
+        if (_segments is { } segments)
+        {
+            foreach (var (buffer, count) in segments)
+            {
+                buffer.AsSpan(0, count).CopyTo(result.AsSpan(offset));
+                offset += count;
+            }
+        }
+
+        _bytes.AsSpan(0, _byteCount).CopyTo(result.AsSpan(offset));
+        return result;
+    }
 
     private void EncodeBufferedChars(bool flush)
     {
@@ -161,13 +193,22 @@ internal sealed class Utf8TextWriter : TextWriter
             return;
         }
 
-        var required = _byteCount + StrictUtf8.GetMaxByteCount(chars.Length);
-        if (required > _bytes.Length)
+        var maxByteCount = StrictUtf8.GetMaxByteCount(chars.Length);
+        if (_byteCount + maxByteCount > _bytes.Length)
         {
-            var bytes = ArrayPool<byte>.Shared.Rent(Math.Max(required, _bytes.Length * 2));
-            _bytes.AsSpan(0, _byteCount).CopyTo(bytes);
-            ArrayPool<byte>.Shared.Return(_bytes);
-            _bytes = bytes;
+            // The full buffer becomes a segment, and the text continues in a new one, twice as large
+            if (_byteCount > 0)
+            {
+                (_segments ??= []).Add((_bytes, _byteCount));
+                _segmentsByteCount += _byteCount;
+            }
+            else
+            {
+                ArrayPool<byte>.Shared.Return(_bytes);
+            }
+
+            _bytes = ArrayPool<byte>.Shared.Rent(Math.Max(maxByteCount, _bytes.Length * 2));
+            _byteCount = 0;
         }
 
         _byteCount += _encoder.GetBytes(chars, _bytes.AsSpan(_byteCount), flush);

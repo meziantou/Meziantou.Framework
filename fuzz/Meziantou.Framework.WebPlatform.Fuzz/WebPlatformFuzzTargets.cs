@@ -231,6 +231,9 @@ public static partial class WebPlatformFuzzTargets
         if (!markup.Contains("<plaintext", StringComparison.OrdinalIgnoreCase) && PrepareHtmlRoundTrips(document))
         {
             markup = document.ToHtml();
+
+            // A round trip can drop a nested form, which can nest another form: each form can take a round trip (fuzz regression)
+            var maxRoundTrips = HtmlMaxRoundTrips + document.QuerySelectorAll("form").Length;
             var rounds = new List<string> { markup };
             while (true)
             {
@@ -239,8 +242,8 @@ public static partial class WebPlatformFuzzTargets
                     break;
 
                 rounds.Add(serialized);
-                if (rounds.Count > HtmlMaxRoundTrips)
-                    FuzzAssert.Fail($"The serialization does not reach a fixed point after {HtmlMaxRoundTrips} round trips:{Environment.NewLine}{string.Join(Environment.NewLine, rounds.Select(FuzzAssert.Format))}");
+                if (rounds.Count > maxRoundTrips)
+                    FuzzAssert.Fail($"The serialization does not reach a fixed point after {maxRoundTrips} round trips:{Environment.NewLine}{string.Join(Environment.NewLine, rounds.Select(FuzzAssert.Format))}");
             }
         }
 

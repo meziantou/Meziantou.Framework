@@ -1,0 +1,120 @@
+# Labels the pull requests that need a closer review, and removes the label when the check no longer finds anything:
+# - review:dependencies: the pull request adds a dependency (package, action, image...) that no file of the target branch
+#   references. Updating the version of a dependency does not count.
+# - review:tests: the pull request modifies, deletes or renames a file of tests/. Adding files does not count.
+# eng/detect-pr-review-labels.cs compares the merge commit of the pull request with the target branch.
+#
+# pull_request_target gives a token that can write labels on the pull requests from forks too. It runs the workflow and
+# the scripts of the target branch: the files of the pull request must only be read, never built or run.
+name: pr-review-labels
+on:
+  pull_request_target:
+    types: [opened, synchronize, reopened, edited]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+permissions: {}
+
+env:
+  DOTNET_SKIP_FIRST_TIME_EXPERIENCE: 1
+  DOTNET_NOLOGO: true
+
+defaults:
+  run:
+    shell: pwsh
+
+jobs:
+  label:
+    # An edit only changes what the pull request merges into when it changes the target branch
+    if: github.event.action != 'edited' || github.event.changes.base
+    runs-on: ubuntu-26.04
+    timeout-minutes: 20
+    permissions:
+      contents: read
+      issues: write
+      pull-requests: write
+    steps:
+      - uses: actions/checkout@v7.0.1
+        with:
+          persist-credentials: false
+
+      # The first parent of the merge commit is the target branch, so the two commits differ by the changes of the pull
+      # request only, even when its branch is behind the target branch.
+      - name: Fetch the merge commit of the pull request
+        id: fetch
+        env:
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+        run: |
+          # GitHub computes the merge commit asynchronously, so it may not exist yet when the pull request is opened
+          for ($attempt = 1; $attempt -le 6; $attempt++) {
+            git fetch --no-tags --depth=2 origin "+refs/pull/$($env:PR_NUMBER)/merge:refs/pr/merge"
+            if ($LASTEXITCODE -eq 0) {
+              "available=true" >> $env:GITHUB_OUTPUT
+              exit 0
+            }
+
+            Start-Sleep -Seconds 10
+          }
+
+          Write-Host "::notice::The pull request has no merge commit, for instance because of a merge conflict. The labels are left unchanged."
+          "available=false" >> $env:GITHUB_OUTPUT
+          exit 0
+
+      - name: Setup .NET
+        if: steps.fetch.outputs.available == 'true'
+        uses: $/.github/actions/setup-dotnet
+
+      - name: Detect the changes to review
+        id: detect
+        if: steps.fetch.outputs.available == 'true'
+        run: |
+          dotnet run ./eng/detect-pr-review-labels.cs -- --base refs/pr/merge^1 --head refs/pr/merge
+          if ($LASTEXITCODE -ne 0) { throw "Failed to detect the changes to review" }
+
+      - name: Update the labels
+        if: steps.fetch.outputs.available == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPOSITORY: ${{ github.repository }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          HAS_NEW_DEPENDENCIES: ${{ steps.detect.outputs.dependencies }}
+          HAS_CHANGED_TESTS: ${{ steps.detect.outputs.tests }}
+        run: |
+          function Invoke-GitHubApi([string[]]$Arguments) {
+            $output = gh api @Arguments
+            if ($LASTEXITCODE -ne 0) { throw "gh api $($Arguments -join ' ') failed" }
+            return $output
+          }
+
+          $labels = @(
+            @{ Name = 'review:dependencies'; Detected = $env:HAS_NEW_DEPENDENCIES -eq 'true'; Color = 'd93f0b'; Description = 'The pull request adds a dependency' }
+            @{ Name = 'review:tests'; Detected = $env:HAS_CHANGED_TESTS -eq 'true'; Color = 'fbca04'; Description = 'The pull request modifies or deletes existing tests' }
+          )
+
+          $currentLabels = @(Invoke-GitHubApi @("repos/$env:REPOSITORY/issues/$env:PR_NUMBER/labels", '--paginate', '--jq', '.[].name'))
+          $repositoryLabels = @(Invoke-GitHubApi @("repos/$env:REPOSITORY/labels", '--paginate', '--jq', '.[].name'))
+          foreach ($label in $labels) {
+            $encodedName = [uri]::EscapeDataString($label.Name)
+            if ($label.Detected) {
+              if ($label.Name -in $currentLabels) {
+                Write-Host "$($label.Name): already set"
+                continue
+              }
+
+              if ($label.Name -notin $repositoryLabels) {
+                Invoke-GitHubApi @("repos/$env:REPOSITORY/labels", '-f', "name=$($label.Name)", '-f', "color=$($label.Color)", '-f', "description=$($label.Description)") | Out-Null
+              }
+
+              Invoke-GitHubApi @("repos/$env:REPOSITORY/issues/$env:PR_NUMBER/labels", '-f', "labels[]=$($label.Name)") | Out-Null
+              Write-Host "$($label.Name): added"
+            }
+            elseif ($label.Name -in $currentLabels) {
+              Invoke-GitHubApi @('--method', 'DELETE', "repos/$env:REPOSITORY/issues/$env:PR_NUMBER/labels/$encodedName") | Out-Null
+              Write-Host "$($label.Name): removed"
+            }
+            else {
+              Write-Host "$($label.Name): not needed"
+            }
+          }

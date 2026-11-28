@@ -42,19 +42,32 @@ internal static class JpegHuffmanCodeBuilder
 
         (lengths[ReservedSymbol], lengths[longestSymbol]) = (lengths[longestSymbol], lengths[ReservedSymbol]);
 
+        // The symbols by code length, then by value: a counting sort on the lengths (0 for an unused symbol)
         Span<byte> bits = stackalloc byte[16];
         bits.Clear();
-        Span<byte> values = stackalloc byte[ReservedSymbol];
-        var count = 0;
+        foreach (var length in lengths[..ReservedSymbol])
+        {
+            if (length != 0)
+            {
+                bits[length - 1]++;
+            }
+        }
+
+        Span<int> next = stackalloc int[17];
+        next[0] = 0;
         for (var length = 1; length <= 16; length++)
         {
-            for (var symbol = 0; symbol < ReservedSymbol; symbol++)
+            next[length] = next[length - 1] + bits[length - 1];
+        }
+
+        var count = next[16];
+        Span<byte> values = stackalloc byte[ReservedSymbol];
+        for (var symbol = 0; symbol < ReservedSymbol; symbol++)
+        {
+            var length = lengths[symbol];
+            if (length != 0)
             {
-                if (lengths[symbol] == length)
-                {
-                    bits[length - 1]++;
-                    values[count++] = (byte)symbol;
-                }
+                values[next[length - 1]++] = (byte)symbol;
             }
         }
 
@@ -91,16 +104,26 @@ internal static class JpegHuffmanCodeBuilder
         codeSizes.Clear();
         Span<int> others = stackalloc int[ReservedSymbol + 1];
         others.Fill(-1);
-        while (true)
+
+        // The trees by frequency, the one of the largest symbol first among equal frequencies (the order of Figure K.1)
+        var trees = new PriorityQueue<int, (long Frequency, int Order)>(ReservedSymbol + 1);
+        for (var symbol = 0; symbol < frequencies.Length; symbol++)
         {
-            var first = FindSmallest(frequencies, excluded: -1);
-            var second = FindSmallest(frequencies, excluded: first);
-            if (second < 0)
-                break;
+            if (frequencies[symbol] != 0)
+            {
+                trees.Enqueue(symbol, (frequencies[symbol], -symbol));
+            }
+        }
+
+        while (trees.Count >= 2)
+        {
+            var first = trees.Dequeue();
+            var second = trees.Dequeue();
 
             // The second tree is merged into the first: every symbol of both gets one more bit
             frequencies[first] += frequencies[second];
             frequencies[second] = 0;
+            trees.Enqueue(first, (frequencies[first], -first));
             codeSizes[first]++;
             while (others[first] >= 0)
             {
@@ -160,37 +183,35 @@ internal static class JpegHuffmanCodeBuilder
             counts[size - 1] = (byte)bits[size];
         }
 
-        // Figure K.4: the symbols in the order of their code sizes before the adjustment, then of their values
-        Span<byte> values = stackalloc byte[ReservedSymbol];
-        var count = 0;
-        for (var size = 1; size <= MaxCodeSize; size++)
+        // Figure K.4: the symbols in the order of their code sizes before the adjustment, then of their values (a counting
+        // sort on the sizes, 0 for an unused symbol)
+        Span<int> next = stackalloc int[MaxCodeSize + 2];
+        next.Clear();
+        foreach (var size in codeSizes[..ReservedSymbol])
         {
-            for (var symbol = 0; symbol < ReservedSymbol; symbol++)
+            if (size > 0)
             {
-                if (codeSizes[symbol] == size)
-                {
-                    values[count++] = (byte)symbol;
-                }
+                next[size + 1]++;
+            }
+        }
+
+        for (var size = 2; size < next.Length; size++)
+        {
+            next[size] += next[size - 1];
+        }
+
+        var count = next[^1];
+        Span<byte> values = stackalloc byte[ReservedSymbol];
+        for (var symbol = 0; symbol < ReservedSymbol; symbol++)
+        {
+            var size = codeSizes[symbol];
+            if (size > 0)
+            {
+                values[next[size]++] = (byte)symbol;
             }
         }
 
         Debug.Assert(count > 0);
         return new JpegHuffmanEncoder(counts, values[..count]);
-
-        static int FindSmallest(ReadOnlySpan<long> frequencies, int excluded)
-        {
-            var found = -1;
-            var smallest = long.MaxValue;
-            for (var symbol = 0; symbol < frequencies.Length; symbol++)
-            {
-                if (frequencies[symbol] != 0 && frequencies[symbol] <= smallest && symbol != excluded)
-                {
-                    smallest = frequencies[symbol];
-                    found = symbol;
-                }
-            }
-
-            return found;
-        }
     }
 }

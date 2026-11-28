@@ -108,6 +108,10 @@ public class PngBenchmarks : IDisposable
     public long SaveLarge8MinimumSize() => ImageWorkloads.Encode(_large8, new PngEncoder { Optimization = PngOptimization.MinimumSize }, _output);
 
     [Benchmark]
+    [Workload("1024x768 Rgba64 -> PNG in the narrowest exact layout (16-bit RGBA, PngOptimization.Layout)", ReturnsOutputBytes = true)]
+    public long SaveLarge16Layout() => ImageWorkloads.Encode(_large16, new PngEncoder { Optimization = PngOptimization.Layout }, _output);
+
+    [Benchmark]
     [Workload("2048x1536 Rgb24 of 256 colors -> PNG in the narrowest exact layout (palette found, PngOptimization.Layout)", ReturnsOutputBytes = true)]
     public long SaveFewColorsLayout() => ImageWorkloads.Encode(_fewColors, new PngEncoder { Optimization = PngOptimization.Layout }, _output);
 

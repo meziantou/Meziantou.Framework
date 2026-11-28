@@ -676,6 +676,11 @@ internal sealed class JpegXlModularEntropyCode : IDisposable
         // The largest token of a fine token is below 1024 for every configuration: 8 KB, once per entropy code
         using var tokensRental = Av1PooledArray<long>.Rent(_scope, 1024, clear: false, AllocationKind.Temporary);
         var tokens = tokensRental.Span;
+        tokens.Clear();
+
+        // The tokens below this one may be non-zero: the others are, and are neither cleared nor read
+        var dirty = 0;
+        Span<int> present = stackalloc int[FineAlphabetSize];
         for (var cluster = 0; cluster < fineClusters.Length; cluster++)
         {
             var fine = fineClusters[cluster];
@@ -686,22 +691,29 @@ internal sealed class JpegXlModularEntropyCode : IDisposable
                 lengthCount += count;
             }
 
+            // The fine tokens of the cluster, in increasing order
+            var presentCount = 0;
+            for (var token = 0; token < FineAlphabetSize; token++)
+            {
+                if (fine[token] != 0)
+                {
+                    present[presentCount++] = token;
+                }
+            }
+
             var bestCost = double.MaxValue;
             var best = -1;
             var candidateCount = _searchConfigs ? Configs.Length : 1;
             for (var c = 0; c < candidateCount; c++)
             {
                 var map = ConfigTokens[c];
-                tokens.Clear();
+                tokens[..dirty].Clear();
                 long rawBits = 0;
                 long total = lengthCount;
                 var maxToken = 0;
-                for (var token = 0; token < FineAlphabetSize; token++)
+                foreach (var token in present[..presentCount])
                 {
                     var count = fine[token];
-                    if (count == 0)
-                        continue;
-
                     var (coarse, bitCount) = map[token];
                     if (coarse >= tokens.Length)
                     {
@@ -710,6 +722,7 @@ internal sealed class JpegXlModularEntropyCode : IDisposable
                     }
 
                     tokens[coarse] += count;
+                    dirty = Math.Max(dirty, coarse + 1);
                     rawBits += count * bitCount;
                     total += count;
                     maxToken = Math.Max(maxToken, coarse);
@@ -720,7 +733,7 @@ internal sealed class JpegXlModularEntropyCode : IDisposable
 
                 var cost = (double)rawBits;
                 var used = 0;
-                foreach (var count in tokens)
+                foreach (var count in tokens[..(maxToken + 1)])
                 {
                     if (count != 0)
                     {

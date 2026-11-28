@@ -303,14 +303,8 @@ internal sealed class PaletteQuantizer : IDisposable
         _opaqueCount = 0;
         _transparentIndex = -1;
         _pixelCount = 0;
+        // The buckets are only read once the exact set overflows: they are cleared and filled from it then (StartBuckets)
         var state = GetState();
-        state.Slice(CountsOffset, _bucketCount * sizeof(int)).Clear();
-        state.Slice(_sumsOffset, Buckets * 3 * sizeof(long)).Clear();
-        if (_translucent)
-        {
-            state.Slice(_translucentSumsOffset, Buckets * 4 * sizeof(long)).Clear();
-        }
-
         _hasHistogram = true;
         unsafe { MemoryMarshal.Cast<byte, int>(state.Slice(_exactOffset, ExactSlots * sizeof(int))).Fill(TransparentKey); }
         state.Slice(_exactCountsOffset, ExactSlots * sizeof(int)).Clear();
@@ -332,16 +326,51 @@ internal sealed class PaletteQuantizer : IDisposable
         var translucentSums = TranslucentSums;
         var exact = unsafe(MemoryMarshal.Cast<byte, int>(state.Slice(_exactOffset, ExactSlots * sizeof(int))));
         var exactCounts = unsafe(MemoryMarshal.Cast<byte, int>(state.Slice(_exactCountsOffset, ExactSlots * sizeof(int))));
-        // A run of equal keys is counted at once: every count and sum it changes grows by the length of the run
-        for (var i = 0; i < keys.Length;)
+        // A run of equal keys is counted at once: every count and sum it changes grows by the length of the run. The colors
+        // are counted exactly until there are too many of them, then by bucket
+        var i = 0;
+        while (!_exactOverflow && i < keys.Length)
         {
             var key = keys[i];
-            var run = 1;
-            while (i + run < keys.Length && keys[i + run] == key)
+            var run = GetRunLength(keys, i);
+            i += run;
+            if (key == TransparentKey)
             {
-                run++;
+                _hasTransparency = true;
+                continue;
             }
 
+            if ((key >>> 24) != 0 && !_translucent)
+                throw new ArgumentException("The quantizer was not created for translucent colors.", nameof(keys));
+
+            var slot = HashExact(key);
+            while (exact[slot] != TransparentKey && exact[slot] != key)
+            {
+                slot = (slot + 1) & (ExactSlots - 1);
+            }
+
+            if (exact[slot] != key)
+            {
+                if (_exactCount == _limit)
+                {
+                    // One color too many: the colors counted so far become the buckets, which count the pixels from now on
+                    _exactOverflow = true;
+                    StartBuckets(exact, exactCounts, counts, sums, translucentSums);
+                    AddToBucket(key, run, counts, sums, translucentSums);
+                    break;
+                }
+
+                exact[slot] = key;
+                _exactCount++;
+            }
+
+            exactCounts[slot] += run;
+        }
+
+        while (i < keys.Length)
+        {
+            var key = keys[i];
+            var run = GetRunLength(keys, i);
             i += run;
             if (key == TransparentKey)
             {
@@ -370,29 +399,58 @@ internal sealed class PaletteQuantizer : IDisposable
                 sums[(3 * bucket) + 1] += ((key >> 8) & 0xFF) * run;
                 sums[(3 * bucket) + 2] += (key & 0xFF) * run;
             }
+        }
+    }
 
-            if (_exactOverflow)
-                continue;
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private static int GetRunLength(ReadOnlySpan<int> keys, int start)
+    {
+        var key = keys[start];
+        var run = 1;
+        while (start + run < keys.Length && keys[start + run] == key)
+        {
+            run++;
+        }
 
-            var slot = HashExact(key);
-            while (exact[slot] != TransparentKey && exact[slot] != key)
+        return run;
+    }
+
+    /// <summary>Fills the buckets with the colors of the exact set and their pixel counts.</summary>
+    private static void StartBuckets(ReadOnlySpan<int> exact, ReadOnlySpan<int> exactCounts, Span<int> counts, Span<long> sums, Span<long> translucentSums)
+    {
+        counts.Clear();
+        sums.Clear();
+        translucentSums.Clear();
+        for (var slot = 0; slot < ExactSlots; slot++)
+        {
+            if (exact[slot] != TransparentKey)
             {
-                slot = (slot + 1) & (ExactSlots - 1);
+                AddToBucket(exact[slot], exactCounts[slot], counts, sums, translucentSums);
             }
+        }
+    }
 
-            if (exact[slot] != key)
-            {
-                if (_exactCount == _limit)
-                {
-                    _exactOverflow = true;
-                    continue;
-                }
-
-                exact[slot] = key;
-                _exactCount++;
-            }
-
-            exactCounts[slot] += run;
+    // The sums of a bucket are integers: the order of the additions does not change them
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private static void AddToBucket(int key, int run, Span<int> counts, Span<long> sums, Span<long> translucentSums)
+    {
+        if ((key >>> 24) != 0)
+        {
+            long alpha = key >>> 24;
+            var translucent = GetTranslucentBucket(key);
+            counts[Buckets + translucent] += run;
+            translucentSums[4 * translucent] += ((key >> 16) & 0xFF) * alpha * run;
+            translucentSums[(4 * translucent) + 1] += ((key >> 8) & 0xFF) * alpha * run;
+            translucentSums[(4 * translucent) + 2] += (key & 0xFF) * alpha * run;
+            translucentSums[(4 * translucent) + 3] += alpha * run;
+        }
+        else
+        {
+            var bucket = GetBucket(key);
+            counts[bucket] += run;
+            sums[3 * bucket] += (long)((key >> 16) & 0xFF) * run;
+            sums[(3 * bucket) + 1] += (long)((key >> 8) & 0xFF) * run;
+            sums[(3 * bucket) + 2] += (long)(key & 0xFF) * run;
         }
     }
 

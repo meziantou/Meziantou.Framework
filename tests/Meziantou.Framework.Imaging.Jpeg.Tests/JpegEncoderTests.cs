@@ -248,6 +248,193 @@ public sealed class JpegEncoderTests
     }
 
     [Fact]
+    [SuppressMessage("Security", "CA5394:Do not use insecure randomness", Justification = "Deterministic seeded test inputs.")]
+    public void ScanHuffmanTablesListTheSymbolsLikeTheReferenceProcedures()
+    {
+        var random = new Random(34);
+        var histogram = new uint[256];
+        for (var iteration = 0; iteration < 600; iteration++)
+        {
+            Array.Clear(histogram);
+            var used = iteration switch
+            {
+                0 => 1,
+                1 => 2,
+                2 => 256,
+                _ => random.Next(1, 257),
+            };
+
+            var (a, b) = (1u, 1u);
+            for (var i = 0; i < used; i++)
+            {
+                var symbol = iteration < 3 ? i : random.Next(256);
+                histogram[symbol] = (iteration % 4) switch
+                {
+                    0 => a,
+                    1 => (uint)random.Next(1, 1 << random.Next(1, 20)),
+                    2 => (uint)random.Next(1, 4),
+                    _ => (uint)random.Next(1000, 2000),
+                };
+                (a, b) = (b, Math.Min(a + b, uint.MaxValue / 4));
+            }
+
+            var (bits, values) = ReferenceBuild(histogram);
+            var table = JpegHuffmanCodeBuilder.Build(histogram);
+            Assert.Equal(bits, table.Bits.ToArray());
+            Assert.Equal(values, table.Values.ToArray());
+
+            (bits, values) = ReferenceBuildAnnexK(histogram);
+            table = JpegHuffmanCodeBuilder.BuildAnnexK(histogram);
+            Assert.Equal(bits, table.Bits.ToArray());
+            Assert.Equal(values, table.Values.ToArray());
+        }
+
+        // The lengths of the canonical builder, with the symbols listed by length then value one length at a time
+        static (byte[] Bits, byte[] Values) ReferenceBuild(uint[] histogram)
+        {
+            var counts = new uint[257];
+            histogram.CopyTo(counts, 0);
+            counts[256] = 1;
+            var lengths = new byte[257];
+            CanonicalHuffmanBuilder.BuildLengths(counts, maxLength: 16, lengths);
+            var longest = lengths[256];
+            var longestSymbol = 256;
+            for (var symbol = 0; symbol < 256; symbol++)
+            {
+                if (lengths[symbol] > longest)
+                {
+                    longest = lengths[symbol];
+                    longestSymbol = symbol;
+                }
+            }
+
+            (lengths[256], lengths[longestSymbol]) = (lengths[longestSymbol], lengths[256]);
+            var bits = new byte[16];
+            var values = new List<byte>();
+            for (var length = 1; length <= 16; length++)
+            {
+                for (var symbol = 0; symbol < 256; symbol++)
+                {
+                    if (lengths[symbol] == length)
+                    {
+                        bits[length - 1]++;
+                        values.Add((byte)symbol);
+                    }
+                }
+            }
+
+            return (bits, [.. values]);
+        }
+
+        // Figures K.1 to K.4, with the linear search of the two smallest frequencies (the largest symbol on a tie)
+        static (byte[] Bits, byte[] Values) ReferenceBuildAnnexK(uint[] histogram)
+        {
+            var frequencies = new long[257];
+            for (var symbol = 0; symbol < 256; symbol++)
+            {
+                frequencies[symbol] = histogram[symbol];
+            }
+
+            frequencies[256] = 1;
+            var codeSizes = new int[257];
+            var others = Enumerable.Repeat(-1, 257).ToArray();
+            while (true)
+            {
+                var first = FindSmallest(frequencies, excluded: -1);
+                var second = FindSmallest(frequencies, excluded: first);
+                if (second < 0)
+                    break;
+
+                frequencies[first] += frequencies[second];
+                frequencies[second] = 0;
+                codeSizes[first]++;
+                while (others[first] >= 0)
+                {
+                    first = others[first];
+                    codeSizes[first]++;
+                }
+
+                others[first] = second;
+                codeSizes[second]++;
+                while (others[second] >= 0)
+                {
+                    second = others[second];
+                    codeSizes[second]++;
+                }
+            }
+
+            var sizes = new int[257];
+            foreach (var size in codeSizes)
+            {
+                if (size > 0)
+                {
+                    sizes[size]++;
+                }
+            }
+
+            var length = 256;
+            for (; length > 16; length--)
+            {
+                while (sizes[length] > 0)
+                {
+                    var prefix = length - 2;
+                    while (sizes[prefix] == 0)
+                    {
+                        prefix--;
+                    }
+
+                    sizes[length] -= 2;
+                    sizes[length - 1]++;
+                    sizes[prefix + 1] += 2;
+                    sizes[prefix]--;
+                }
+            }
+
+            while (sizes[length] == 0)
+            {
+                length--;
+            }
+
+            sizes[length]--;
+            var bits = new byte[16];
+            for (var size = 1; size <= 16; size++)
+            {
+                bits[size - 1] = (byte)sizes[size];
+            }
+
+            var values = new List<byte>();
+            for (var size = 1; size <= 256; size++)
+            {
+                for (var symbol = 0; symbol < 256; symbol++)
+                {
+                    if (codeSizes[symbol] == size)
+                    {
+                        values.Add((byte)symbol);
+                    }
+                }
+            }
+
+            return (bits, [.. values]);
+        }
+
+        static int FindSmallest(long[] frequencies, int excluded)
+        {
+            var found = -1;
+            var smallest = long.MaxValue;
+            for (var symbol = 0; symbol < frequencies.Length; symbol++)
+            {
+                if (frequencies[symbol] != 0 && frequencies[symbol] <= smallest && symbol != excluded)
+                {
+                    smallest = frequencies[symbol];
+                    found = symbol;
+                }
+            }
+
+            return found;
+        }
+    }
+
+    [Fact]
     public void QualityScalesTheAnnexKTables()
     {
         using var image = Rgb(JpegTestPatterns.PhotoLike(16, 16, seed: 1));

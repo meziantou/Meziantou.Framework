@@ -62,6 +62,9 @@ internal sealed class PngOptimizedEncoderSession : ImageEncoderSession
     private readonly PngFilter[] _filters;
     private readonly PngMetadataWriter _metadata;
     private readonly List<Trial> _trials = [];
+
+    // The SOURCE layout trials of the chosen layout, whose sizes the trials of the plan that follows reuse
+    private readonly List<Trial> _layoutTrials = [];
     private readonly Diff[] _diffs = new Diff[3];
     private PngLayoutAnalysis? _analysis;
     private PngIndexedRows? _palette;
@@ -472,6 +475,14 @@ internal sealed class PngOptimizedEncoderSession : ImageEncoderSession
         }
 
         _layout = _candidates[best];
+        foreach (var trial in _trials)
+        {
+            if (trial.Tag == best && trial.Over is null && trial.PreviousImage is null)
+            {
+                _layoutTrials.Add(trial);
+            }
+        }
+
         _palette = _analysis!.TakePalette(_layout.Palette);
         _candidates = null;
         _plannedPoster = null;
@@ -660,6 +671,7 @@ internal sealed class PngOptimizedEncoderSession : ImageEncoderSession
         }
 
         _trialIndex = 0;
+        ReuseLayoutTrials();
         if (_trials.Count == 1)
         {
             var only = _trials[0];
@@ -701,6 +713,7 @@ internal sealed class PngOptimizedEncoderSession : ImageEncoderSession
         }
 
         _trialIndex = 0;
+        ReuseLayoutTrials();
         if (_trials.Count <= 1 && !_plan.HasSize)
         {
             // A single candidate: nothing to compare
@@ -712,8 +725,33 @@ internal sealed class PngOptimizedEncoderSession : ImageEncoderSession
         _step = Step.FilterTrials;
     }
 
+    /// <summary>
+    /// Gives the trials that compress the same scanlines as a layout trial of this operation its size: the same image and
+    /// region with SOURCE, the same filter strategy and level.
+    /// </summary>
+    private void ReuseLayoutTrials()
+    {
+        foreach (var trial in _trials)
+        {
+            if (trial.Over is not null || trial.PreviousImage is not null)
+                continue;
+
+            foreach (var known in _layoutTrials)
+            {
+                if (known.Layout == trial.Layout && known.Image == trial.Image && known.Region == trial.Region && known.Filter == trial.Filter && known.Level == trial.Level)
+                {
+                    trial.Size = known.Size;
+                    trial.IsCounted = true;
+                    break;
+                }
+            }
+        }
+    }
+
     private void EndPlan()
     {
+        // The layout trials measured the images of the operation that chose the layout
+        _layoutTrials.Clear();
         foreach (var trial in _trials)
         {
             if (!_plan.HasSize || trial.Size < _plan.Size)
@@ -734,6 +772,21 @@ internal sealed class PngOptimizedEncoderSession : ImageEncoderSession
     {
         if (_trialIndex >= _trials.Count)
             return true;
+
+        if (!_trialStarted && _trials[_trialIndex].IsCounted)
+        {
+            // Measured by a layout trial: the rows of the image of the operation are read next when it is the last one
+            while (_trialIndex < _trials.Count && _trials[_trialIndex].IsCounted)
+            {
+                _trialIndex++;
+            }
+
+            if (_trialIndex == _trials.Count)
+            {
+                _rows!.SetFrame(_frame);
+                return true;
+            }
+        }
 
         var trial = _trials[_trialIndex];
         var data = _data!;
@@ -948,6 +1001,9 @@ internal sealed class PngOptimizedEncoderSession : ImageEncoderSession
         public int Tag { get; } = tag;
 
         public long Size { get; set; }
+
+        /// <summary>Gets or sets a value indicating whether <see cref="Size"/> is known without compressing the trial.</summary>
+        public bool IsCounted { get; set; }
     }
 
     /// <summary>The encoding chosen for the image of the operation.</summary>

@@ -302,6 +302,13 @@ public sealed class CssomTests
         reparsed.ReplaceSync(text);
         Assert.Equal(text, reparsed.CssRules[0].CssText);
 
+        // The number after an identifier that ends with an escaped character is not read as a part of it
+        sheet.ReplaceSync("a { background: url(\"a.svg\" param(--x: \\+.2)) }");
+        text = sheet.CssRules[0].CssText;
+        Assert.Contains("param(--x: \\+/**/0.2)", text, StringComparison.Ordinal);
+        reparsed.ReplaceSync(text);
+        Assert.Equal(text, reparsed.CssRules[0].CssText);
+
         // In a media query, 0e0 is not an <integer>: it is written 0.0
         sheet.ReplaceSync("@media (0e0e1) { a { color: red } }");
         Assert.Equal("(0.0\\65 1)", ((CssMediaRule)sheet.CssRules[0]).Media.MediaText);

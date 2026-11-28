@@ -566,7 +566,7 @@ internal static partial class CssSerializer
                 builder.Insert(start, "/**/");
             }
             else if (!pendingSpace && adjacent && value is CssPreservedToken { Type: CssTokenType.Number or CssTokenType.Percentage or CssTokenType.Dimension }
-                && start > 0 && start < builder.Length && char.IsAsciiDigit(builder[start]) && WouldMergeWithFollowingName(builder[start - 1]))
+                && start > 0 && start < builder.Length && char.IsAsciiDigit(builder[start]) && (WouldMergeWithFollowingName(builder[start - 1]) || IsEscaped(builder, start - 1)))
             {
                 // A number serialized with a leading digit (".5" written "0.5", "+5" written "5") is parsed with the name or the
                 // number before it ("a" followed by ".5" written "a0.5", "1px" followed by "+5" written "1px5")
@@ -592,6 +592,19 @@ internal static partial class CssSerializer
         // The last character of a serialization followed by a name: an ident code point, the space ending an escape, @ (an
         // at-keyword), # (a hash), or \ (an escape)
         static bool WouldMergeWithFollowingName(char c) => c >= '\u0080' || char.IsAsciiLetterOrDigit(c) || c is '-' or '_' or ' ' or '@' or '#' or '\\';
+
+        // Whether the character at index is escaped (e.g. "+" in "\+", the identifier "+"): it is part of the name before it,
+        // which a digit after it would continue (fuzz regression)
+        static bool IsEscaped(StringBuilder builder, int index)
+        {
+            var count = 0;
+            for (var i = index - 1; i >= 0 && builder[i] == '\\'; i--)
+            {
+                count++;
+            }
+
+            return count % 2 == 1;
+        }
     }
 
     /// <summary>

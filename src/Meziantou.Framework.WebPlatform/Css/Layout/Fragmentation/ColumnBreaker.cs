@@ -521,11 +521,15 @@ internal static partial class ColumnBreaker
                 }
             }
 
-            // The boxes that are broken by the end of the fragmentainer
+            // The boxes that are broken by the end of the fragmentainer. A box whose own block is not finished grows the box of the
+            // flow (its contents are pushed by the breaks); a box that is finished but whose flow continues only overflows it.
+            var hasUnfinishedBoxes = false;
             foreach (var item in _advanced)
             {
                 var itemAppeal = item.Appeal;
-                var isItemUnfinished = !TryFinishBox(item, blockSize, ref shortage) || !item.IsFlowDone;
+                var isBoxUnfinished = !TryFinishBox(item, blockSize, ref shortage);
+                hasUnfinishedBoxes |= isBoxUnfinished;
+                var isItemUnfinished = isBoxUnfinished || !item.IsFlowDone;
                 if (isItemUnfinished && item.Avoid)
                 {
                     itemAppeal = Worst(itemAppeal, BreakAppeal.Avoid);
@@ -930,7 +934,7 @@ internal static partial class ColumnBreaker
                 _flow.AddMonolithicSlice(_index);
             }
 
-            return new AdvanceResult(IsFinished: false, position, displayOffset, appeal, shortage) { ContentEnd = endBeforeBreak + next.CloneEndEdges, IsMonolithicSlice = isMonolithicSlice, HasUnfinishedFlows = isUnfinished };
+            return new AdvanceResult(IsFinished: false, position, displayOffset, appeal, shortage) { ContentEnd = endBeforeBreak + next.CloneEndEdges, IsMonolithicSlice = isMonolithicSlice, HasUnfinishedFlows = hasUnfinishedBoxes };
 
             // Records a possible break that fits: the latest one of the best appeal is chosen. The parallel flows that start before the
             // break and are broken by the end of the fragmentainer lower its appeal

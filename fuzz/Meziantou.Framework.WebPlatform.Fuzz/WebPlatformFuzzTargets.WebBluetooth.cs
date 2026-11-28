@@ -88,7 +88,7 @@ public static partial class WebPlatformFuzzTargets
         JsonObject? json;
         try
         {
-            json = JsonNode.Parse(data, documentOptions: new JsonDocumentOptions { MaxDepth = 64 }) as JsonObject;
+            json = JsonNode.Parse(data, documentOptions: new JsonDocumentOptions { MaxDepth = 64, AllowDuplicateProperties = false }) as JsonObject;
         }
         catch (JsonException)
         {

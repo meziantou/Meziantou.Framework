@@ -474,7 +474,7 @@ public static class MarkdownFormatter
                     break;
 
                 case MarkdownFigureSyntax figure:
-                    WriteFencedContainer(lines, figure, [.. figure.Blocks.Where(block => block is not MarkdownFigureCaptionSyntax)], figure.ClosingFenceToken, figure.ChildNodes().OfType<MarkdownFigureCaptionSyntax>().FirstOrDefault(caption => figure.ClosingFenceToken.RawKind != 0 && caption.SpanStart > figure.ClosingFenceToken.SpanStart));
+                    WriteFencedContainer(lines, figure, GetFigureBlocks(figure), figure.ClosingFenceToken, figure.ChildNodes().OfType<MarkdownFigureCaptionSyntax>().FirstOrDefault(caption => figure.ClosingFenceToken.RawKind != 0 && caption.SpanStart > figure.ClosingFenceToken.SpanStart));
                     break;
 
                 case MarkdownFooterSyntax footer:
@@ -837,8 +837,29 @@ public static class MarkdownFormatter
                 return 0;
             }
 
-            var next = new List<string>();
-            WriteBlock(next, blocks[index + 1], blocks[index], index + 2 < blocks.Length ? blocks[index + 2] : null, blankLine: true, previousStart: 0);
+            // The first line of a container is its marker or its opening fence: the blocks it contains are not written, as writing
+            // them for each container would write the containers nested in each other an exponential number of times (fuzz
+            // regression: a list followed by a custom container that is not closed, which contains the next list, and so on)
+            List<string> next;
+            switch (blocks[index + 1])
+            {
+                case MarkdownBlockQuoteSyntax or MarkdownAlertSyntax or MarkdownFootnoteDefinitionSyntax or MarkdownFooterSyntax:
+                    return 0;
+
+                case MarkdownCustomContainerSyntax container:
+                    next = GetFencedContainerOpening(container, container.Blocks, container.ClosingFenceToken);
+                    break;
+
+                case MarkdownFigureSyntax figure:
+                    next = GetFencedContainerOpening(figure, GetFigureBlocks(figure), figure.ClosingFenceToken);
+                    break;
+
+                default:
+                    next = [];
+                    WriteBlock(next, blocks[index + 1], blocks[index], index + 2 < blocks.Length ? blocks[index + 2] : null, blankLine: true, previousStart: 0);
+                    break;
+            }
+
             return next.Count == 0 ? 0 : next[0].Length - next[0].TrimStart(' ').Length;
         }
 
@@ -1028,12 +1049,19 @@ public static class MarkdownFormatter
             return column;
         }
 
-        private void WriteFencedContainer(List<string> lines, MarkdownBlockSyntax container, ImmutableArray<MarkdownBlockSyntax> blocks, SyntaxToken closingFence, MarkdownFigureCaptionSyntax? caption)
+        // The blocks of a figure, without its caption
+        private static ImmutableArray<MarkdownBlockSyntax> GetFigureBlocks(MarkdownFigureSyntax figure) => [.. figure.Blocks.Where(block => block is not MarkdownFigureCaptionSyntax)];
+
+        // The lines of the opening fence, with the arguments of a custom container or the caption of a figure
+        private static List<string> GetFencedContainerOpening(MarkdownBlockSyntax container, ImmutableArray<MarkdownBlockSyntax> blocks, SyntaxToken closingFence)
         {
             var end = Math.Min(blocks.Length > 0 ? blocks[0].SpanStart : int.MaxValue, closingFence.RawKind != 0 ? closingFence.SpanStart : int.MaxValue);
-            // The opening fence, with the arguments of a custom container or the caption of a figure
-            var opening = container.DescendantTokens().Where(token => token.SpanStart < end);
-            lines.AddRange(GetLines(opening));
+            return GetLines(container.DescendantTokens().Where(token => token.SpanStart < end));
+        }
+
+        private void WriteFencedContainer(List<string> lines, MarkdownBlockSyntax container, ImmutableArray<MarkdownBlockSyntax> blocks, SyntaxToken closingFence, MarkdownFigureCaptionSyntax? caption)
+        {
+            lines.AddRange(GetFencedContainerOpening(container, blocks, closingFence));
             lines.AddRange(WriteBlocks(blocks, BlankLines.Preserve));
             if (closingFence.RawKind != 0)
             {

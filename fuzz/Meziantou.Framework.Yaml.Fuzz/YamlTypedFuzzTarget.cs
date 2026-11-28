@@ -51,8 +51,13 @@ internal static class YamlTypedFuzzTarget
         var written = YamlSerializer.Serialize(reflection.Value, options);
         FuzzAssert.Equal(written, YamlSerializer.Serialize(generated.Value, options), "The reflection-based and the source-generated serializers read different values");
 
-        // The UTF-8 bytes read the same values as the text, and the UTF-8 overloads write the bytes of the text
-        FuzzAssert.Equal(written, Write(Read(() => YamlSerializer.Deserialize<TypedPayload>(StrictUtf8.GetBytes(yaml), options)).Value, options), "The text and the UTF-8 bytes read different values");
+        // The UTF-8 bytes read the same values as the text, and the UTF-8 overloads write the bytes of the text. A lone
+        // surrogate in the input, which UTF-8 cannot encode, can be in a part that the serializer skips (an unmapped member)
+        if (TryGetUtf8(yaml) is { } utf8)
+        {
+            FuzzAssert.Equal(written, Write(Read(() => YamlSerializer.Deserialize<TypedPayload>(utf8, options)).Value, options), "The text and the UTF-8 bytes read different values");
+        }
+
         AssertUtf8(written, YamlSerializer.SerializeToUtf8Bytes(reflection.Value, options), "SerializeToUtf8Bytes");
         AssertUtf8(YamlSerializer.Serialize(generated.Value, context), YamlSerializer.SerializeToUtf8Bytes(generated.Value, context), "SerializeToUtf8Bytes with the generated metadata");
         using (var stream = new MemoryStream())
@@ -85,6 +90,18 @@ internal static class YamlTypedFuzzTarget
         catch (YamlException ex)
         {
             return (null, ex.Message);
+        }
+    }
+
+    private static byte[]? TryGetUtf8(string text)
+    {
+        try
+        {
+            return StrictUtf8.GetBytes(text);
+        }
+        catch (EncoderFallbackException)
+        {
+            return null;
         }
     }
 

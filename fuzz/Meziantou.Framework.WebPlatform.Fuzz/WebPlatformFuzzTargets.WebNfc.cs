@@ -37,7 +37,7 @@ public static partial class WebPlatformFuzzTargets
         JsonNode? json;
         try
         {
-            json = JsonNode.Parse(data, documentOptions: new JsonDocumentOptions { MaxDepth = 256 });
+            json = JsonNode.Parse(data, documentOptions: new JsonDocumentOptions { MaxDepth = 256, AllowDuplicateProperties = false });
         }
         catch (JsonException)
         {

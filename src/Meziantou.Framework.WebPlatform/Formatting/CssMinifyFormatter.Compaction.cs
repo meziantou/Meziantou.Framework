@@ -73,6 +73,16 @@ public sealed partial class CssMinifyFormatter
             if (token.Type == CssTokenType.Whitespace)
             {
                 position = token.End;
+
+                // The newline ends a bad string (an unclosed string followed by a newline): without it, or with a space instead,
+                // the string would go on to the next newline (fuzz regression)
+                if (i > 0 && tokens[i - 1].Type == CssTokenType.BadString)
+                {
+                    output.Write('\n');
+                    lastChar = '\n';
+                    continue;
+                }
+
                 if (i == 0 || i == tokens.Count - 1)
                     continue;
 

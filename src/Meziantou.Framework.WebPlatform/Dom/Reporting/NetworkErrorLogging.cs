@@ -184,52 +184,65 @@ internal sealed record NetworkErrorLoggingPolicyHeader
             if (document.RootElement.GetArrayLength() == 0 || document.RootElement[0] is not { ValueKind: JsonValueKind.Object } policy)
                 return null;
 
-            if (!policy.TryGetProperty("max_age", out var maxAgeElement) || maxAgeElement.ValueKind != JsonValueKind.Number || !maxAgeElement.TryGetInt64(out var maxAge) || maxAge < 0)
-                return null;
-
-            string reportTo;
-            if (policy.TryGetProperty("report_to", out var reportToElement))
+            try
             {
-                if (reportToElement.ValueKind != JsonValueKind.String)
-                    return null;
-
-                reportTo = reportToElement.GetString()!;
+                return ParsePolicy(policy);
             }
-            else if (maxAge == 0)
+            catch (InvalidOperationException)
             {
-                reportTo = "";
-            }
-            else
-            {
+                // A member name or a string escapes a lone surrogate (\uDC00), which System.Text.Json cannot decode
                 return null;
             }
-
-            var includeSubdomains = false;
-            if (policy.TryGetProperty("include_subdomains", out var includeSubdomainsElement))
-            {
-                if (includeSubdomainsElement.ValueKind is not (JsonValueKind.True or JsonValueKind.False))
-                    return null;
-
-                includeSubdomains = includeSubdomainsElement.GetBoolean();
-            }
-
-            if (GetFraction(policy, "success_fraction", 0.0) is not { } successFraction || GetFraction(policy, "failure_fraction", 1.0) is not { } failureFraction)
-                return null;
-
-            if (GetHeaderNames(policy, "request_headers") is not { } requestHeaders || GetHeaderNames(policy, "response_headers") is not { } responseHeaders)
-                return null;
-
-            return new NetworkErrorLoggingPolicyHeader
-            {
-                ReportTo = reportTo,
-                MaxAge = Math.Min(maxAge, MaxMaxAge),
-                IncludeSubdomains = includeSubdomains,
-                SuccessFraction = successFraction,
-                FailureFraction = failureFraction,
-                RequestHeaders = requestHeaders,
-                ResponseHeaders = responseHeaders,
-            };
         }
+    }
+
+    private static NetworkErrorLoggingPolicyHeader? ParsePolicy(JsonElement policy)
+    {
+        if (!policy.TryGetProperty("max_age", out var maxAgeElement) || maxAgeElement.ValueKind != JsonValueKind.Number || !maxAgeElement.TryGetInt64(out var maxAge) || maxAge < 0)
+            return null;
+
+        string reportTo;
+        if (policy.TryGetProperty("report_to", out var reportToElement))
+        {
+            if (reportToElement.ValueKind != JsonValueKind.String)
+                return null;
+
+            reportTo = reportToElement.GetString()!;
+        }
+        else if (maxAge == 0)
+        {
+            reportTo = "";
+        }
+        else
+        {
+            return null;
+        }
+
+        var includeSubdomains = false;
+        if (policy.TryGetProperty("include_subdomains", out var includeSubdomainsElement))
+        {
+            if (includeSubdomainsElement.ValueKind is not (JsonValueKind.True or JsonValueKind.False))
+                return null;
+
+            includeSubdomains = includeSubdomainsElement.GetBoolean();
+        }
+
+        if (GetFraction(policy, "success_fraction", 0.0) is not { } successFraction || GetFraction(policy, "failure_fraction", 1.0) is not { } failureFraction)
+            return null;
+
+        if (GetHeaderNames(policy, "request_headers") is not { } requestHeaders || GetHeaderNames(policy, "response_headers") is not { } responseHeaders)
+            return null;
+
+        return new NetworkErrorLoggingPolicyHeader
+        {
+            ReportTo = reportTo,
+            MaxAge = Math.Min(maxAge, MaxMaxAge),
+            IncludeSubdomains = includeSubdomains,
+            SuccessFraction = successFraction,
+            FailureFraction = failureFraction,
+            RequestHeaders = requestHeaders,
+            ResponseHeaders = responseHeaders,
+        };
 
         static double? GetFraction(JsonElement policy, string name, double defaultValue)
         {

@@ -457,6 +457,9 @@ public static class MarkdownEscaper
         return text.Replace("\r\n", " ", StringComparison.Ordinal).Replace('\r', ' ').Replace('\n', ' ');
     }
 
+    // The nesting depth of the parentheses of a destination that the parser reads (Parsing.InlineParser)
+    private const int MaximumLinkDestinationParentheses = 32;
+
     private static string EscapeDestination(string url)
     {
         // A destination with spaces or ASCII control characters, or an empty one, needs angle brackets. The unbalanced
@@ -478,9 +481,10 @@ public static class MarkdownEscaper
             {
                 unbalanced = true;
             }
-            else if (c == '(')
+            else if (c == '(' && ++depth > MaximumLinkDestinationParentheses)
             {
-                depth++;
+                // The parser reads at most 32 nested parentheses in a destination without angle brackets (fuzz regression)
+                unbalanced = true;
             }
         }
 
@@ -494,7 +498,9 @@ public static class MarkdownEscaper
             var builder = new StringBuilder(escaped.Length + 8);
             foreach (var c in escaped)
             {
-                if (char.IsControl(c) && c is not '\t')
+                // U+0000 is kept: its entity (&#x0;) is decoded as U+FFFD, while the parser keeps the character in the destination in
+                // angle brackets (fuzz regression)
+                if (char.IsControl(c) && c is not ('\t' or '\0'))
                 {
                     // A backslash before the line ending is text, which would escape the ampersand of the entity
                     if (builder.Length > 0 && builder[^1] == '\\')

@@ -777,7 +777,10 @@ public static class MarkdownFuzzTargets
         FuzzAssert.True(MarkdownHtmlRenderer.ToHtml(reparsed) == MarkdownHtmlRenderer.ToHtml(tree), $"The tree of an edit does not render as its text: {FuzzAssert.Format(text)}");
     }
 
-    private static string GetContainerChain(SyntaxNode node) => string.Join('/', node.Ancestors().Select(ancestor => ancestor.RawKind));
+    // An alert is a block quote: an edit that splits a paragraph can make a quote an alert, or the reverse, as the paragraph that
+    // starts with [!KIND] is a paragraph of the quote once the lines before it, such as the rows of a pipe table, are apart (fuzz
+    // regression)
+    private static string GetContainerChain(SyntaxNode node) => string.Join('/', node.Ancestors().Select(ancestor => ancestor is MarkdownAlertSyntax or MarkdownBlockQuoteSyntax ? nameof(MarkdownBlockQuoteSyntax) : ancestor.RawKind.ToString(CultureInfo.InvariantCulture)));
 
     // The nodes that the With methods return are read back with the values they were given. A node is read alone, when it is read
     // alone as it is in the tree: in the tree, the new text can change how the text around it is read, as any Markdown text, such as

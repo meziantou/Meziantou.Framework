@@ -71,6 +71,10 @@ public sealed class ReportingTests : IDisposable
 
         // (a lone surrogate, which no bytes give, is not JSON)
         Assert.Null(NetworkErrorLoggingPolicyHeader.Parse("{\"report_to\": \"\uDC9F\", \"max_age\": 60}"));
+
+        // (an escaped lone surrogate in a member name or a string)
+        Assert.Null(NetworkErrorLoggingPolicyHeader.Parse("""{"report_to": "nel", "max_ag\udddd": 9}"""));
+        Assert.Null(NetworkErrorLoggingPolicyHeader.Parse("""{"report_to": "\udddd", "max_age": 9}"""));
     }
 
     [Theory]

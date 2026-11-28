@@ -25,6 +25,7 @@ public sealed class CssMinifyFormatterTests
     [InlineData("a { color: red; all: var(--x); color: blue }", "a{all:var(--x);color:blue}")]
     [InlineData("a { font: menu; font-style: italic }", "a{font:menu;font-style:italic}")]
     [InlineData("a { margin: var(--a); padding: var(--b); margin-left: 0; padding-left: 0 }", "a{margin:var(--a);padding:var(--b);margin-left:0px;padding-left:0px}")]
+    [InlineData("a { margin: var(--m) \"b\n  c; color: red }", "a{color:red}")] // A bad string is invalid, in quirks mode too
     // Colors and numbers
     [InlineData("a { color: #ff0000; background-color: rgb(18, 52, 86); border-color: rgba(0, 0, 0, 0.5) }", "a{color:#f00;background-color:#123456;border-color:rgba(0,0,0,.5)}")]
     [InlineData("a { transition: opacity 0.5s, color -0.25s; opacity: 0.5 }", "a{transition:opacity .5s,color 0s -.25s;opacity:.5}")]
@@ -47,6 +48,23 @@ public sealed class CssMinifyFormatterTests
     public void Minify_Theory(string css, string expected)
     {
         Assert.Equal(expected, Minify(css));
+    }
+
+    [Fact]
+    public void Minify_BadStringInADeeplyNestedValue_KeepsTheNewlineThatEndsIt()
+    {
+        // The content of the blocks nested deeper than the parser keeps is written as specified, bad strings included
+        var nesting = new string('(', 300);
+        var minified = Minify("a { margin: var(--m) " + nesting + "\"b\n  c }");
+
+        // ("}" is in the parentheses: it does not end the rule)
+        Assert.Equal("a{margin:var(--m) " + nesting + "\"b\nc }" + new string(')', 300) + "}", minified);
+        Assert.Equal(minified, Minify(minified));
+
+        // A bad url left open at the end of the style sheet is closed before the blocks
+        minified = Minify("a { margin: var(--m) " + nesting + "url(a\n@");
+        Assert.Equal("a{margin:var(--m) " + nesting + "url(a\n@)" + new string(')', 300) + "}", minified);
+        Assert.Equal(minified, Minify(minified));
     }
 
     [Fact]

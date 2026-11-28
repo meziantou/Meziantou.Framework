@@ -290,6 +290,31 @@ public sealed class CssomTests
     }
 
     [Fact]
+    public void Serialization_DimensionWhoseUnitLooksLikeAnExponent_EscapesTheUnit()
+    {
+        // 1e0e4 is the number 1 with the unit "e4": written 1e4, it would be read back as the number 10000
+        var sheet = new CssStyleSheet();
+        sheet.ReplaceSync("a { background: url(\"a.svg\" param(--x: 1e0e4)) }");
+        var text = sheet.CssRules[0].CssText;
+
+        Assert.Contains("param(--x: 1\\65 4)", text, StringComparison.Ordinal);
+        var reparsed = new CssStyleSheet();
+        reparsed.ReplaceSync(text);
+        Assert.Equal(text, reparsed.CssRules[0].CssText);
+
+        // The number after an identifier that ends with an escaped character is not read as a part of it
+        sheet.ReplaceSync("a { background: url(\"a.svg\" param(--x: \\+.2)) }");
+        text = sheet.CssRules[0].CssText;
+        Assert.Contains("param(--x: \\+/**/0.2)", text, StringComparison.Ordinal);
+        reparsed.ReplaceSync(text);
+        Assert.Equal(text, reparsed.CssRules[0].CssText);
+
+        // In a media query, 0e0 is not an <integer>: it is written 0.0
+        sheet.ReplaceSync("@media (0e0e1) { a { color: red } }");
+        Assert.Equal("(0.0\\65 1)", ((CssMediaRule)sheet.CssRules[0]).Media.MediaText);
+    }
+
+    [Fact]
     public void PageRule_RejectsCss21PropertiesThatDoNotApplyToPages()
     {
         var sheet = new CssStyleSheet();

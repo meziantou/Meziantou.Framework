@@ -2175,6 +2175,31 @@ public sealed class MarkdownSyntaxTreeTests
         Assert.InRange(calls, 0, 500, "The formatter parses the trigger characters of the text a few times each");
     }
 
+    [Fact]
+    public void FormatterWritesTheContainersNestedAfterListsOnce()
+    {
+        // Each custom container that is not closed contains the next list and the next container: the indentation of the
+        // container after a list is the one of its opening fence, without writing its blocks
+        var calls = 0;
+        var options = new MarkdownParseOptions
+        {
+            Extensions = MarkdownExtensions.CustomContainers,
+            SyntaxExtensions = [new ParseHandlerExtension("count", "§", (ref MarkdownInlineParseContext context) =>
+            {
+                calls++;
+                return false;
+            })],
+        };
+        var text = string.Concat(Enumerable.Range(0, 40).Select(i => "1. §\nb\n  :::spoiler\n"));
+        var tree = MarkdownSyntaxTree.ParseText(text, options);
+        calls = 0;
+
+        var formatted = MarkdownFormatter.FormatText(tree, options: null);
+
+        Assert.StartsWith("1. §\n   b\n\n:::spoiler\n1. §\n   b\n:::spoiler\n", formatted, StringComparison.Ordinal);
+        Assert.InRange(calls, 0, 2000, "The formatter parses the trigger characters of the text a few times each");
+    }
+
     [Theory]
     [InlineData("| a | b |\n|-|-|\n| `x \\| y` | z |\n", MarkdownExtensions.GitHubFlavored, "| a        | b   |\n| -------- | --- |\n| `x \\| y` | z   |\n")]
     [InlineData("| a {.c} | b |\n|-|-|\n| x | y |\n", MarkdownExtensions.Advanced, "| a {.c} | b |\n|-|-|\n| x | y |\n")]
@@ -3468,6 +3493,8 @@ public sealed class MarkdownSyntaxTreeTests
     [InlineData("a&amp;b")]
     [InlineData("a\"b'c")]
     [InlineData("a\nb")]
+    [InlineData("a\0b\\")]
+    [InlineData("a(((((((((((((((((((((((((((((((((b)))))))))))))))))))))))))))))))))")]
     [InlineData("é ✓")]
     public void LinkDestinationIsParsedBackToTheUrl(string url)
     {

@@ -44,6 +44,20 @@ internal static partial class CssSerializer
     /// <summary>The identifier as <c>CSS.escape()</c> writes it: https://drafts.csswg.org/cssom/#serialize-an-identifier, which keeps the characters of at least U+0080.</summary>
     public static string EscapeIdentifier(string value) => SerializeIdentifier(value, keepsNonAsciiCharacters: true);
 
+    /// <summary>
+    /// The unit of a &lt;dimension-token&gt;, written after its number: a unit that starts with "e" followed by a digit (e.g.
+    /// "e4" in <c>1e0e4</c>), or by "-" and a digit, has its "e" escaped, so that it is not read back as the exponent of the
+    /// number (fuzz regression). ("+" is escaped by the serialization of the identifier.)
+    /// </summary>
+    internal static string SerializeUnit(string unit)
+    {
+        var serialized = SerializeIdentifier(unit);
+        if (serialized is ['e' or 'E', var next, ..] && (char.IsAsciiDigit(next) || (next == '-' && serialized.Length > 2 && char.IsAsciiDigit(serialized[2]))))
+            return (serialized[0] == 'e' ? "\\65 " : "\\45 ") + serialized[1..];
+
+        return serialized;
+    }
+
     private static string SerializeIdentifier(string value, bool keepsNonAsciiCharacters)
     {
         if (IsSerializedAsIs(value, keepsNonAsciiCharacters))
@@ -552,7 +566,7 @@ internal static partial class CssSerializer
                 builder.Insert(start, "/**/");
             }
             else if (!pendingSpace && adjacent && value is CssPreservedToken { Type: CssTokenType.Number or CssTokenType.Percentage or CssTokenType.Dimension }
-                && start > 0 && start < builder.Length && char.IsAsciiDigit(builder[start]) && WouldMergeWithFollowingName(builder[start - 1]))
+                && start > 0 && start < builder.Length && char.IsAsciiDigit(builder[start]) && (WouldMergeWithFollowingName(builder[start - 1]) || IsEscaped(builder, start - 1)))
             {
                 // A number serialized with a leading digit (".5" written "0.5", "+5" written "5") is parsed with the name or the
                 // number before it ("a" followed by ".5" written "a0.5", "1px" followed by "+5" written "1px5")
@@ -578,6 +592,19 @@ internal static partial class CssSerializer
         // The last character of a serialization followed by a name: an ident code point, the space ending an escape, @ (an
         // at-keyword), # (a hash), or \ (an escape)
         static bool WouldMergeWithFollowingName(char c) => c >= '\u0080' || char.IsAsciiLetterOrDigit(c) || c is '-' or '_' or ' ' or '@' or '#' or '\\';
+
+        // Whether the character at index is escaped (e.g. "+" in "\+", the identifier "+"): it is part of the name before it,
+        // which a digit after it would continue (fuzz regression)
+        static bool IsEscaped(StringBuilder builder, int index)
+        {
+            var count = 0;
+            for (var i = index - 1; i >= 0 && builder[i] == '\\'; i--)
+            {
+                count++;
+            }
+
+            return count % 2 == 1;
+        }
     }
 
     /// <summary>
@@ -788,7 +815,7 @@ internal static partial class CssSerializer
                         builder.Append(token.NumericValue.ToString("R", System.Globalization.CultureInfo.InvariantCulture)).Append('%');
                         return;
                     case CssTokenType.Dimension when s_preserveColors:
-                        builder.Append(token.NumericValue.ToString("R", System.Globalization.CultureInfo.InvariantCulture)).Append(SerializeIdentifier(InfraAscii.ToAsciiLowercase(token.Value)));
+                        builder.Append(token.NumericValue.ToString("R", System.Globalization.CultureInfo.InvariantCulture)).Append(SerializeUnit(InfraAscii.ToAsciiLowercase(token.Value)));
                         return;
                     case CssTokenType.Number when token.IsInteger && double.IsFinite(token.NumericValue) && Math.Abs(token.NumericValue) >= 1e21:
                         // The exponent notation of a large number is not an <integer>: the serialization would not be parsed as the same value
@@ -806,7 +833,7 @@ internal static partial class CssSerializer
                         builder.Append(SerializeNumber(token.NumericValue)).Append('%');
                         return;
                     case CssTokenType.Dimension:
-                        builder.Append(SerializeNumber(token.NumericValue)).Append(SerializeIdentifier(InfraAscii.ToAsciiLowercase(token.Value)));
+                        builder.Append(SerializeNumber(token.NumericValue)).Append(SerializeUnit(InfraAscii.ToAsciiLowercase(token.Value)));
                         return;
                     case CssTokenType.AtKeyword:
                         builder.Append('@').Append(SerializeIdentifier(token.Value));

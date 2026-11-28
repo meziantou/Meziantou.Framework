@@ -36,6 +36,11 @@ internal static class CssQuirks
         if (!lengths && !colors)
             return null;
 
+        // The quirks do not make a value without a valid syntax valid (e.g. a bad string, which the serialization of the value
+        // would not give back, fuzz regression)
+        if (!CssShorthands.IsValidDeclarationValue(values, topLevel: true))
+            return null;
+
         var builder = new StringBuilder();
         Append(builder, values, lengths, colors, property == "clip");
         return CssParser.ParseListOfComponentValues(builder.ToString());

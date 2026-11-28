@@ -81,6 +81,67 @@ public sealed class JsEngineTests
         Assert.Equal(2, created);
     }
 
+    // The safe integers are formatted with integer arithmetic, the other numbers with the general algorithm (expected values from V8)
+    [Theory]
+    [InlineData("(255).toString(16)", "ff")]
+    [InlineData("(-255).toString(2)", "-11111111")]
+    [InlineData("(1).toString(36)", "1")]
+    [InlineData("(35).toString(36)", "z")]
+    [InlineData("(36).toString(36)", "10")]
+    [InlineData("(4294967296).toString(2)", "100000000000000000000000000000000")]
+    [InlineData("(2 ** 53 - 1).toString(36)", "2gosa7pa2gv")]
+    [InlineData("(-(2 ** 53 - 1)).toString(16)", "-1fffffffffffff")]
+    [InlineData("(2 ** 53).toString(16)", "20000000000000")]
+    [InlineData("(2 ** 53 + 2).toString(7)", "5350140446150306056")]
+    [InlineData("(123.5).toString(16)", "7b.8")]
+    [InlineData("(-0).toString(16)", "0")]
+    public void NumberToStringWithRadix(string script, string expected)
+    {
+        using var engine = new JsEngine();
+        var realm = engine.CreateRealm();
+        Assert.Equal(expected, realm.Execute(script).AsString());
+    }
+
+    // The elements are read once the separator is converted: the ones the conversion removed are empty (expected values from V8)
+    [Theory]
+    [InlineData("new Uint8Array([1, 2, 255]).join('-')", "1-2-255")]
+    [InlineData("new Float64Array([1.5, -0, NaN, Infinity, 1e21, 0.1]).join()", "1.5,0,NaN,Infinity,1e+21,0.1")]
+    [InlineData("new Int16Array([-32768, 7]).join('')", "-327687")]
+    [InlineData("new BigInt64Array([1n, -2n]).join('|')", "1|-2")]
+    [InlineData("new Float32Array([0.1]).join()", "0.10000000149011612")]
+    [InlineData("var rab = new ArrayBuffer(4, { maxByteLength: 8 }); var a = new Uint8Array(rab); a.set([1, 2, 3, 4]); a.join({ toString() { rab.resize(2); return ','; } })", "1,2,,")]
+    [InlineData("var b = new ArrayBuffer(3); var a = new Uint8Array(b); a.set([1, 2, 3]); a.join({ toString() { b.transfer(); return ';'; } })", ";;")]
+    [InlineData("new Uint8Array(0).join()", "")]
+    public void TypedArrayJoin(string script, string expected)
+    {
+        using var engine = new JsEngine();
+        var realm = engine.CreateRealm();
+        Assert.Equal(expected, realm.Execute(script).AsString());
+    }
+
+    // A global replace or match with the intrinsic exec leaves the state of the steps of the specification (expected values from V8)
+    [Theory]
+    [InlineData("var r = /(a)(b)?/g; var s = 'xaxabx'.replace(r, '[$1$2]'); [s, r.lastIndex, RegExp.lastMatch, RegExp.$1, RegExp.$2, RegExp.leftContext, RegExp.rightContext].join('|')", "x[a]x[ab]x|0|ab|a|b|xax|x")]
+    [InlineData("var r = /x*/g; r.lastIndex = 3; ['abc'.replace(r, '-'), r.lastIndex].join('|')", "-a-b-c-|0")]
+    [InlineData("var e = String.fromCodePoint(0x1F600); String((e + 'a' + e).replace(/(?:)/gu, '-') === '-' + e + '-a-' + e + '-')", "true")]
+    [InlineData("var e = String.fromCodePoint(0x1F600); String((e + 'a' + e).replace(/(?:)/g, '-').length)", "11")]
+    [InlineData("var r = /a/gy; ['aab a'.replace(r, 'X'), r.lastIndex].join('|')", "XXb a|0")]
+    [InlineData("var r = Object.freeze(/a/g); try { 'a'.replace(r, 'b'); 'no' } catch (e) { e.constructor.name }", "TypeError")]
+    [InlineData("var r = /b/g; var calls = []; 'abcb'.replace(r, (m, p) => { calls.push(p + ':' + r.lastIndex); return m.toUpperCase(); }) + '|' + calls.join()", "aBcB|1:0,3:0")]
+    [InlineData("var r = /(?<l>[a-z])\\d/g; 'a1b2c'.replace(r, '$<l>') + '|' + RegExp.lastMatch", "abc|b2")]
+    [InlineData("'abc'.replace(/b/, 'x'); 'abc'.replace(/z/g, '-') + '|' + RegExp.lastMatch", "abc|b")]
+    [InlineData("var r = /(a)(b)?/g; var m = 'xaxabx'.match(r); [m.join(), r.lastIndex, RegExp.lastMatch, RegExp.$1, RegExp.$2, RegExp.rightContext].join('|')", "a,ab|0|ab|a|b|x")]
+    [InlineData("var r = /x*/g; r.lastIndex = 2; ['abc'.match(r).length, r.lastIndex].join('|')", "4|0")]
+    [InlineData("var e = String.fromCodePoint(0x1F600); String((e + 'a').match(/(?:)/gu).length) + String((e + 'a').match(/(?:)/g).length)", "34")]
+    [InlineData("'abc'.match(/b/); String('abc'.match(/z/g)) + '|' + RegExp.lastMatch", "null|b")]
+    [InlineData("var r = /a/gy; ['aab a'.match(r).join(), r.lastIndex].join('|')", "a,a|0")]
+    public void GlobalReplaceAndMatch(string script, string expected)
+    {
+        using var engine = new JsEngine();
+        var realm = engine.CreateRealm();
+        Assert.Equal(expected, realm.Execute(script).AsString());
+    }
+
     // [[Set]] looks up the receiver again after the factory of a lazy property of the prototype ran
     [Theory]
     [InlineData(false)]

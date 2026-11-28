@@ -37,6 +37,9 @@ internal static class NumberFormatting
         return new string(buffer[..length]);
     }
 
+    /// <summary>Returns the cached string of a small non-negative integer, or null.</summary>
+    public static string? TryGetSmallInteger(double value) => value >= 0 && value < SmallIntegers.Length && value == Math.Floor(value) ? SmallIntegers[(int)value] : null;
+
     /// <summary>Number::toString(x, 10) as a string value (the small integers are cached).</summary>
     public static JsString ToJsString(double value)
     {
@@ -220,6 +223,28 @@ internal static class NumberFormatting
     private static string ToRadixString(double value, int radix)
     {
         const string Chars = "0123456789abcdefghijklmnopqrstuvwxyz";
+
+        // A safe integer (e.g. a code point in hexadecimal) has no fraction digits, and its digits are exact: they are computed
+        // with integer arithmetic, in a buffer that does not need the size (and the zeroing) of the general case
+        if (Math.Abs(value) is var magnitude && magnitude < 9007199254740992 && Math.Floor(magnitude) == magnitude)
+        {
+            Span<char> digits = stackalloc char[65];
+            var position = digits.Length;
+            var remaining = (ulong)magnitude;
+            do
+            {
+                digits[--position] = Chars[(int)(remaining % (uint)radix)];
+                remaining /= (uint)radix;
+            }
+            while (remaining > 0);
+
+            if (value < 0)
+            {
+                digits[--position] = '-';
+            }
+
+            return digits[position..].ToString();
+        }
 
         // The integer part has at most 1024 digits (radix 2) and the fraction part at most 1074 + 52 digits
         const int BufferSize = 2200;

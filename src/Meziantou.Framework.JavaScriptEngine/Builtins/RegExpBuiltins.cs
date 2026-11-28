@@ -821,6 +821,9 @@ internal static class RegExpBuiltins
         var fullUnicode = flags.Contains('u', StringComparison.Ordinal) || flags.Contains('v', StringComparison.Ordinal);
         regexp.Set(LastIndexKey, 0, throwOnFailure: true);
         var array = new JsArray(function.Realm.Intrinsics.ArrayPrototype);
+        if (TryGetBuiltinExec(regexp, out var builtin) && (builtin.RecordFlags & RegExpFlags.Global) != 0)
+            return MatchGlobal(builtin, input, fullUnicode, array);
+
         while (true)
         {
             var (captures, result) = RegExpExecRaw(regexp, input, scratch: true);
@@ -925,23 +928,13 @@ internal static class RegExpBuiltins
 
         // The results: the capture slots of the intrinsic exec, or the objects of a custom exec
         var results = new List<(int[]? Captures, JsObject? Object)>();
-        while (true)
+        if (global && TryGetBuiltinExec(regexp, out var builtin) && (builtin.RecordFlags & RegExpFlags.Global) != 0)
         {
-            var (captures, result) = RegExpExecRaw(regexp, input);
-            if (captures is null && result.Cell is not JsObject)
-                break;
-
-            var resultObject = result.Cell as JsObject;
-            results.Add((captures, resultObject));
-            if (!global)
-                break;
-
-            var matchedLength = captures is not null ? captures[1] - captures[0] : JsOperations.ToString(resultObject!.Get(ZeroKey)).Length;
-            if (matchedLength == 0)
-            {
-                var thisIndex = JsOperations.ToLength(regexp.Get(LastIndexKey));
-                regexp.Set(LastIndexKey, AdvanceStringIndex(input, thisIndex, fullUnicode), throwOnFailure: true);
-            }
+            CollectGlobalMatches(builtin, input, fullUnicode, results);
+        }
+        else
+        {
+            CollectMatches(regexp, input, global, fullUnicode, results);
         }
 
         // Nothing is replaced: the result is the input
@@ -1023,6 +1016,89 @@ internal static class RegExpBuiltins
 
         StringOperations.Append(builder, input.AsSpan(nextSourcePosition, length - nextSourcePosition));
         return builder.ToString();
+    }
+
+    /// <summary>
+    /// The matches of a global RegExp whose exec is the intrinsic one (the loop of RegExp.prototype[%Symbol.replace%]): no code of
+    /// the script runs between the matches, so lastIndex (a writable data property, that the caller just set to 0) is not read
+    /// and written for each one. The state after the loop is the same: lastIndex is 0 (the last match failed), and the legacy
+    /// static properties are the ones of the last successful match.
+    /// </summary>
+    private static void CollectGlobalMatches(JsRegExpObject regexp, string input, bool fullUnicode, List<(int[]? Captures, JsObject? Object)> results)
+    {
+        var matcher = regexp.Matcher!;
+        var sticky = (regexp.RecordFlags & RegExpFlags.Sticky) != 0;
+        var engine = JsEngine.Current;
+        double lastIndex = 0;
+        int[]? lastCaptures = null;
+        while (lastIndex <= input.Length)
+        {
+            var captures = matcher.Exec(input, (int)lastIndex, sticky, engine);
+            if (captures is null)
+                break;
+
+            results.Add((captures, null));
+            lastCaptures = captures;
+            lastIndex = captures[1] == captures[0] ? AdvanceStringIndex(input, captures[1], fullUnicode) : captures[1];
+        }
+
+        regexp.Set(LastIndexKey, 0, throwOnFailure: true);
+        if (lastCaptures is not null)
+        {
+            UpdateLegacyStaticProperties(regexp.Realm, regexp, input, lastCaptures);
+        }
+    }
+
+    /// <summary>
+    /// The matched substrings of a global RegExp whose exec is the intrinsic one (the loop of RegExp.prototype[%Symbol.match%]),
+    /// with the same shortcut as <see cref="CollectGlobalMatches"/>.
+    /// </summary>
+    private static JsValue MatchGlobal(JsRegExpObject regexp, string input, bool fullUnicode, JsArray array)
+    {
+        var matcher = regexp.Matcher!;
+        var sticky = (regexp.RecordFlags & RegExpFlags.Sticky) != 0;
+        var engine = JsEngine.Current;
+        var captures = GetScratchCaptures(matcher);
+        int[]? lastCaptures = null;
+        double lastIndex = 0;
+        while (lastIndex <= input.Length && matcher.Exec(input, (int)lastIndex, sticky, engine, captures) is not null)
+        {
+            var (start, end) = (captures[0], captures[1]);
+            array.Push(input[start..end]);
+            lastCaptures ??= new int[captures.Length];
+            captures.CopyTo(lastCaptures, 0);
+            lastIndex = start == end ? AdvanceStringIndex(input, end, fullUnicode) : end;
+        }
+
+        regexp.Set(LastIndexKey, 0, throwOnFailure: true);
+        if (lastCaptures is null)
+            return JsValue.Null;
+
+        UpdateLegacyStaticProperties(regexp.Realm, regexp, input, lastCaptures);
+        return array;
+    }
+
+    /// <summary>The matches of the loop of RegExp.prototype[%Symbol.replace%], with the steps of RegExpExec for each one.</summary>
+    private static void CollectMatches(JsObject regexp, string input, bool global, bool fullUnicode, List<(int[]? Captures, JsObject? Object)> results)
+    {
+        while (true)
+        {
+            var (captures, result) = RegExpExecRaw(regexp, input);
+            if (captures is null && result.Cell is not JsObject)
+                break;
+
+            var resultObject = result.Cell as JsObject;
+            results.Add((captures, resultObject));
+            if (!global)
+                break;
+
+            var matchedLength = captures is not null ? captures[1] - captures[0] : JsOperations.ToString(resultObject!.Get(ZeroKey)).Length;
+            if (matchedLength == 0)
+            {
+                var thisIndex = JsOperations.ToLength(regexp.Get(LastIndexKey));
+                regexp.Set(LastIndexKey, AdvanceStringIndex(input, thisIndex, fullUnicode), throwOnFailure: true);
+            }
+        }
     }
 
     private static JsObject CreateGroups(RegExpProgram program, string input, int[] captures)

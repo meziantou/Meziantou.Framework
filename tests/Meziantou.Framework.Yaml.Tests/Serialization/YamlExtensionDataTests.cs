@@ -1,5 +1,5 @@
 using System.Collections.Immutable;
-using Meziantou.Framework.Yaml.Model;
+using Meziantou.Framework.Yaml.Nodes;
 using Meziantou.Framework.Yaml.Serialization;
 
 namespace Meziantou.Framework.Yaml.Tests.Serialization;
@@ -99,7 +99,7 @@ public sealed class YamlExtensionDataTests
 
         Assert.Equal(1, value.A);
 
-        YamlElement? captured = null;
+        YamlNode? captured = null;
         foreach (var pair in value.Extra)
         {
             if (pair.Key is YamlValue keyValue && keyValue.Value == "B")

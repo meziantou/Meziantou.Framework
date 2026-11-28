@@ -1,4 +1,4 @@
-using Meziantou.Framework.Yaml.Model;
+using Meziantou.Framework.Yaml.Nodes;
 using static Meziantou.Framework.DependencyScanning.Internals.YamlParserUtilities;
 
 namespace Meziantou.Framework.DependencyScanning.Scanners;
@@ -37,7 +37,7 @@ public sealed class AzureDevOpsScanner : DependencyScanner
     }
 
     // https://learn.microsoft.com/en-us/azure/devops/pipelines/yaml-schema/pool?view=azure-pipelines&WT.mc_id=DT-MVP-5003978
-    private void ScanPool(YamlFile yaml, YamlElement node)
+    private void ScanPool(YamlFile yaml, YamlNode node)
     {
         var poolNode = GetProperty(node, "pool", StringComparison.Ordinal);
         var vmImageNode = GetProperty(poolNode, "vmImage", StringComparison.Ordinal);
@@ -48,13 +48,13 @@ public sealed class AzureDevOpsScanner : DependencyScanner
         }
     }
 
-    private void ScanTemplate(YamlFile yaml, YamlElement? node)
+    private void ScanTemplate(YamlFile yaml, YamlNode? node)
     {
         var templateNode = GetProperty(node, "template", StringComparison.Ordinal);
         yaml.ReportDependencyWithSeparator(this, templateNode, DependencyType.AzureDevOpsTemplate, '@');
     }
 
-    private void ScanStep(YamlFile yaml, YamlElement node)
+    private void ScanStep(YamlFile yaml, YamlNode node)
     {
         var taskNode = GetProperty(node, "task", StringComparison.Ordinal);
         yaml.ReportDependencyWithSeparator(this, taskNode, DependencyType.AzureDevOpsTask, '@');
@@ -79,7 +79,7 @@ public sealed class AzureDevOpsScanner : DependencyScanner
     }
 
     // https://learn.microsoft.com/en-us/azure/devops/pipelines/yaml-schema/jobs?view=azure-pipelines&WT.mc_id=DT-MVP-5003978
-    private void ScanJobs(YamlFile yaml, YamlElement node, HashSet<string> containerAliases)
+    private void ScanJobs(YamlFile yaml, YamlNode node, HashSet<string> containerAliases)
     {
         var jobsNode = GetProperty(node, "jobs", StringComparison.Ordinal);
         if (jobsNode is YamlSequence jobs)
@@ -97,7 +97,7 @@ public sealed class AzureDevOpsScanner : DependencyScanner
     }
 
     // strategy: runOnce|rolling|canary -> preDeploy|deploy|routeTraffic|postRouteTraffic|on.success|on.failure -> steps
-    private void ScanDeploymentStrategy(YamlFile yaml, YamlElement node)
+    private void ScanDeploymentStrategy(YamlFile yaml, YamlNode node)
     {
         if (GetProperty(node, "strategy", StringComparison.Ordinal) is not YamlMapping strategy)
             return;
@@ -121,7 +121,7 @@ public sealed class AzureDevOpsScanner : DependencyScanner
         }
     }
 
-    private void ScanDeploymentHook(YamlFile yaml, YamlElement? hook)
+    private void ScanDeploymentHook(YamlFile yaml, YamlNode? hook)
     {
         if (hook is null)
             return;
@@ -130,7 +130,7 @@ public sealed class AzureDevOpsScanner : DependencyScanner
         ScanSteps(yaml, hook);
     }
 
-    private void ScanSteps(YamlFile yaml, YamlElement node)
+    private void ScanSteps(YamlFile yaml, YamlNode node)
     {
         var stepsNode = GetProperty(node, "steps", StringComparison.Ordinal);
         if (stepsNode is YamlSequence steps)
@@ -142,7 +142,7 @@ public sealed class AzureDevOpsScanner : DependencyScanner
         }
     }
 
-    private void ScanJobContainers(YamlFile yaml, YamlElement node, HashSet<string> containerAliases, bool scanServices)
+    private void ScanJobContainers(YamlFile yaml, YamlNode node, HashSet<string> containerAliases, bool scanServices)
     {
         ScanContainer(yaml, GetProperty(node, "container", StringComparison.Ordinal), containerAliases);
 
@@ -157,7 +157,7 @@ public sealed class AzureDevOpsScanner : DependencyScanner
         }
     }
 
-    private void ScanContainer(YamlFile yaml, YamlElement? containerNode, HashSet<string> containerAliases)
+    private void ScanContainer(YamlFile yaml, YamlNode? containerNode, HashSet<string> containerAliases)
     {
         if (containerNode is YamlMapping container)
         {
@@ -175,7 +175,7 @@ public sealed class AzureDevOpsScanner : DependencyScanner
     }
 
     // https://learn.microsoft.com/en-us/azure/devops/pipelines/yaml-schema/variables-template?view=azure-pipelines&WT.mc_id=DT-MVP-5003978
-    private void ScanVariables(YamlFile yaml, YamlElement? node)
+    private void ScanVariables(YamlFile yaml, YamlNode? node)
     {
         if (GetProperty(node, "variables", StringComparison.Ordinal) is YamlSequence variables)
         {
@@ -186,7 +186,7 @@ public sealed class AzureDevOpsScanner : DependencyScanner
         }
     }
 
-    private static HashSet<string> GetContainerAliases(YamlElement node)
+    private static HashSet<string> GetContainerAliases(YamlNode node)
     {
         var result = new HashSet<string>(StringComparer.Ordinal);
         if (GetProperty(node, "resources", StringComparison.Ordinal) is YamlMapping resources &&
@@ -204,7 +204,7 @@ public sealed class AzureDevOpsScanner : DependencyScanner
         return result;
     }
 
-    private void ScanResources(YamlFile yaml, YamlElement node)
+    private void ScanResources(YamlFile yaml, YamlNode node)
     {
         if (GetProperty(node, "resources", StringComparison.Ordinal) is YamlMapping resources)
         {

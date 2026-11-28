@@ -1,6 +1,6 @@
 ﻿using Meziantou.Framework.Yaml.Events;
-using Meziantou.Framework.Yaml.Model;
-using YamlStream = Meziantou.Framework.Yaml.Model.YamlStream;
+using Meziantou.Framework.Yaml.Nodes;
+using YamlStream = Meziantou.Framework.Yaml.Nodes.YamlStream;
 
 namespace Meziantou.Framework.Yaml.Tests;
 
@@ -137,7 +137,7 @@ public class YamlNodeTest
             { new YamlValue("debug"), new YamlValue(false) },
         };
 
-        var stream = new YamlStream { new YamlDocument { Contents = root } };
+        var stream = new YamlStream { new YamlStreamDocument { Contents = root } };
 
         using var writer = new StringWriter { NewLine = "\n" };
         stream.WriteTo(writer);
@@ -166,7 +166,7 @@ public class YamlNodeTest
 
         var firstCollectionIndicatorValue = collectionIndicators[firstCollectionIndicator];
 
-        collectionIndicators[0] = new KeyValuePair<YamlElement, YamlElement?>(
+        collectionIndicators[0] = new KeyValuePair<YamlNode, YamlNode?>(
             new YamlValue(":-)"),
             firstCollectionIndicatorValue
         );
@@ -226,7 +226,7 @@ public class YamlNodeTest
     public void FromObject()
     {
         var stream = new YamlStream();
-        var document = new YamlDocument();
+        var document = new YamlStreamDocument();
         stream.Add(document);
 
         var sequence = (YamlSequence)YamlNode.FromObject(new[] { "item 4", "item 5", "item 6" }, expectedType: typeof(string[]));
@@ -405,7 +405,7 @@ public class YamlNodeTest
         var mapping = new YamlMapping();
         mapping["a"] = new YamlValue("1");
 
-        mapping[0] = new KeyValuePair<YamlElement, YamlElement?>(new YamlValue("b"), new YamlValue("2"));
+        mapping[0] = new KeyValuePair<YamlNode, YamlNode?>(new YamlValue("b"), new YamlValue("2"));
 
         Assert.False(mapping.ContainsKey("a"));
         Assert.Null(mapping["a"]);
@@ -425,8 +425,8 @@ public class YamlNodeTest
         Assert.Equal(new[] { "b", "c" }, mapping.Keys.Select(key => ((YamlValue)key).Value).ToArray());
         Assert.Equal(new[] { "2", "3" }, mapping.Values.Select(value => ((YamlValue)value!).Value).ToArray());
 
-        var pairs = new KeyValuePair<YamlElement, YamlElement?>[2];
-        ((ICollection<KeyValuePair<YamlElement, YamlElement?>>)mapping).CopyTo(pairs, 0);
+        var pairs = new KeyValuePair<YamlNode, YamlNode?>[2];
+        ((ICollection<KeyValuePair<YamlNode, YamlNode?>>)mapping).CopyTo(pairs, 0);
         Assert.Equal(new[] { "b", "c" }, pairs.Select(pair => ((YamlValue)pair.Key).Value).ToArray());
     }
 
@@ -448,10 +448,10 @@ public class YamlNodeTest
         var key = new YamlValue("a");
         var value = new YamlValue("1");
         mapping.Add(key, value);
-        var collection = (ICollection<KeyValuePair<YamlElement, YamlElement?>>)mapping;
+        var collection = (ICollection<KeyValuePair<YamlNode, YamlNode?>>)mapping;
 
-        Assert.True(collection.Contains(new KeyValuePair<YamlElement, YamlElement?>(key, value)));
-        Assert.False(collection.Contains(new KeyValuePair<YamlElement, YamlElement?>(key, new YamlValue("1"))));
+        Assert.True(collection.Contains(new KeyValuePair<YamlNode, YamlNode?>(key, value)));
+        Assert.False(collection.Contains(new KeyValuePair<YamlNode, YamlNode?>(key, new YamlValue("1"))));
     }
 
     [Fact]
@@ -469,6 +469,36 @@ public class YamlNodeTest
         mapping["k"] = new YamlValue("x") { Tag = "tag:example.com,2000:foo" };
 
         Assert.Equal("k: !<tag:example.com,2000:foo> x", mapping.ToString());
+    }
+
+    [Fact]
+    public void TagThatIsNotAUri_IsWrittenWithADirective()
+    {
+        // A %TAG prefix does not need a URI scheme, unlike a verbatim tag: the tag is written with the handle of a directive
+        var stream = YamlStream.Load(new StringReader("%TAG !e! tag.com,2000:app/\n%TAG !u! tag:example.com,2000:\n---\na: !e!foo x\nb: !u!bar y\n"));
+        var root = (YamlMapping)stream[0].Contents!;
+
+        Assert.Equal("tag.com,2000:app/foo", root["a"]!.Tag);
+        Assert.Equal("%TAG !e! tag.com,2000:app/\n%TAG !u! tag:example.com,2000:\n---\na: !e!foo x\nb: !u!bar y\n", WriteTo(stream, suppressDocumentTags: false));
+
+        // Without the directives of the document, the ones that a tag needs are kept, and a node alone gets a new one
+        Assert.Equal("%TAG !e! tag.com,2000:app/\n---\na: !e!foo x\nb: !<tag:example.com,2000:bar> y\n", WriteTo(stream, suppressDocumentTags: true));
+        Assert.Equal("%TAG !t! tag.com,2000:app/\n--- !t!foo x", root["a"]!.ToString().ReplaceLineEndings("\n"));
+        Assert.Equal("x", root["a"]!.ToObject<string>());
+
+        // A tag of one character has no prefix and suffix for a directive, and no verbatim form
+        Assert.Equal("%TAG !t! y\n--- !t!-light v", new YamlValue("v") { Tag = "y-light" }.ToString().ReplaceLineEndings("\n"));
+        Assert.Throws<YamlException>(() => new YamlValue("v") { Tag = "a" }.ToString());
+
+        root["c"] = new YamlValue("z") { Tag = "other.org,2000:baz" };
+        Assert.Equal("%TAG !e! tag.com,2000:app/\n%TAG !u! tag:example.com,2000:\n%TAG !t! other.org,2000:\n---\na: !e!foo x\nb: !u!bar y\nc: !t!baz z\n", WriteTo(stream, suppressDocumentTags: false));
+
+        static string WriteTo(YamlStream stream, bool suppressDocumentTags)
+        {
+            using var writer = new StringWriter(CultureInfo.InvariantCulture) { NewLine = "\n" };
+            stream.WriteTo(writer, suppressDocumentTags);
+            return writer.ToString().ReplaceLineEndings("\n");
+        }
     }
 
     public static TheoryData<string> YamlTestSuiteJsonCases() => YamlTestSuite.Ids(testCase => !testCase.Error && testCase.Json is not null);

@@ -21,5 +21,5 @@ internal sealed class YamlUInt64Converter : YamlConverter<ulong>
     }
 
     public override void Write(YamlWriter writer, ulong value)
-        => writer.WriteScalar(value.ToString(CultureInfo.InvariantCulture));
+        => writer.WriteScalar(value);
 }

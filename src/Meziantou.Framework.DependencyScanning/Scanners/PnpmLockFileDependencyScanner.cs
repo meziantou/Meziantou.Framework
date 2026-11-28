@@ -1,6 +1,6 @@
 using System.Globalization;
 using Meziantou.Framework.DependencyScanning.Internals;
-using Meziantou.Framework.Yaml.Model;
+using Meziantou.Framework.Yaml.Nodes;
 using static Meziantou.Framework.DependencyScanning.Internals.YamlParserUtilities;
 
 namespace Meziantou.Framework.DependencyScanning.Scanners;
@@ -49,7 +49,7 @@ public sealed class PnpmLockFileDependencyScanner : DependencyScanner
         return ValueTask.CompletedTask;
     }
 
-    private static bool TryGetPackage(string key, YamlElement? entry, bool usesSlashSeparator, [NotNullWhen(true)] out string? name, [NotNullWhen(true)] out string? version)
+    private static bool TryGetPackage(string key, YamlNode? entry, bool usesSlashSeparator, [NotNullWhen(true)] out string? name, [NotNullWhen(true)] out string? version)
     {
         name = null;
         version = null;

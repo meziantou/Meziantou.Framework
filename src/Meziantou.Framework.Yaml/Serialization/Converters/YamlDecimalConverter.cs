@@ -21,5 +21,5 @@ internal sealed class YamlDecimalConverter : YamlConverter<decimal>
     }
 
     public override void Write(YamlWriter writer, decimal value)
-        => writer.WriteScalar(value.ToString(CultureInfo.InvariantCulture));
+        => writer.WriteScalar(value);
 }

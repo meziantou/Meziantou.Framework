@@ -21,5 +21,5 @@ internal sealed class YamlByteConverter : YamlConverter<byte>
     }
 
     public override void Write(YamlWriter writer, byte value)
-        => writer.WriteScalar(value.ToString(CultureInfo.InvariantCulture));
+        => writer.WriteScalar(value);
 }

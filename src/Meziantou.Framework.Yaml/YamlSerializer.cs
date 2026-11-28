@@ -402,6 +402,176 @@ public static class YamlSerializer
         }
     }
 
+    /// <summary>Deserializes a YAML payload from UTF-8 bytes.</summary>
+    /// <typeparam name="T">The destination CLR type.</typeparam>
+    /// <param name="utf8Yaml">The YAML payload, encoded in UTF-8. A leading byte order mark is allowed.</param>
+    /// <param name="options">The serializer options. If <see langword="null"/>, <see cref="YamlSerializerOptions.Default"/> is used.</param>
+    /// <returns>The deserialized value.</returns>
+    /// <remarks>The bytes are read as is, without being decoded to a string first.</remarks>
+    public static T? Deserialize<T>(ReadOnlySpan<byte> utf8Yaml, YamlSerializerOptions? options = null)
+    {
+        var effectiveOptions = options ?? YamlSerializerOptions.Default;
+        var typeInfo = ResolveTypeInfo(effectiveOptions, typeof(T));
+        return DeserializeAs<T>(typeInfo, utf8Yaml);
+    }
+
+    /// <summary>Attempts to deserialize a YAML payload from UTF-8 bytes.</summary>
+    /// <typeparam name="T">The destination CLR type.</typeparam>
+    /// <param name="utf8Yaml">The YAML payload, encoded in UTF-8. A leading byte order mark is allowed.</param>
+    /// <param name="value">The deserialized value when successful; otherwise <see langword="default"/>.</param>
+    /// <param name="options">The serializer options. If <see langword="null"/>, <see cref="YamlSerializerOptions.Default"/> is used.</param>
+    /// <returns><see langword="true"/> when deserialization succeeded; otherwise <see langword="false"/>.</returns>
+    public static bool TryDeserialize<T>(ReadOnlySpan<byte> utf8Yaml, out T? value, YamlSerializerOptions? options = null)
+    {
+        try
+        {
+            value = Deserialize<T>(utf8Yaml, options);
+            return true;
+        }
+        catch (YamlException)
+        {
+            value = default;
+            return false;
+        }
+    }
+
+    /// <summary>Deserializes a YAML payload from UTF-8 bytes using generated metadata from a serializer context.</summary>
+    /// <typeparam name="T">The destination CLR type.</typeparam>
+    /// <param name="utf8Yaml">The YAML payload, encoded in UTF-8. A leading byte order mark is allowed.</param>
+    /// <param name="context">The source-generated serializer context.</param>
+    /// <returns>The deserialized value.</returns>
+    /// <exception cref="ArgumentNullException"><paramref name="context"/> is <see langword="null"/>.</exception>
+    /// <exception cref="InvalidOperationException">No generated metadata is available for <typeparamref name="T"/> in <paramref name="context"/>.</exception>
+    public static T? Deserialize<T>(ReadOnlySpan<byte> utf8Yaml, YamlSerializerContext context)
+    {
+        ArgumentNullException.ThrowIfNull(context);
+
+        var typeInfo = ResolveTypeInfo(context, typeof(T));
+        return DeserializeAs<T>(typeInfo, utf8Yaml);
+    }
+
+    /// <summary>Attempts to deserialize a YAML payload from UTF-8 bytes using generated metadata from a serializer context.</summary>
+    /// <typeparam name="T">The destination CLR type.</typeparam>
+    /// <param name="utf8Yaml">The YAML payload, encoded in UTF-8. A leading byte order mark is allowed.</param>
+    /// <param name="context">The source-generated serializer context.</param>
+    /// <param name="value">The deserialized value when successful; otherwise <see langword="default"/>.</param>
+    /// <returns><see langword="true"/> when deserialization succeeded; otherwise <see langword="false"/>.</returns>
+    /// <exception cref="ArgumentNullException"><paramref name="context"/> is <see langword="null"/>.</exception>
+    public static bool TryDeserialize<T>(ReadOnlySpan<byte> utf8Yaml, YamlSerializerContext context, out T? value)
+    {
+        ArgumentNullException.ThrowIfNull(context);
+
+        try
+        {
+            value = Deserialize<T>(utf8Yaml, context);
+            return true;
+        }
+        catch (YamlException)
+        {
+            value = default;
+            return false;
+        }
+    }
+
+    /// <summary>Deserializes a YAML payload from UTF-8 bytes into an explicit destination type.</summary>
+    /// <param name="utf8Yaml">The YAML payload, encoded in UTF-8. A leading byte order mark is allowed.</param>
+    /// <param name="returnType">The destination CLR type.</param>
+    /// <param name="options">The serializer options. If <see langword="null"/>, <see cref="YamlSerializerOptions.Default"/> is used.</param>
+    /// <returns>The deserialized value.</returns>
+    /// <exception cref="ArgumentNullException"><paramref name="returnType"/> is <see langword="null"/>.</exception>
+    public static object? Deserialize(ReadOnlySpan<byte> utf8Yaml, Type returnType, YamlSerializerOptions? options = null)
+    {
+        ArgumentNullException.ThrowIfNull(returnType);
+
+        var effectiveOptions = options ?? YamlSerializerOptions.Default;
+        var typeInfo = ResolveTypeInfo(effectiveOptions, returnType);
+        return DeserializeCore(typeInfo, utf8Yaml);
+    }
+
+    /// <summary>Attempts to deserialize a YAML payload from UTF-8 bytes into an explicit destination type.</summary>
+    /// <param name="utf8Yaml">The YAML payload, encoded in UTF-8. A leading byte order mark is allowed.</param>
+    /// <param name="returnType">The destination CLR type.</param>
+    /// <param name="value">The deserialized value when successful; otherwise <see langword="null"/>.</param>
+    /// <param name="options">The serializer options. If <see langword="null"/>, <see cref="YamlSerializerOptions.Default"/> is used.</param>
+    /// <returns><see langword="true"/> when deserialization succeeded; otherwise <see langword="false"/>.</returns>
+    /// <exception cref="ArgumentNullException"><paramref name="returnType"/> is <see langword="null"/>.</exception>
+    public static bool TryDeserialize(ReadOnlySpan<byte> utf8Yaml, Type returnType, out object? value, YamlSerializerOptions? options = null)
+    {
+        ArgumentNullException.ThrowIfNull(returnType);
+
+        try
+        {
+            value = Deserialize(utf8Yaml, returnType, options);
+            return true;
+        }
+        catch (YamlException)
+        {
+            value = default;
+            return false;
+        }
+    }
+
+    /// <summary>Deserializes a YAML payload from UTF-8 bytes into an explicit destination type using generated metadata from a serializer context.</summary>
+    /// <param name="utf8Yaml">The YAML payload, encoded in UTF-8. A leading byte order mark is allowed.</param>
+    /// <param name="returnType">The destination CLR type.</param>
+    /// <param name="context">The source-generated serializer context.</param>
+    /// <returns>The deserialized value.</returns>
+    /// <exception cref="ArgumentNullException"><paramref name="returnType"/> or <paramref name="context"/> is <see langword="null"/>.</exception>
+    /// <exception cref="InvalidOperationException">No generated metadata is available for <paramref name="returnType"/> in <paramref name="context"/>.</exception>
+    public static object? Deserialize(ReadOnlySpan<byte> utf8Yaml, Type returnType, YamlSerializerContext context)
+    {
+        ArgumentNullException.ThrowIfNull(returnType);
+        ArgumentNullException.ThrowIfNull(context);
+
+        var typeInfo = ResolveTypeInfo(context, returnType);
+        return DeserializeCore(typeInfo, utf8Yaml);
+    }
+
+    /// <summary>Attempts to deserialize a YAML payload from UTF-8 bytes into an explicit destination type using generated metadata from a serializer context.</summary>
+    /// <param name="utf8Yaml">The YAML payload, encoded in UTF-8. A leading byte order mark is allowed.</param>
+    /// <param name="returnType">The destination CLR type.</param>
+    /// <param name="context">The source-generated serializer context.</param>
+    /// <param name="value">The deserialized value when successful; otherwise <see langword="null"/>.</param>
+    /// <returns><see langword="true"/> when deserialization succeeded; otherwise <see langword="false"/>.</returns>
+    /// <exception cref="ArgumentNullException"><paramref name="returnType"/> or <paramref name="context"/> is <see langword="null"/>.</exception>
+    public static bool TryDeserialize(ReadOnlySpan<byte> utf8Yaml, Type returnType, YamlSerializerContext context, out object? value)
+    {
+        ArgumentNullException.ThrowIfNull(returnType);
+        ArgumentNullException.ThrowIfNull(context);
+
+        try
+        {
+            value = Deserialize(utf8Yaml, returnType, context);
+            return true;
+        }
+        catch (YamlException)
+        {
+            value = default;
+            return false;
+        }
+    }
+
+    /// <summary>Deserializes a YAML payload from UTF-8 bytes using explicit type metadata.</summary>
+    /// <typeparam name="T">The destination CLR type.</typeparam>
+    /// <param name="utf8Yaml">The YAML payload, encoded in UTF-8. A leading byte order mark is allowed.</param>
+    /// <param name="typeInfo">The metadata for <typeparamref name="T"/>.</param>
+    /// <returns>The deserialized value.</returns>
+    /// <exception cref="ArgumentNullException"><paramref name="typeInfo"/> is <see langword="null"/>.</exception>
+    public static T? Deserialize<T>(ReadOnlySpan<byte> utf8Yaml, YamlTypeInfo<T> typeInfo)
+    {
+        return DeserializeCore(typeInfo, utf8Yaml);
+    }
+
+    /// <summary>Deserializes a YAML payload from UTF-8 bytes using explicit type metadata.</summary>
+    /// <param name="utf8Yaml">The YAML payload, encoded in UTF-8. A leading byte order mark is allowed.</param>
+    /// <param name="typeInfo">The metadata for the destination type.</param>
+    /// <returns>The deserialized value.</returns>
+    /// <exception cref="ArgumentNullException"><paramref name="typeInfo"/> is <see langword="null"/>.</exception>
+    public static object? Deserialize(ReadOnlySpan<byte> utf8Yaml, YamlTypeInfo typeInfo)
+    {
+        return DeserializeCore(typeInfo, utf8Yaml);
+    }
+
     /// <summary>Deserializes YAML from a stream using UTF-8 encoding.</summary>
     /// <typeparam name="T">The destination CLR type.</typeparam>
     /// <param name="utf8Stream">The source stream.</param>
@@ -412,8 +582,9 @@ public static class YamlSerializer
     {
         ArgumentNullException.ThrowIfNull(utf8Stream);
 
-        using var reader = new StreamReader(utf8Stream, DefaultStreamEncoding, detectEncodingFromByteOrderMarks: true, bufferSize: 1024, leaveOpen: true);
-        return Deserialize<T>(reader, options);
+        var effectiveOptions = options ?? YamlSerializerOptions.Default;
+        var typeInfo = ResolveTypeInfo(effectiveOptions, typeof(T));
+        return DeserializeAs<T>(typeInfo, utf8Stream);
     }
 
     /// <summary>Attempts to deserialize YAML from a stream using UTF-8 encoding.</summary>
@@ -491,8 +662,8 @@ public static class YamlSerializer
         ArgumentNullException.ThrowIfNull(utf8Stream);
         ArgumentNullException.ThrowIfNull(context);
 
-        using var reader = new StreamReader(utf8Stream, DefaultStreamEncoding, detectEncodingFromByteOrderMarks: true, bufferSize: 1024, leaveOpen: true);
-        return Deserialize<T>(reader, context);
+        var typeInfo = ResolveTypeInfo(context, typeof(T));
+        return DeserializeAs<T>(typeInfo, utf8Stream);
     }
 
     /// <summary>Attempts to deserialize YAML from a stream using UTF-8 encoding and generated metadata from a serializer context.</summary>
@@ -570,8 +741,9 @@ public static class YamlSerializer
         ArgumentNullException.ThrowIfNull(utf8Stream);
         ArgumentNullException.ThrowIfNull(returnType);
 
-        using var reader = new StreamReader(utf8Stream, DefaultStreamEncoding, detectEncodingFromByteOrderMarks: true, bufferSize: 1024, leaveOpen: true);
-        return Deserialize(reader, returnType, options);
+        var effectiveOptions = options ?? YamlSerializerOptions.Default;
+        var typeInfo = ResolveTypeInfo(effectiveOptions, returnType);
+        return DeserializeCore(typeInfo, utf8Stream);
     }
 
     /// <summary>Attempts to deserialize YAML from a stream using UTF-8 encoding and an explicit destination type.</summary>
@@ -653,8 +825,8 @@ public static class YamlSerializer
         ArgumentNullException.ThrowIfNull(returnType);
         ArgumentNullException.ThrowIfNull(context);
 
-        using var reader = new StreamReader(utf8Stream, DefaultStreamEncoding, detectEncodingFromByteOrderMarks: true, bufferSize: 1024, leaveOpen: true);
-        return Deserialize(reader, returnType, context);
+        var typeInfo = ResolveTypeInfo(context, returnType);
+        return DeserializeCore(typeInfo, utf8Stream);
     }
 
     /// <summary>Attempts to deserialize YAML from a stream using UTF-8 encoding and an explicit destination type using generated metadata from a serializer context.</summary>
@@ -822,8 +994,7 @@ public static class YamlSerializer
     {
         ArgumentNullException.ThrowIfNull(utf8Stream);
         ArgumentNullException.ThrowIfNull(typeInfo);
-        using var reader = new StreamReader(utf8Stream, DefaultStreamEncoding, detectEncodingFromByteOrderMarks: true, bufferSize: 1024, leaveOpen: true);
-        return Deserialize(reader, typeInfo);
+        return DeserializeCore(typeInfo, utf8Stream);
     }
 
     /// <summary>
@@ -837,8 +1008,7 @@ public static class YamlSerializer
     {
         ArgumentNullException.ThrowIfNull(utf8Stream);
         ArgumentNullException.ThrowIfNull(typeInfo);
-        using var reader = new StreamReader(utf8Stream, DefaultStreamEncoding, detectEncodingFromByteOrderMarks: true, bufferSize: 1024, leaveOpen: true);
-        return Deserialize(reader, typeInfo);
+        return DeserializeCore(typeInfo, utf8Stream);
     }
 
     /// <summary>Deserializes a payload using explicit type metadata.</summary>
@@ -1013,38 +1183,61 @@ public static class YamlSerializer
     {
         ArgumentNullException.ThrowIfNull(typeInfo);
         ArgumentNullException.ThrowIfNull(yaml);
-
-        var reader = YamlReader.Create(yaml, typeInfo.Options);
-        if (!reader.Read())
-        {
-            return null;
-        }
-
-        return typeInfo.ReadAsObject(reader);
+        return DeserializeCore(typeInfo, new Utf8YamlTokenSource(yaml, typeInfo.Options.EffectiveMaxDepth, typeInfo.Options.SourceName));
     }
 
     private static T? DeserializeCore<T>(YamlTypeInfo<T> typeInfo, string yaml)
     {
         ArgumentNullException.ThrowIfNull(typeInfo);
         ArgumentNullException.ThrowIfNull(yaml);
+        return DeserializeCore(typeInfo, new Utf8YamlTokenSource(yaml, typeInfo.Options.EffectiveMaxDepth, typeInfo.Options.SourceName));
+    }
 
-        var reader = YamlReader.Create(yaml, typeInfo.Options);
-        if (!reader.Read())
-        {
-            return default;
-        }
+    private static object? DeserializeCore(YamlTypeInfo typeInfo, ReadOnlySpan<byte> utf8Yaml)
+    {
+        ArgumentNullException.ThrowIfNull(typeInfo);
+        return DeserializeCore(typeInfo, new Utf8YamlTokenSource(utf8Yaml, typeInfo.Options.EffectiveMaxDepth, typeInfo.Options.SourceName));
+    }
 
-        return typeInfo.Read(reader);
+    private static T? DeserializeCore<T>(YamlTypeInfo<T> typeInfo, ReadOnlySpan<byte> utf8Yaml)
+    {
+        ArgumentNullException.ThrowIfNull(typeInfo);
+        return DeserializeCore(typeInfo, new Utf8YamlTokenSource(utf8Yaml, typeInfo.Options.EffectiveMaxDepth, typeInfo.Options.SourceName));
     }
 
     private static object? DeserializeCore(YamlTypeInfo typeInfo, TextReader reader)
     {
         ArgumentNullException.ThrowIfNull(typeInfo);
         ArgumentNullException.ThrowIfNull(reader);
+        return DeserializeCore(typeInfo, CreateSource(reader, typeInfo.Options));
+    }
 
+    private static T? DeserializeCore<T>(YamlTypeInfo<T> typeInfo, TextReader reader)
+    {
+        ArgumentNullException.ThrowIfNull(typeInfo);
+        ArgumentNullException.ThrowIfNull(reader);
+        return DeserializeCore(typeInfo, CreateSource(reader, typeInfo.Options));
+    }
+
+    private static object? DeserializeCore(YamlTypeInfo typeInfo, Stream utf8Stream)
+    {
+        ArgumentNullException.ThrowIfNull(typeInfo);
+        ArgumentNullException.ThrowIfNull(utf8Stream);
+        return DeserializeCore(typeInfo, CreateSource(utf8Stream, typeInfo.Options));
+    }
+
+    private static T? DeserializeCore<T>(YamlTypeInfo<T> typeInfo, Stream utf8Stream)
+    {
+        ArgumentNullException.ThrowIfNull(typeInfo);
+        ArgumentNullException.ThrowIfNull(utf8Stream);
+        return DeserializeCore(typeInfo, CreateSource(utf8Stream, typeInfo.Options));
+    }
+
+    private static object? DeserializeCore(YamlTypeInfo typeInfo, Utf8YamlTokenSource source)
+    {
         try
         {
-            var yamlReader = YamlReader.Create(reader, typeInfo.Options);
+            var yamlReader = YamlReader.Create(source, typeInfo.Options);
             if (!yamlReader.Read())
             {
                 return null;
@@ -1056,16 +1249,17 @@ public static class YamlSerializer
         {
             throw CreateInvalidEncodingException(typeInfo.Options.SourceName, exception);
         }
+        finally
+        {
+            source.ReturnPooledBuffer();
+        }
     }
 
-    private static T? DeserializeCore<T>(YamlTypeInfo<T> typeInfo, TextReader reader)
+    private static T? DeserializeCore<T>(YamlTypeInfo<T> typeInfo, Utf8YamlTokenSource source)
     {
-        ArgumentNullException.ThrowIfNull(typeInfo);
-        ArgumentNullException.ThrowIfNull(reader);
-
         try
         {
-            var yamlReader = YamlReader.Create(reader, typeInfo.Options);
+            var yamlReader = YamlReader.Create(source, typeInfo.Options);
             if (!yamlReader.Read())
             {
                 return default;
@@ -1076,6 +1270,35 @@ public static class YamlSerializer
         catch (DecoderFallbackException exception)
         {
             throw CreateInvalidEncodingException(typeInfo.Options.SourceName, exception);
+        }
+        finally
+        {
+            source.ReturnPooledBuffer();
+        }
+    }
+
+    // The first block of the text is read and decoded when the source is created
+    private static Utf8YamlTokenSource CreateSource(TextReader reader, YamlSerializerOptions options)
+    {
+        try
+        {
+            return new Utf8YamlTokenSource(reader, options.EffectiveMaxDepth, options.SourceName);
+        }
+        catch (DecoderFallbackException exception)
+        {
+            throw CreateInvalidEncodingException(options.SourceName, exception);
+        }
+    }
+
+    private static Utf8YamlTokenSource CreateSource(Stream utf8Stream, YamlSerializerOptions options)
+    {
+        try
+        {
+            return new Utf8YamlTokenSource(utf8Stream, options.EffectiveMaxDepth, options.SourceName);
+        }
+        catch (DecoderFallbackException exception)
+        {
+            throw CreateInvalidEncodingException(options.SourceName, exception);
         }
     }
 
@@ -1096,6 +1319,16 @@ public static class YamlSerializer
         return DeserializeCore(typeInfo, yaml) is { } value ? (T)value : default;
     }
 
+    private static T? DeserializeAs<T>(YamlTypeInfo typeInfo, ReadOnlySpan<byte> utf8Yaml)
+    {
+        if (typeInfo is YamlTypeInfo<T> typedTypeInfo)
+        {
+            return DeserializeCore(typedTypeInfo, utf8Yaml);
+        }
+
+        return DeserializeCore(typeInfo, utf8Yaml) is { } value ? (T)value : default;
+    }
+
     private static T? DeserializeAs<T>(YamlTypeInfo typeInfo, TextReader reader)
     {
         if (typeInfo is YamlTypeInfo<T> typedTypeInfo)
@@ -1104,6 +1337,16 @@ public static class YamlSerializer
         }
 
         return DeserializeCore(typeInfo, reader) is { } value ? (T)value : default;
+    }
+
+    private static T? DeserializeAs<T>(YamlTypeInfo typeInfo, Stream utf8Stream)
+    {
+        if (typeInfo is YamlTypeInfo<T> typedTypeInfo)
+        {
+            return DeserializeCore(typedTypeInfo, utf8Stream);
+        }
+
+        return DeserializeCore(typeInfo, utf8Stream) is { } value ? (T)value : default;
     }
 
     private static StringBuilder AcquireStringBuilder(int minimumCapacity)

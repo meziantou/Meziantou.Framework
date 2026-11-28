@@ -1,6 +1,6 @@
 using System.Diagnostics.CodeAnalysis;
 using Meziantou.Framework.DependencyScanning.Locations;
-using Meziantou.Framework.Yaml.Model;
+using Meziantou.Framework.Yaml.Nodes;
 using static Meziantou.Framework.DependencyScanning.Internals.YamlParserUtilities;
 
 namespace Meziantou.Framework.DependencyScanning.Scanners;
@@ -89,13 +89,13 @@ public sealed class GitHubActionsLockFileDependencyScanner : DependencyScanner
         return true;
     }
 
-    private static string? GetValue(YamlElement? entry, string propertyName)
+    private static string? GetValue(YamlNode? entry, string propertyName)
     {
         var value = GetScalarValue(GetProperty(entry, propertyName, StringComparison.Ordinal));
         return string.IsNullOrEmpty(value) ? null : value;
     }
 
-    private static long? GetId(YamlElement? entry, string propertyName)
+    private static long? GetId(YamlNode? entry, string propertyName)
     {
         return long.TryParse(GetValue(entry, propertyName), NumberStyles.None, CultureInfo.InvariantCulture, out var id) ? id : null;
     }

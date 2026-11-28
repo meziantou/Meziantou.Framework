@@ -2156,9 +2156,11 @@ public class Scanner<TBuffer> where TBuffer : ILookAheadBuffer
             }
 
             // An empty line inside the scalar cannot be indented with a tab. The empty lines only belong to the
-            // scalar when it continues on a following line.
+            // scalar when it continues on a following line: not before a flow indicator, or a ':' that is not part of the
+            // scalar, in a flow collection.
 
-            if (hasTabIndentedEmptyLine && !_analyzer.IsZero() && !_analyzer.Check('#') && !IsDocumentIndicator() && (_flowLevel > 0 || _column >= currentIndent))
+            var endsFlowScalar = _flowLevel > 0 && (_analyzer.Check(",[]{}") || (_analyzer.Check(':') && (_analyzer.IsBlankOrBreakOrZero(1) || _analyzer.Check(",[]{}", 1))));
+            if (hasTabIndentedEmptyLine && !endsFlowScalar && !_analyzer.IsZero() && !_analyzer.Check('#') && !IsDocumentIndicator() && (_flowLevel > 0 || _column >= currentIndent))
                 throw new SyntaxErrorException(start, CurrentPosition, "A tab cannot be used for indentation.");
 
             // Check intendation level.

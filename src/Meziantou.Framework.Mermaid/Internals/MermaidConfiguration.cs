@@ -1,5 +1,5 @@
 using System.Globalization;
-using Meziantou.Framework.Yaml.Model;
+using Meziantou.Framework.Yaml.Nodes;
 
 namespace Meziantou.Framework.Mermaid.Internals;
 
@@ -70,7 +70,7 @@ internal sealed class MermaidConfiguration
     }
 
     /// <summary>Converts a YAML element to dictionaries, lists and strings.</summary>
-    public static object? FromYaml(YamlElement? element, int depth = 0)
+    public static object? FromYaml(YamlNode? element, int depth = 0)
     {
         if (element is null || depth > 32)
             return null;

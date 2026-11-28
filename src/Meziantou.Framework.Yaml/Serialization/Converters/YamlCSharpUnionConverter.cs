@@ -1,7 +1,7 @@
 using System.Collections;
 using System.Collections.Immutable;
 using System.Reflection;
-using Meziantou.Framework.Yaml.Model;
+using Meziantou.Framework.Yaml.Nodes;
 
 namespace Meziantou.Framework.Yaml.Serialization.Converters;
 

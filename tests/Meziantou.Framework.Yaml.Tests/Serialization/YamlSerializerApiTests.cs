@@ -1,4 +1,4 @@
-using Meziantou.Framework.Yaml.Model;
+using Meziantou.Framework.Yaml.Nodes;
 using Meziantou.Framework.Yaml.Serialization;
 
 namespace Meziantou.Framework.Yaml.Tests.Serialization;
@@ -155,7 +155,7 @@ public class YamlSerializerApiTests
         var options = new YamlSerializerOptions { SourceName = "config.yaml" };
 
         var exception = Assert.Throws<YamlException>(() => YamlSerializer.Deserialize<Product>("Id: [1, 2]", options));
-        Assert.Equal("config.yaml: (Lin: 0, Col: 4, Chr: 4) - (Lin: 0, Col: 4, Chr: 4): Expected a Scalar token but found 'StartSequence'.", exception.Message);
+        Assert.Equal("config.yaml: (Lin: 0, Col: 4, Chr: 4) - (Lin: 0, Col: 5, Chr: 5): Expected a Scalar token but found 'StartSequence'.", exception.Message);
         #endregion
     }
 

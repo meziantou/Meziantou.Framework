@@ -47,7 +47,7 @@ and a string that the reader would take for another type is quoted: see
 
 The schema classes [FailsafeSchema](cref:Meziantou.Framework.Yaml.Schemas.FailsafeSchema), [JsonSchema](cref:Meziantou.Framework.Yaml.Schemas.JsonSchema), [CoreSchema](cref:Meziantou.Framework.Yaml.Schemas.CoreSchema) and [ExtendedSchema](cref:Meziantou.Framework.Yaml.Schemas.ExtendedSchema), in the
 [Meziantou.Framework.Yaml.Schemas](cref:Meziantou.Framework.Yaml.Schemas) namespace, derive from [SchemaBase](cref:Meziantou.Framework.Yaml.Schemas.SchemaBase) and implement [IYamlSchema](cref:Meziantou.Framework.Yaml.Schemas.IYamlSchema). They expand and
-shorten tags, hold the rules that resolve scalars, and register tags. A [YamlValue](cref:Meziantou.Framework.Yaml.Model.YamlValue) of the
+shorten tags, hold the rules that resolve scalars, and register tags. A [YamlValue](cref:Meziantou.Framework.Yaml.Nodes.YamlValue) of the
 [document object model](../05-DocumentObjectModel.md) takes one to choose the tag of its value. To build another schema,
 derive from one of them and override [PrepareScalarRules](cref:Meziantou.Framework.Yaml.Schemas.SchemaBase.PrepareScalarRules). The serializer itself selects its schema with
 [YamlSchemaKind](cref:Meziantou.Framework.Yaml.YamlSchemaKind).

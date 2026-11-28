@@ -41,7 +41,7 @@ another anchor, repeated a few times, makes the number of nodes grow exponential
 only the nodes created by aliases, so documents without aliases are never affected. The serializer applies the same
 limit to the nodes that a merge key copies from an alias (`<<: *defaults`).
 
-[YamlStream.Load](cref:Meziantou.Framework.Yaml.Model.YamlStream.Load) without options uses [YamlSerializerOptions.Default](cref:Meziantou.Framework.Yaml.YamlSerializerOptions.Default). Pass your options when the YAML is untrusted:
+[YamlStream.Load](cref:Meziantou.Framework.Yaml.Nodes.YamlStream.Load) without options uses [YamlSerializerOptions.Default](cref:Meziantou.Framework.Yaml.YamlSerializerOptions.Default). Pass your options when the YAML is untrusted:
 
 <!-- ref:../../tests/Meziantou.Framework.Yaml.Tests/YamlNodeTest.cs;region=YamlStream_LoadWithOptions;format=md-fenced-code-block;dedent=true -->
 ```csharp

@@ -1,4 +1,4 @@
-using Meziantou.Framework.Yaml.Model;
+using Meziantou.Framework.Yaml.Nodes;
 using static Meziantou.Framework.DependencyScanning.Internals.YamlParserUtilities;
 
 namespace Meziantou.Framework.DependencyScanning.Scanners;
@@ -60,7 +60,7 @@ public sealed class KubernetesDependencyScanner : DependencyScanner
         return ValueTask.CompletedTask;
     }
 
-    private static string? GetKind(YamlElement? node)
+    private static string? GetKind(YamlNode? node)
     {
         if (node is not YamlMapping || GetScalarValue(GetProperty(node, "apiVersion", StringComparison.Ordinal)) is null)
             return null;
@@ -68,7 +68,7 @@ public sealed class KubernetesDependencyScanner : DependencyScanner
         return GetScalarValue(GetProperty(node, "kind", StringComparison.Ordinal));
     }
 
-    private void ScanObject(YamlFile yaml, YamlElement? node)
+    private void ScanObject(YamlFile yaml, YamlNode? node)
     {
         // https://kubernetes.io/docs/concepts/workloads/
         var podSpec = GetKind(node) switch
@@ -91,6 +91,6 @@ public sealed class KubernetesDependencyScanner : DependencyScanner
             }
         }
 
-        static YamlElement? GetPodTemplateSpec(YamlElement? node) => GetProperty(GetProperty(node, "template", StringComparison.Ordinal), "spec", StringComparison.Ordinal);
+        static YamlNode? GetPodTemplateSpec(YamlNode? node) => GetProperty(GetProperty(node, "template", StringComparison.Ordinal), "spec", StringComparison.Ordinal);
     }
 }

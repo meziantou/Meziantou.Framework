@@ -1,6 +1,6 @@
 using System.Diagnostics;
 using Meziantou.Framework.Yaml.Events;
-using Meziantou.Framework.Yaml.Model;
+using Meziantou.Framework.Yaml.Nodes;
 
 namespace Meziantou.Framework.Yaml.Tests;
 
@@ -365,6 +365,9 @@ public class EmitterTests : YamlTest
     [InlineData("!<!!>", "--- !%21 \n...\n", "!!")]
     [InlineData("!<!!> fr", "!%21 fr\n...\n", "!!")]
     [InlineData("--- !<!a!b> x\n", "--- !a%21b x\n...\n", "!a!b")]
+    [InlineData("--- !<!!a> x\n", "--- !%21a x\n...\n", "!!a")]
+    [InlineData("--- !<!!!b> x\n", "--- !%21%21b x\n...\n", "!!!b")]
+    [InlineData("--- !<!!bool:yaml'.org,2002:str> x\n", "--- !%21bool:yaml'.org%2C2002:str x\n...\n", "!!bool:yaml'.org,2002:str")]
     [InlineData("--- !<!a,[b]> x\n", "--- !a%2C%5Bb%5D x\n...\n", "!a,[b]")]
     [InlineData("--- !<tag:yaml.org,2002:> x\n", "--- !<tag:yaml.org,2002:> x\n...\n", "tag:yaml.org,2002:")]
     [InlineData("%TAG !e! tag:example.com,2000:\n--- !<!e!> x\n", "%TAG !e! tag:example.com,2000:\n--- !e%21 x\n...\n", "!e!")]
@@ -377,12 +380,42 @@ public class EmitterTests : YamlTest
         var yaml = SaveAndReload(input, out var reloaded);
 
         Assert.Equal(expected, yaml);
-        Assert.Equal(expectedTag, ((YamlElement)reloaded[^1].Contents!).Tag);
+        Assert.Equal(expectedTag, ((YamlNode)reloaded[^1].Contents!).Tag);
         Assert.Equal(yaml, Save(reloaded));
     }
 
     [Theory]
-    [InlineData("%TAG !m! !m!!booly-\n--- !m!light green\n", "%TAG !m! !m!!booly-\n--- !m!light green\n...\n", "!m!!booly-light")]
+    [InlineData("a")]
+    [InlineData("y-light")]
+    [InlineData("tag.com,2000:app/foo")]
+    public void Emit_TagWithoutVerbatimFormOrDirective_Throws(string tag)
+    {
+        // The verbatim form of a tag that is neither a local tag nor a URI cannot be read back
+        using var writer = new StringWriter();
+        var emitter = new Emitter(writer);
+        emitter.Emit(new StreamStart());
+        emitter.Emit(new DocumentStart());
+
+        var exception = Assert.Throws<YamlException>(() => emitter.Emit(new Scalar(anchor: null, tag, "x", ScalarStyle.Plain, isPlainImplicit: false, isQuotedImplicit: false)));
+        Assert.Contains("cannot be written", exception.Message, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void Emit_TagWithoutVerbatimForm_IsWrittenWithADirective()
+    {
+        using var writer = new StringWriter { NewLine = "\n" };
+        var emitter = new Emitter(writer);
+        emitter.Emit(new StreamStart());
+        emitter.Emit(new DocumentStart(version: null, new TagDirectiveCollection([new Tokens.TagDirective("!y!", "y-")]), isImplicit: true));
+        emitter.Emit(new Scalar(anchor: null, "y-light", "x", ScalarStyle.Plain, isPlainImplicit: false, isQuotedImplicit: false));
+        emitter.Emit(new DocumentEnd(isImplicit: true));
+        emitter.Emit(new StreamEnd());
+
+        Assert.Equal("%TAG !y! y-\n--- !y!light x\n...\n", writer.ToString());
+    }
+
+    [Theory]
+    [InlineData("%TAG !m! !m!!booly-\n--- !m!light green\n","%TAG !m! !m!!booly-\n--- !m!light green\n...\n", "!m!!booly-light")]
     [InlineData("%TAG !m! !m!!booly-\n--- !<!m!light> green\n", "%TAG !m! !m!!booly-\n--- !m%21light green\n...\n", "!m!light")]
     [InlineData("%TAG !! !!booly-\n--- !!light green\n", "%TAG !! !!booly-\n--- !!light green\n...\n", "!!booly-light")]
     [InlineData("%TAG !m! !other-\n--- !m!light green\n", "%TAG !m! !other-\n--- !m!light green\n...\n", "!other-light")]
@@ -392,7 +425,7 @@ public class EmitterTests : YamlTest
         var yaml = SaveAndReload(input, out var reloaded);
 
         Assert.Equal(expected, yaml);
-        Assert.Equal(expectedTag, ((YamlElement)reloaded[^1].Contents!).Tag);
+        Assert.Equal(expectedTag, ((YamlNode)reloaded[^1].Contents!).Tag);
         Assert.Equal(yaml, Save(reloaded));
     }
 
@@ -436,7 +469,7 @@ public class EmitterTests : YamlTest
     [Fact]
     public void WriteTo_DocumentWithoutContents_WritesEmptyDocument()
     {
-        var stream = new YamlStream { new YamlDocument() };
+        var stream = new YamlStream { new YamlStreamDocument() };
 
         var reloaded = YamlStream.Load(new StringReader(Save(stream)));
         Assert.HasCount(1, reloaded);
@@ -453,10 +486,10 @@ public class EmitterTests : YamlTest
         Assert.Equal("%TAG !e! tag:example.com,2000:\n--- !e!foo bar\n...\n", Save(stream));
     }
 
-    private static string Save(YamlNode node)
+    private static string Save(YamlStream stream)
     {
         using var writer = new StringWriter { NewLine = "\n" };
-        node.WriteTo(writer);
+        stream.WriteTo(writer);
         return writer.ToString();
     }
 

@@ -559,6 +559,19 @@ public sealed class YamlScalarTests
     }
 
     [Theory]
+    [InlineData("_2")]
+    [InlineData("_1_000")]
+    [InlineData("_0x10")]
+    public void Serialize_StringThatStartsWithAnUnderscoreAndReadsAsANumber_IsQuoted(string value)
+    {
+        // Without the schema, the number parsers ignore the underscores: a plain "_2" is read as 2
+        var yaml = YamlSerializer.Serialize(new List<object> { value });
+
+        Assert.Equal("- \"" + value + "\"\n", yaml);
+        Assert.Equal(value, Assert.Single(YamlSerializer.Deserialize<List<object>>(yaml)!));
+    }
+
+    [Theory]
     [InlineData("yes")]
     [InlineData("on")]
     [InlineData("N")]

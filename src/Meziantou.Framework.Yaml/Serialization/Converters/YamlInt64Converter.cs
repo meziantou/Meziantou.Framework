@@ -22,6 +22,6 @@ internal sealed class YamlInt64Converter : YamlConverter<long>
 
     public override void Write(YamlWriter writer, long value)
     {
-        writer.WriteScalar(value.ToString(System.Globalization.CultureInfo.InvariantCulture));
+        writer.WriteScalar(value);
     }
 }

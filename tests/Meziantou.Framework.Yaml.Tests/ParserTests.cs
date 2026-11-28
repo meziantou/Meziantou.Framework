@@ -67,6 +67,63 @@ public class ParserTests : ParserTestHelper
         Assert.Equal(ReadEventsWithPositions(Parser.CreateParser(new StringReader(yaml))), ReadEventsWithPositions(Parser.CreateParser(reader)));
     }
 
+    [Theory]
+    [InlineData("- a\n- b\n\n# comment\n\n--- \n- c\n")]
+    [InlineData("|\n  literal\n\n  text\n\n # comment\n")]
+    [InlineData("key: value\n\n\n# first comment\n# second comment\n")]
+    [InlineData("key:\n  - item\n\n# comment\n")]
+    [InlineData("# first\n---\n- a\n\n# second\n\uFEFF---\n- b\n")]
+    public void StreamReaderParser_CommentsAfterTheLastNode_ReportTheSamePositionsAsTheStringParser(string yaml)
+    {
+        // The end of the document and of its collections are at the end of the last node, in bytes that the refills of
+        // the buffer drop before reading the comments
+        using var reader = CreateTrickleStreamReader(yaml);
+
+        Assert.Equal(ReadEventsWithPositions(Parser.CreateParser(new StringReader(yaml))), ReadEventsWithPositions(Parser.CreateParser(reader)));
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void StreamReaderParser_DeepCollections_ReportTheSameEventsAsTheStringParser(bool flow)
+    {
+        // More than 16 levels: the reader keeps the stack of its collections in an array, which the tokens before an
+        // incomplete token change
+        var builder = new StringBuilder();
+        for (var i = 0; i < 24; i++)
+        {
+            if (flow)
+            {
+                builder.Append(CultureInfo.InvariantCulture, $"{new string(' ', i % 3)}[ item{i}, {{ key{i}: value{i} }},\n");
+            }
+            else
+            {
+                builder.Append(CultureInfo.InvariantCulture, $"{new string(' ', 4 * i)}key{i}:\n{new string(' ', 4 * i + 2)}- item{i}\n{new string(' ', 4 * i + 2)}-\n");
+            }
+        }
+
+        builder.Append(flow ? new string(']', 24) + "\n" : new string(' ', 96) + "last\n");
+        var yaml = builder.ToString();
+        using var reader = CreateTrickleStreamReader(yaml);
+
+        Assert.Equal(ReadEventsWithPositions(Parser.CreateParser(new StringReader(yaml))), ReadEventsWithPositions(Parser.CreateParser(reader)));
+    }
+
+    [Theory]
+    [InlineData("\uFEFF\uFEFF, bar\n")]
+    [InlineData("\uFEFF\uFEFF\uFEFF{ a\n")]
+    [InlineData("\uFEFF\uFEFF%FOO\n--- [\n")]
+    public void StreamReaderParser_ErrorAfterByteOrderMarks_ReportsTheSamePositionAsTheStringParser(string yaml)
+    {
+        // The reader of the next block starts after the byte order marks that it consumed: only the first one of the
+        // line is not a column
+        var expected = Assert.Throws<SyntaxErrorException>(() => ReadEventsWithPositions(Parser.CreateParser(new StringReader(yaml))));
+        using var reader = CreateTrickleStreamReader(yaml);
+        var actual = Assert.Throws<SyntaxErrorException>(() => ReadEventsWithPositions(Parser.CreateParser(reader)));
+
+        Assert.Equal(expected.Message, actual.Message);
+    }
+
     private static StreamReader CreateTrickleStreamReader(string yaml)
     {
         // The byte order mark of the document, if any, is kept as a character, like the string parser sees it
@@ -87,7 +144,7 @@ public class ParserTests : ParserTestHelper
     }
 
     /// <summary>A read-only stream that returns between 1 and 3 bytes per read.</summary>
-    private sealed class TrickleStream(byte[] data) : Stream
+    internal sealed class TrickleStream(byte[] data) : Stream
     {
         private int _position;
 

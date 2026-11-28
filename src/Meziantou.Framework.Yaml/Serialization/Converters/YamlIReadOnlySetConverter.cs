@@ -39,8 +39,7 @@ internal sealed class YamlIReadOnlySetConverter<TElement> : YamlConverter<IReadO
 
         while (reader.TokenType != YamlTokenType.EndSequence)
         {
-            var value = _elementConverter.Read(reader, typeof(TElement));
-            set.Add((TElement)value!);
+            set.Add(SequenceReadHelpers.ReadElement<TElement>(reader, _elementConverter));
         }
 
         reader.Read();

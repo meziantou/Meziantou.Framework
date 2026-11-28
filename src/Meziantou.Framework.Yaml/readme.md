@@ -49,7 +49,7 @@ Four API layers are available, from the lowest level to the highest:
 | --- | --- | --- |
 | Tokens and events | `Scanner<TBuffer>`, `Parser<TBuffer>`, `EventReader`, `Emitter` | Streaming over parsing events without materializing a tree |
 | Syntax tree | `YamlSyntaxTree` | Lossless representation, including comments and whitespace, with source spans |
-| Document Object Model | `YamlStream`, `YamlDocument`, `YamlMapping`, `YamlSequence`, `YamlValue` | Inspecting or transforming a document without binding to a CLR type |
+| Document Object Model | `YamlStream`, `YamlStreamDocument`, `YamlMapping`, `YamlSequence`, `YamlValue` | Inspecting or transforming a document without binding to a CLR type |
 | Serializer | `YamlSerializer`, `YamlReader`, `YamlWriter` | Binding YAML to CLR types |
 
 ## Serialize and deserialize objects
@@ -831,7 +831,7 @@ case matches exactly, the cases that can still read the value are used instead: 
 `[YamlConverter]`, on the options, or on the generation options &mdash; reads any value. A nested union case matches the
 shapes of its own cases, and a case referencing the union itself, such as `union Node(bool, Node?)`, never matches. The
 `YamlSequence`, `YamlMapping`, and `YamlValue` cases match sequences, mappings, and scalars; `object`, `YamlNode`, and
-`YamlElement` cases match any value.
+`YamlNode` cases match any value.
 
 A payload matching several cases &mdash; two cases that both serialize as a mapping, for instance &mdash; fails unless a
 type classifier is registered. The classifier can only select one of the matching cases. `YamlUnionTypeStructuralClassifier`
@@ -1175,7 +1175,7 @@ deserialization.
 ## Document Object Model
 
 Use the DOM when you need to inspect or transform YAML without binding to a CLR type. Its types are in the
-`Meziantou.Framework.Yaml.Model` namespace.
+`Meziantou.Framework.Yaml.Nodes` namespace.
 
 <!-- ref:../../tests/Meziantou.Framework.Yaml.Tests/YamlNodeTest.cs;region=YamlStream_Load;format=md-fenced-code-block;dedent=true -->
 ```csharp
@@ -1193,9 +1193,9 @@ Assert.Equal("Sample product", name);
 ```
 <!-- endref -->
 
-`YamlStream` is a list of `YamlDocument`, so a multi-document stream is read in one pass. `YamlMapping` implements both
-`IDictionary<YamlElement, YamlElement>` and `IList<KeyValuePair<…>>`, so entries keep their document order and can be
-inserted at a given index. `YamlMapping` and `YamlSequence` expose `Style` (`Block` or `Flow`), and `YamlElement`
+`YamlStream` is a list of `YamlStreamDocument`, so a multi-document stream is read in one pass. `YamlMapping` implements both
+`IDictionary<YamlNode, YamlNode>` and `IList<KeyValuePair<…>>`, so entries keep their document order and can be
+inserted at a given index. `YamlMapping` and `YamlSequence` expose `Style` (`Block` or `Flow`), and `YamlNode`
 exposes `Anchor` and `Tag`.
 
 Every node supports `DeepClone()`, `WriteTo(TextWriter)`, `EnumerateEvents()`, and bridges to the serializer:
@@ -1311,7 +1311,7 @@ Set `SourceName` to prefix messages with the origin of the document:
 var options = new YamlSerializerOptions { SourceName = "config.yaml" };
 
 var exception = Assert.Throws<YamlException>(() => YamlSerializer.Deserialize<Product>("Id: [1, 2]", options));
-Assert.Equal("config.yaml: (Lin: 0, Col: 4, Chr: 4) - (Lin: 0, Col: 4, Chr: 4): Expected a Scalar token but found 'StartSequence'.", exception.Message);
+Assert.Equal("config.yaml: (Lin: 0, Col: 4, Chr: 4) - (Lin: 0, Col: 5, Chr: 5): Expected a Scalar token but found 'StartSequence'.", exception.Message);
 ```
 <!-- endref -->
 

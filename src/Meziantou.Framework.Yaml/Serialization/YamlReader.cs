@@ -1,3 +1,4 @@
+using System.Text;
 using Meziantou.Framework.Yaml.Events;
 using Meziantou.Framework.Yaml.Serialization.References;
 
@@ -32,9 +33,7 @@ public sealed class YamlReader : YamlReaderWriterBase
     {
         ArgumentNullException.ThrowIfNull(yaml);
         var effectiveOptions = options ?? YamlSerializerOptions.Default;
-        var parser = Parser.CreateParser(new StringReader(yaml), effectiveOptions.EffectiveMaxDepth, effectiveOptions.SourceName);
-        var referenceReader = effectiveOptions.ReferenceHandling != YamlReferenceHandling.None ? new YamlReferenceReader(effectiveOptions.EffectiveMaxAliasExpansionNodeCount) : null;
-        return new YamlReader(new YamlReaderState(parser, referenceReader, effectiveOptions.SourceName, effectiveOptions.AllowAnchors, effectiveOptions.AllowAliases, IsJsonSchemaStrict(effectiveOptions)), effectiveOptions);
+        return Create(new Utf8YamlTokenSource(yaml, effectiveOptions.EffectiveMaxDepth, effectiveOptions.SourceName), effectiveOptions);
     }
 
     /// <summary>Creates a YAML reader over a text reader.</summary>
@@ -45,9 +44,14 @@ public sealed class YamlReader : YamlReaderWriterBase
     {
         ArgumentNullException.ThrowIfNull(reader);
         var effectiveOptions = options ?? YamlSerializerOptions.Default;
-        var parser = Parser.CreateParser(reader, effectiveOptions.EffectiveMaxDepth, effectiveOptions.SourceName);
-        var referenceReader = effectiveOptions.ReferenceHandling != YamlReferenceHandling.None ? new YamlReferenceReader(effectiveOptions.EffectiveMaxAliasExpansionNodeCount) : null;
-        return new YamlReader(new YamlReaderState(parser, referenceReader, effectiveOptions.SourceName, effectiveOptions.AllowAnchors, effectiveOptions.AllowAliases, IsJsonSchemaStrict(effectiveOptions)), effectiveOptions);
+        return Create(new Utf8YamlTokenSource(reader, effectiveOptions.EffectiveMaxDepth, effectiveOptions.SourceName), effectiveOptions);
+    }
+
+    /// <summary>Creates a YAML reader over a token source, with its own reference anchor state.</summary>
+    internal static YamlReader Create(Utf8YamlTokenSource source, YamlSerializerOptions options)
+    {
+        var referenceReader = options.ReferenceHandling != YamlReferenceHandling.None ? new YamlReferenceReader(options.EffectiveMaxAliasExpansionNodeCount) : null;
+        return new YamlReader(new YamlReaderState(source, referenceReader, options.SourceName, options.AllowAnchors, options.AllowAliases, IsJsonSchemaStrict(options)), options);
     }
 
     /// <summary>Creates a YAML reader over a string payload that shares the current reader's reference anchor state.</summary>
@@ -74,21 +78,56 @@ public sealed class YamlReader : YamlReaderWriterBase
     {
         ArgumentNullException.ThrowIfNull(yaml);
         ArgumentNullException.ThrowIfNull(options);
-        var parser = Parser.CreateParser(new StringReader(yaml), options.EffectiveMaxDepth, sourceName);
+        var parser = new Utf8YamlTokenSource(yaml, options.EffectiveMaxDepth, sourceName);
         return new YamlReader(new YamlReaderState(parser, referenceReader, sourceName, options.AllowAnchors, options.AllowAliases, IsJsonSchemaStrict(options)), options);
     }
 
     /// <summary>
     /// Gets an empty set of mapping keys that compares them with <see cref="YamlReaderWriterBase.PropertyNameComparer"/>.
-    /// Give it back with <see cref="ReturnKeySet"/> once the mapping is read, so the next mapping reuses it.
+    /// Give it back with <see cref="ReturnPropertyNameKeySet"/> once the mapping is read, so the next mapping reuses it.
     /// </summary>
-    internal HashSet<string> RentKeySet()
+    internal HashSet<string> RentPropertyNameKeySet()
     {
         return _keySets is not null && _keySets.TryPop(out var set) ? set : new HashSet<string>(PropertyNameComparer);
     }
 
-    /// <summary>Gives back a set obtained from <see cref="RentKeySet"/>. The set must not be used afterward.</summary>
-    internal void ReturnKeySet(HashSet<string>? set)
+    /// <summary>Gets a set from <see cref="RentPropertyNameKeySet"/> that contains the keys of <paramref name="keys"/>.</summary>
+    internal HashSet<string> CopyPropertyNameKeySet(HashSet<string> keys)
+    {
+        var set = RentPropertyNameKeySet();
+        set.UnionWith(keys);
+        return set;
+    }
+
+    /// <summary>
+    /// Gets an empty set of mapping keys that compares them with <paramref name="comparer"/>, to find the duplicate keys
+    /// of a mapping. Give it back with <see cref="ReturnKeySet"/> once the mapping is read, so the next mapping reuses it.
+    /// </summary>
+    /// <param name="comparer">The comparer of the keys.</param>
+    /// <returns>
+    /// An empty set. It comes from a pool of the reader when <paramref name="comparer"/> is the comparer of the property
+    /// names: <see cref="StringComparer.OrdinalIgnoreCase"/> when <see cref="YamlSerializerOptions.PropertyNameCaseInsensitive"/>
+    /// is set, and <see cref="StringComparer.Ordinal"/> otherwise.
+    /// </returns>
+    /// <exception cref="ArgumentNullException"><paramref name="comparer"/> is <see langword="null"/>.</exception>
+    public HashSet<string> RentKeySet(IEqualityComparer<string> comparer)
+    {
+        ArgumentNullException.ThrowIfNull(comparer);
+        return Equals(comparer, PropertyNameComparer) ? RentPropertyNameKeySet() : new HashSet<string>(comparer);
+    }
+
+    /// <summary>Gives back a set obtained from <see cref="RentKeySet(IEqualityComparer{string})"/>. The set must not be used afterward.</summary>
+    /// <param name="set">The set, or <see langword="null"/> to do nothing.</param>
+    public void ReturnKeySet(HashSet<string>? set)
+    {
+        if (set is not null && Equals(set.Comparer, PropertyNameComparer))
+        {
+            ReturnPropertyNameKeySet(set);
+        }
+    }
+
+    /// <summary>Gives back a set obtained from <see cref="RentPropertyNameKeySet"/>. The set must not be used afterward.</summary>
+    internal void ReturnPropertyNameKeySet(HashSet<string>? set)
     {
         if (set is null || set.Count > MaxPooledKeySetCount)
             return;
@@ -130,6 +169,16 @@ public sealed class YamlReader : YamlReaderWriterBase
 
     /// <summary>Gets the end location of the current token.</summary>
     public Mark End => _state.End;
+
+    /// <summary>
+    /// Gets the location of the current token. Unlike <see cref="Start"/> and <see cref="End"/>, its line and column are
+    /// computed only when they are asked for, which makes it cheap to keep for an error that may never be reported.
+    /// </summary>
+    /// <remarks>Read the start and the end of the location before the deserialization returns, see <see cref="YamlLocation"/>.</remarks>
+    public YamlLocation CurrentLocation => _state.CurrentLocation;
+
+    /// <summary>Gets the UTF-8 bytes of the current scalar, when they are its value, without decoding it.</summary>
+    internal bool TryGetRawUtf8Scalar(out ReadOnlySpan<byte> value) => _state.TryGetRawUtf8Scalar(out value);
 
     internal ParsingEvent? CurrentEvent => _state.CurrentEvent;
 
@@ -350,7 +399,7 @@ public sealed class YamlReader : YamlReaderWriterBase
     /// <summary>
     /// Ensures the current token is <see cref="YamlTokenType.Scalar"/> and returns its value.
     /// </summary>
-    /// <exception cref="InvalidOperationException">The current token is not a scalar.</exception>
+    /// <exception cref="YamlException">The current token is not a scalar.</exception>
     public string GetScalarValue()
     {
         if (TokenType != YamlTokenType.Scalar)
@@ -359,6 +408,39 @@ public sealed class YamlReader : YamlReaderWriterBase
         }
 
         return ScalarValue ?? string.Empty;
+    }
+
+    /// <summary>
+    /// Ensures the current token is <see cref="YamlTokenType.Scalar"/> and returns its value, as the string instance of
+    /// <paramref name="knownValues"/> that is equal to it when there is one, so that a mapping key that names a member does
+    /// not allocate a string.
+    /// </summary>
+    /// <param name="knownValues">The values to reuse, such as the names of the members of a type.</param>
+    /// <exception cref="YamlException">The current token is not a scalar.</exception>
+    public string GetScalarValue(ReadOnlySpan<string> knownValues)
+    {
+        if (_state.TryGetRawUtf8Scalar(out var raw))
+        {
+            foreach (var knownValue in knownValues)
+            {
+                if (knownValue.Length == raw.Length && Ascii.Equals(raw, knownValue))
+                    return knownValue;
+            }
+
+            // The bytes are the value: ASCII bytes that match no known value are a value that is not one of them
+            if (Ascii.IsValid(raw))
+                return GetScalarValue();
+        }
+
+        // A key with escapes, quotes that change it, or other characters than ASCII is decoded first
+        var value = GetScalarValue();
+        foreach (var knownValue in knownValues)
+        {
+            if (string.Equals(knownValue, value, StringComparison.Ordinal))
+                return knownValue;
+        }
+
+        return value;
     }
 
     /// <summary>Creates the writer that copies a node, so that every scalar of the copy resolves as it did in the source.</summary>
@@ -486,17 +568,24 @@ public sealed class YamlReader : YamlReaderWriterBase
 
     internal sealed class YamlReaderState
     {
-        private readonly IParser _parser;
+        private readonly Utf8YamlTokenSource _source;
         private readonly bool _allowAnchors;
         private readonly bool _allowAliases;
         private readonly bool _jsonSchemaStrict;
         private readonly bool _recordMappings;
         private Stack<ReplayFrame>? _replays;
 
-        public YamlReaderState(IParser parser, YamlReferenceReader? referenceReader, string? sourceName, bool allowAnchors = true, bool allowAliases = true, bool jsonSchemaStrict = false)
+        // The current token comes from the source; its value, its location and its event are created when asked for
+        private bool _fromSource;
+        private string? _scalarValue;
+        private Mark _start = Mark.Empty;
+        private Mark _end = Mark.Empty;
+        private ParsingEvent? _currentEvent;
+
+        public YamlReaderState(Utf8YamlTokenSource source, YamlReferenceReader? referenceReader, string? sourceName, bool allowAnchors = true, bool allowAliases = true, bool jsonSchemaStrict = false)
         {
             _jsonSchemaStrict = jsonSchemaStrict;
-            _parser = parser;
+            _source = source;
             TokenType = YamlTokenType.None;
             ReferenceReader = referenceReader;
             SourceName = sourceName;
@@ -513,7 +602,7 @@ public sealed class YamlReader : YamlReaderWriterBase
             Read();
         }
 
-        private bool TryGetNextEvent([NotNullWhen(true)] out ParsingEvent? current, out bool isReplayed)
+        private bool TryGetReplayedEvent([NotNullWhen(true)] out ParsingEvent? current)
         {
             while (_replays is { Count: > 0 })
             {
@@ -521,26 +610,10 @@ public sealed class YamlReader : YamlReaderWriterBase
                 if (frame.Index < frame.Events.Count)
                 {
                     current = frame.Events[frame.Index++];
-                    isReplayed = true;
                     return true;
                 }
 
                 _replays.Pop();
-            }
-
-            isReplayed = false;
-            while (_parser.MoveNext())
-            {
-                current = _parser.Current;
-                if (current is not null)
-                {
-                    if (_recordMappings)
-                    {
-                        ReferenceReader!.Record(current);
-                    }
-
-                    return true;
-                }
             }
 
             current = null;
@@ -548,113 +621,236 @@ public sealed class YamlReader : YamlReaderWriterBase
         }
 
         public YamlTokenType TokenType { get; private set; }
-        public string? ScalarValue { get; private set; }
+
+        public string? ScalarValue => _fromSource && _scalarValue is null && TokenType is YamlTokenType.Scalar ? _scalarValue = _source.ScalarValue : _scalarValue;
+
         public ScalarStyle ScalarStyle { get; private set; } = ScalarStyle.Any;
+
         public string? Tag { get; private set; }
+
         public string? Anchor { get; private set; }
+
         public string? Alias { get; private set; }
-        public Mark Start { get; private set; } = Mark.Empty;
-        public Mark End { get; private set; } = Mark.Empty;
-        public ParsingEvent? CurrentEvent { get; private set; }
+
+        public Mark Start => _fromSource ? _source.Start : _start;
+
+        public Mark End => _fromSource ? _source.End : _end;
+
+        public bool TryGetRawUtf8Scalar(out ReadOnlySpan<byte> value)
+        {
+            if (_fromSource && TokenType is YamlTokenType.Scalar)
+                return _source.TryGetRawScalar(out value);
+
+            value = default;
+            return false;
+        }
+
+        // The line and column of a key are only needed for an error: when the source keeps the whole input, they are
+        // computed then, from the offsets of the token
+        public YamlLocation CurrentLocation => _fromSource && _source.KeepsWholeInput
+            ? new YamlLocation(_source, _source.TokenStartOffset, _source.TokenEndOffset)
+            : new YamlLocation(Start, End);
+
+        public ParsingEvent? CurrentEvent => _fromSource && _currentEvent is null && TokenType is not YamlTokenType.None ? _currentEvent = _source.CreateEvent() : _currentEvent;
+
         public ParsingEvent? DerivedTypeResolvedEvent { get; set; }
+
         public YamlReferenceReader? ReferenceReader { get; }
+
         public string? SourceName { get; }
 
         public bool Read()
         {
-            while (TryGetNextEvent(out var current, out var isReplayed))
+            while (true)
             {
-                Start = current.Start;
-                End = current.End;
-
-                // These are stream/document framing tokens that most converters should not see.
-                if (current is StreamStart or StreamEnd or DocumentStart or DocumentEnd)
+                if (TryGetReplayedEvent(out var replayed))
                 {
+                    if (ReadEvent(replayed))
+                        return true;
+
                     continue;
                 }
 
-                // The anchors of a replayed node are not defined again: they keep naming the original node.
-                CurrentEvent = current;
-                ScalarValue = null;
-                ScalarStyle = ScalarStyle.Any;
-                Tag = null;
-                Anchor = null;
-                Alias = null;
+                if (!_source.Read())
+                    break;
 
-                switch (current)
+                if (_recordMappings)
                 {
-                    case MappingStart mappingStart:
-                        TokenType = YamlTokenType.StartMapping;
-                        Tag = mappingStart.Tag;
-                        Anchor = isReplayed ? null : mappingStart.Anchor;
-                        ThrowIfAnchorNotAllowed();
+                    // The recorded events are the ones that a replay reads
+                    var current = _source.CreateEvent();
+                    ReferenceReader!.Record(current);
+                    if (ReadEvent(current, isReplayed: false))
                         return true;
 
-                    case MappingEnd:
-                        TokenType = YamlTokenType.EndMapping;
-                        return true;
-
-                    case SequenceStart sequenceStart:
-                        TokenType = YamlTokenType.StartSequence;
-                        Tag = sequenceStart.Tag;
-                        Anchor = isReplayed ? null : sequenceStart.Anchor;
-                        ThrowIfAnchorNotAllowed();
-                        return true;
-
-                    case SequenceEnd:
-                        TokenType = YamlTokenType.EndSequence;
-                        return true;
-
-                    case Scalar scalar:
-                        TokenType = YamlTokenType.Scalar;
-                        ScalarValue = scalar.Value;
-                        ScalarStyle = scalar.Style;
-                        Tag = scalar.Tag;
-                        Anchor = isReplayed ? null : scalar.Anchor;
-                        ThrowIfAnchorNotAllowed();
-                        ThrowIfInvalidJsonSchemaScalar();
-                        if (Anchor is not null)
-                        {
-                            ReferenceReader?.RegisterScalar(Anchor, scalar);
-                        }
-
-                        return true;
-
-                    case AnchorAlias alias:
-                        if (!_allowAliases)
-                        {
-                            throw new YamlException(SourceName, Start, End, "YAML aliases are not allowed.");
-                        }
-
-                        // An alias to a scalar is presented as that scalar, so every converter reads it as the type
-                        // it expects instead of the type the anchored occurrence produced.
-                        if (ReferenceReader is not null && ReferenceReader.TryResolveScalar(alias.Value, out var anchoredScalar))
-                        {
-                            TokenType = YamlTokenType.Scalar;
-                            ScalarValue = anchoredScalar.Value;
-                            ScalarStyle = anchoredScalar.Style;
-                            Tag = anchoredScalar.Tag;
-                            return true;
-                        }
-
-                        TokenType = YamlTokenType.Alias;
-                        Alias = alias.Value;
-                        return true;
+                    continue;
                 }
 
-                // Ignore any other event types (directives, etc.) for now.
+                if (ReadSourceToken())
+                    return true;
             }
 
+            _fromSource = false;
             TokenType = YamlTokenType.None;
-            ScalarValue = null;
+            _scalarValue = null;
             ScalarStyle = ScalarStyle.Any;
             Tag = null;
             Anchor = null;
             Alias = null;
-            Start = Mark.Empty;
-            End = Mark.Empty;
-            CurrentEvent = null;
+            _start = Mark.Empty;
+            _end = Mark.Empty;
+            _currentEvent = null;
             return false;
+        }
+
+        // Reads the current token of the source without creating its event
+        private bool ReadSourceToken()
+        {
+            var kind = _source.Kind;
+            if (kind is Utf8YamlTokenKind.DocumentStart or Utf8YamlTokenKind.DocumentEnd)
+                return false;
+
+            _fromSource = true;
+            _currentEvent = null;
+            _scalarValue = null;
+            ScalarStyle = ScalarStyle.Any;
+            Tag = null;
+            Anchor = null;
+            Alias = null;
+            switch (kind)
+            {
+                case Utf8YamlTokenKind.MappingStart:
+                    TokenType = YamlTokenType.StartMapping;
+                    Tag = _source.Tag;
+                    Anchor = _source.Anchor;
+                    ThrowIfAnchorNotAllowed();
+                    return true;
+
+                case Utf8YamlTokenKind.MappingEnd:
+                    TokenType = YamlTokenType.EndMapping;
+                    return true;
+
+                case Utf8YamlTokenKind.SequenceStart:
+                    TokenType = YamlTokenType.StartSequence;
+                    Tag = _source.Tag;
+                    Anchor = _source.Anchor;
+                    ThrowIfAnchorNotAllowed();
+                    return true;
+
+                case Utf8YamlTokenKind.SequenceEnd:
+                    TokenType = YamlTokenType.EndSequence;
+                    return true;
+
+                case Utf8YamlTokenKind.Scalar:
+                    TokenType = YamlTokenType.Scalar;
+                    ScalarStyle = _source.ScalarStyle;
+                    Tag = _source.Tag;
+                    Anchor = _source.Anchor;
+                    ThrowIfAnchorNotAllowed();
+                    ThrowIfInvalidJsonSchemaScalar();
+                    if (Anchor is not null)
+                    {
+                        ReferenceReader?.RegisterScalar(Anchor, (Scalar)CurrentEvent!);
+                    }
+
+                    return true;
+
+                default:
+                    TokenType = YamlTokenType.Alias;
+                    return ReadAlias(_source.Anchor!);
+            }
+        }
+
+        private bool ReadEvent(ParsingEvent current, bool isReplayed = true)
+        {
+            // These are stream/document framing tokens that most converters should not see.
+            if (current is StreamStart or StreamEnd or DocumentStart or DocumentEnd)
+                return false;
+
+            // The anchors of a replayed node are not defined again: they keep naming the original node.
+            _fromSource = false;
+            _start = current.Start;
+            _end = current.End;
+            _currentEvent = current;
+            _scalarValue = null;
+            ScalarStyle = ScalarStyle.Any;
+            Tag = null;
+            Anchor = null;
+            Alias = null;
+
+            switch (current)
+            {
+                case MappingStart mappingStart:
+                    TokenType = YamlTokenType.StartMapping;
+                    Tag = mappingStart.Tag;
+                    Anchor = isReplayed ? null : mappingStart.Anchor;
+                    ThrowIfAnchorNotAllowed();
+                    return true;
+
+                case MappingEnd:
+                    TokenType = YamlTokenType.EndMapping;
+                    return true;
+
+                case SequenceStart sequenceStart:
+                    TokenType = YamlTokenType.StartSequence;
+                    Tag = sequenceStart.Tag;
+                    Anchor = isReplayed ? null : sequenceStart.Anchor;
+                    ThrowIfAnchorNotAllowed();
+                    return true;
+
+                case SequenceEnd:
+                    TokenType = YamlTokenType.EndSequence;
+                    return true;
+
+                case Scalar scalar:
+                    TokenType = YamlTokenType.Scalar;
+                    _scalarValue = scalar.Value;
+                    ScalarStyle = scalar.Style;
+                    Tag = scalar.Tag;
+                    Anchor = isReplayed ? null : scalar.Anchor;
+                    ThrowIfAnchorNotAllowed();
+                    ThrowIfInvalidJsonSchemaScalar();
+                    if (Anchor is not null)
+                    {
+                        ReferenceReader?.RegisterScalar(Anchor, scalar);
+                    }
+
+                    return true;
+
+                case AnchorAlias alias:
+                    return ReadAlias(alias.Value);
+            }
+
+            // Ignore any other event types (directives, etc.) for now.
+            return false;
+        }
+
+        private bool ReadAlias(string alias)
+        {
+            if (!_allowAliases)
+                throw new YamlException(SourceName, Start, End, "YAML aliases are not allowed.");
+
+            // An alias to a scalar is presented as that scalar, so every converter reads it as the type
+            // it expects instead of the type the anchored occurrence produced.
+            if (ReferenceReader is not null && ReferenceReader.TryResolveScalar(alias, out var anchoredScalar))
+            {
+                if (_fromSource)
+                {
+                    _start = _source.Start;
+                    _end = _source.End;
+                    _currentEvent = _source.CreateEvent();
+                    _fromSource = false;
+                }
+
+                TokenType = YamlTokenType.Scalar;
+                _scalarValue = anchoredScalar.Value;
+                ScalarStyle = anchoredScalar.Style;
+                Tag = anchoredScalar.Tag;
+                return true;
+            }
+
+            TokenType = YamlTokenType.Alias;
+            Alias = alias;
+            return true;
         }
 
         private void ThrowIfAnchorNotAllowed()

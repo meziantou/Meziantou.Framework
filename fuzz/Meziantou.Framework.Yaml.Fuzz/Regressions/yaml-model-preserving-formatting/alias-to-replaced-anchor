@@ -1,0 +1,3 @@
+base: &b {x: 1}
+first: &anchor 1
+alias: *anchor

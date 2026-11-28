@@ -70,6 +70,88 @@ The static class [YamlScalar](cref:Meziantou.Framework.Yaml.Serialization.YamlSc
 A converter also receives the null scalars (`~`, `null`) of its type: when `null` is valid for the type, check
 [YamlScalar.IsNull](cref:Meziantou.Framework.Yaml.Serialization.YamlScalar.IsNull) in [Read](cref:Meziantou.Framework.Yaml.Serialization.YamlConverter{T}.Read), as in the [generic example below](#generic-types).
 
+## Read a mapping
+
+A converter that reads a mapping goes through its keys until [EndMapping](cref:Meziantou.Framework.Yaml.Serialization.YamlTokenType.EndMapping). The reader has members that keep this
+loop from allocating, the same ones the built-in converters and the source generator use:
+
+- [GetScalarValue](cref:Meziantou.Framework.Yaml.Serialization.YamlReader.GetScalarValue) with `knownValues` returns the string of `knownValues` that is equal to the key, instead of
+  a new string. A key that is not one of them is decoded as usual.
+- [CurrentLocation](cref:Meziantou.Framework.Yaml.Serialization.YamlReader.CurrentLocation) keeps the location of a key for an error reported later. Its line and column are
+  computed only when [Start](cref:Meziantou.Framework.Yaml.Serialization.YamlLocation.Start) or [End](cref:Meziantou.Framework.Yaml.Serialization.YamlLocation.End) is read, while [YamlReader.Start](cref:Meziantou.Framework.Yaml.Serialization.YamlReader.Start) computes them for every key.
+- [RentKeySet](cref:Meziantou.Framework.Yaml.Serialization.YamlReader.RentKeySet) gives a set to find the duplicate keys, and [ReturnKeySet](cref:Meziantou.Framework.Yaml.Serialization.YamlReader.ReturnKeySet) gives it back for the
+  next mapping. The sets are reused when their comparer is the one of the property names: `StringComparer.Ordinal`,
+  or `StringComparer.OrdinalIgnoreCase` with [PropertyNameCaseInsensitive](cref:Meziantou.Framework.Yaml.YamlSerializerOptions.PropertyNameCaseInsensitive).
+- [YamlScalar.TryParseDateTime](cref:Meziantou.Framework.Yaml.Serialization.YamlScalar.TryParseDateTime) and [TryParseDateTimeOffset](cref:Meziantou.Framework.Yaml.Serialization.YamlScalar.TryParseDateTimeOffset), like the number
+  parsers, read the scalar without decoding it to a string.
+
+<!-- ref:../../../tests/Meziantou.Framework.Yaml.Tests/Serialization/YamlConverterAttributeTests.cs;region=YamlConverter_Mapping;format=md-fenced-code-block;dedent=true -->
+```csharp
+[YamlConverter(typeof(DateRangeConverter))]
+internal readonly record struct DateRange(DateTime Start, DateTime End);
+
+internal sealed class DateRangeConverter : YamlConverter<DateRange>
+{
+    private static readonly string[] Keys = ["start", "end"];
+
+    public override DateRange Read(YamlReader reader)
+    {
+        if (reader.TokenType is not YamlTokenType.StartMapping)
+            throw new YamlException(reader.SourceName, reader.Start, reader.End, "Expected a mapping.");
+
+        var seenKeys = reader.RentKeySet(StringComparer.Ordinal);
+        DateTime start = default, end = default;
+        reader.Read();
+        while (reader.TokenType is not YamlTokenType.EndMapping)
+        {
+            var key = reader.GetScalarValue(Keys); // The string of Keys when the key is one of them
+            var keyLocation = reader.CurrentLocation; // The line and column are only computed if they are used
+            reader.Read();
+            if (!seenKeys.Add(key))
+                throw new YamlException(reader.SourceName, keyLocation.Start, keyLocation.End, $"Duplicate key '{key}'.");
+
+            if (!YamlScalar.TryParseDateTime(reader, out var value))
+                throw new YamlException(reader.SourceName, reader.Start, reader.End, "Expected a date.");
+
+            reader.Read();
+            if (ReferenceEquals(key, Keys[0]))
+            {
+                start = value;
+            }
+            else if (ReferenceEquals(key, Keys[1]))
+            {
+                end = value;
+            }
+        }
+
+        reader.Read();
+        reader.ReturnKeySet(seenKeys);
+        return new DateRange(start, end);
+    }
+
+    public override void Write(YamlWriter writer, DateRange value)
+    {
+        writer.WriteStartMapping();
+        writer.WritePropertyName("start");
+        writer.WriteScalar(value.Start);
+        writer.WritePropertyName("end");
+        writer.WriteScalar(value.End);
+        writer.WriteEndMapping();
+    }
+}
+```
+<!-- endref -->
+
+<!-- ref:../../../tests/Meziantou.Framework.Yaml.Tests/Serialization/YamlConverterAttributeTests.cs;region=YamlConverter_MappingUsage;format=md-fenced-code-block;dedent=true -->
+```csharp
+var range = YamlSerializer.Deserialize<DateRange>("start: 2024-01-01T00:00:00Z\nend: 2024-12-31T00:00:00Z\n");
+Assert.Equal(2024, range.End.Year);
+
+var exception = Assert.Throws<YamlException>(() => YamlSerializer.Deserialize<DateRange>("start: 2024-01-01\nstart: 2024-02-01\n"));
+Assert.Equal(1, exception.Start.Line);
+```
+<!-- endref -->
+
 ## Register a converter
 
 A converter applies where it is registered:

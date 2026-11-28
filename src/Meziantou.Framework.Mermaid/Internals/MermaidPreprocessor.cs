@@ -1,6 +1,6 @@
 using System.Text;
 using Meziantou.Framework.Yaml;
-using Meziantou.Framework.Yaml.Model;
+using Meziantou.Framework.Yaml.Nodes;
 
 namespace Meziantou.Framework.Mermaid.Internals;
 

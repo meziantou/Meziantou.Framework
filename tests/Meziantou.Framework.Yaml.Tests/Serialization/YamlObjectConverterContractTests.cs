@@ -1,5 +1,6 @@
 #pragma warning disable MA0048 // File name must match type name
-using Meziantou.Framework.Yaml.Model;
+using System.Runtime.InteropServices;
+using Meziantou.Framework.Yaml.Nodes;
 using Meziantou.Framework.Yaml.Serialization;
 
 namespace Meziantou.Framework.Yaml.Tests.Serialization;
@@ -166,6 +167,114 @@ public sealed class YamlObjectConverterContractTests
         public string Name { get; set; } = string.Empty;
 
         public string? Optional { get; set; }
+    }
+
+    private class AccessorBase
+    {
+        public int Inherited { get; set; }
+
+        public virtual string? Overridden { get; set; }
+    }
+
+    private sealed class AccessorModel : AccessorBase
+    {
+        private string? _overridden;
+
+        public override string? Overridden
+        {
+            get => _overridden;
+            set => _overridden = value?.ToUpperInvariant();
+        }
+
+        [YamlInclude]
+        public int PrivateSetter { get; private set; }
+
+        public int? Nullable { get; set; }
+
+        public decimal Amount { get; set; }
+
+        public AccessorPoint Point { get; set; }
+
+        public List<string>? Items { get; set; }
+
+        public int Throwing
+        {
+            get => Inherited;
+            set => throw new InvalidOperationException("The value " + value.ToString(CultureInfo.InvariantCulture) + " is rejected.");
+        }
+    }
+
+    [StructLayout(LayoutKind.Auto)]
+    private struct AccessorPoint
+    {
+        public int X { get; set; }
+
+        public int Y { get; set; }
+    }
+
+    private interface IAccessorInterface
+    {
+        string? Name { get; set; }
+
+        int Count { get; set; }
+    }
+
+    private sealed class AccessorInterfaceImplementation : IAccessorInterface
+    {
+        public string? Name { get; set; }
+
+        public int Count { get; set; }
+    }
+
+    [Fact]
+    public void Serialize_InterfaceContract_ReadsItsProperties()
+    {
+        IAccessorInterface value = new AccessorInterfaceImplementation { Name = "a", Count = 2 };
+
+        var yaml = YamlSerializer.Serialize(value);
+
+        Assert.Equal("Name: a\nCount: 2\n", yaml);
+    }
+
+    [Fact]
+    public void Deserialize_CompiledAccessors_SetEveryKindOfMember()
+    {
+        var model = YamlSerializer.Deserialize<AccessorModel>("""
+            Inherited: 1
+            Overridden: text
+            PrivateSetter: 2
+            Nullable: ~
+            Amount: 12.50
+            Point: {X: 3, Y: 4}
+            "Items": [a, b]
+            """);
+
+        Assert.NotNull(model);
+        Assert.Equal(1, model.Inherited);
+        Assert.Equal("TEXT", model.Overridden);
+        Assert.Equal(2, model.PrivateSetter);
+        Assert.Null(model.Nullable);
+        Assert.Equal(12.50m, model.Amount);
+        Assert.Equal(3, model.Point.X);
+        Assert.Equal(4, model.Point.Y);
+        Assert.Equal(["a", "b"], model.Items);
+
+        var yaml = YamlSerializer.Serialize(model);
+        Assert.Contains("Overridden: TEXT", yaml, StringComparison.Ordinal);
+        Assert.Contains("PrivateSetter: 2", yaml, StringComparison.Ordinal);
+        Assert.Contains("Point:", yaml, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void Deserialize_SetterThatThrows_ReportsTheLocationOfTheKey()
+    {
+        var exception = Assert.Throws<YamlException>(() => YamlSerializer.Deserialize<AccessorModel>("Inherited: 1\nThrowing: 5\n"));
+
+        // The exception of the setter itself, not a reflection wrapper
+        Assert.IsType<InvalidOperationException>(exception.InnerException);
+        Assert.Equal(1, exception.Start.Line);
+        Assert.Equal(0, exception.Start.Column);
+        Assert.Contains("The value 5 is rejected.", exception.Message, StringComparison.Ordinal);
     }
 
     [Fact]

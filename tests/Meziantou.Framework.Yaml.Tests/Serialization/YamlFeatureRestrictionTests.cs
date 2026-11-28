@@ -1,4 +1,4 @@
-using Meziantou.Framework.Yaml.Model;
+using Meziantou.Framework.Yaml.Nodes;
 
 namespace Meziantou.Framework.Yaml.Tests.Serialization;
 public sealed class YamlFeatureRestrictionTests

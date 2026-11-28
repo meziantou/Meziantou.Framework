@@ -457,6 +457,9 @@ public static class MarkdownEscaper
         return text.Replace("\r\n", " ", StringComparison.Ordinal).Replace('\r', ' ').Replace('\n', ' ');
     }
 
+    // The nesting depth of the parentheses of a destination that the parser reads (Parsing.InlineParser)
+    private const int MaximumLinkDestinationParentheses = 32;
+
     private static string EscapeDestination(string url)
     {
         // A destination with spaces or ASCII control characters, or an empty one, needs angle brackets. The unbalanced
@@ -478,9 +481,10 @@ public static class MarkdownEscaper
             {
                 unbalanced = true;
             }
-            else if (c == '(')
+            else if (c == '(' && ++depth > MaximumLinkDestinationParentheses)
             {
-                depth++;
+                // The parser reads at most 32 nested parentheses in a destination without angle brackets (fuzz regression)
+                unbalanced = true;
             }
         }
 

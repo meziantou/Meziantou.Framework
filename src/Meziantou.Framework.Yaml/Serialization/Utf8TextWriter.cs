@@ -79,7 +79,7 @@ internal sealed class Utf8TextWriter : TextWriter
     {
         if (_charCount == _chars.Length)
         {
-            EncodeChars(flush: false);
+            EncodeBufferedChars(flush: false);
         }
 
         _chars[_charCount++] = value;
@@ -91,11 +91,19 @@ internal sealed class Utf8TextWriter : TextWriter
 
     public override void Write(ReadOnlySpan<char> buffer)
     {
+        // A block of the buffered output of the serializer is encoded as is, without being copied first
+        if (buffer.Length >= CharBufferSize / 2)
+        {
+            EncodeBufferedChars(flush: false);
+            Encode(buffer, flush: false);
+            return;
+        }
+
         while (!buffer.IsEmpty)
         {
             if (_charCount == _chars.Length)
             {
-                EncodeChars(flush: false);
+                EncodeBufferedChars(flush: false);
             }
 
             var count = Math.Min(buffer.Length, _chars.Length - _charCount);
@@ -108,36 +116,47 @@ internal sealed class Utf8TextWriter : TextWriter
     /// <summary>Encodes the buffered text and, with a stream, writes it to the stream and flushes it.</summary>
     public override void Flush()
     {
-        EncodeChars(flush: true);
+        EncodeBufferedChars(flush: true);
         _stream?.Flush();
     }
 
     /// <summary>Gets the bytes of the text, which <see cref="Flush"/> encoded.</summary>
     public byte[] ToArray() => _bytes.AsSpan(0, _byteCount).ToArray();
 
-    // A surrogate pair can be split between two blocks: the encoder keeps the high surrogate until the next block
-    private void EncodeChars(bool flush)
+    private void EncodeBufferedChars(bool flush)
     {
-        var chars = _chars.AsSpan(0, _charCount);
+        var count = _charCount;
+        _charCount = 0;
+        Encode(_chars.AsSpan(0, count), flush);
+    }
+
+    // A surrogate pair can be split between two blocks: the encoder keeps the high surrogate until the next block
+    private void Encode(ReadOnlySpan<char> chars, bool flush)
+    {
         if (_stream is not null)
         {
-            var count = _encoder.GetBytes(chars, _bytes, flush);
-            _stream.Write(_bytes, 0, count);
-        }
-        else
-        {
-            var required = _byteCount + StrictUtf8.GetMaxByteCount(chars.Length);
-            if (required > _bytes.Length)
+            // The bytes of a block of CharBufferSize characters fit in the buffer of the stream
+            do
             {
-                var bytes = ArrayPool<byte>.Shared.Rent(Math.Max(required, _bytes.Length * 2));
-                _bytes.AsSpan(0, _byteCount).CopyTo(bytes);
-                ArrayPool<byte>.Shared.Return(_bytes);
-                _bytes = bytes;
+                var block = chars[..Math.Min(chars.Length, CharBufferSize)];
+                chars = chars[block.Length..];
+                var count = _encoder.GetBytes(block, _bytes, flush && chars.IsEmpty);
+                _stream.Write(_bytes, 0, count);
             }
+            while (!chars.IsEmpty);
 
-            _byteCount += _encoder.GetBytes(chars, _bytes.AsSpan(_byteCount), flush);
+            return;
         }
 
-        _charCount = 0;
+        var required = _byteCount + StrictUtf8.GetMaxByteCount(chars.Length);
+        if (required > _bytes.Length)
+        {
+            var bytes = ArrayPool<byte>.Shared.Rent(Math.Max(required, _bytes.Length * 2));
+            _bytes.AsSpan(0, _byteCount).CopyTo(bytes);
+            ArrayPool<byte>.Shared.Return(_bytes);
+            _bytes = bytes;
+        }
+
+        _byteCount += _encoder.GetBytes(chars, _bytes.AsSpan(_byteCount), flush);
     }
 }

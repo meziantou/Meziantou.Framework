@@ -1,4 +1,5 @@
 using System.Buffers;
+using System.Diagnostics.CodeAnalysis;
 using Meziantou.Framework.Yaml.Serialization;
 using Meziantou.Framework.Yaml.Serialization.References;
 
@@ -1235,6 +1236,7 @@ public static class YamlSerializer
     /// <param name="value">The value to serialize.</param>
     /// <param name="options">The serializer options. If <see langword="null"/>, <see cref="YamlSerializerOptions.Default"/> is used.</param>
     /// <exception cref="ArgumentNullException"><paramref name="destination"/> is <see langword="null"/>.</exception>
+    [SuppressMessage("Reliability", "CA2000:Dispose objects before losing scope", Justification = "The writer is given back to the cache of the thread, which resets it for the next call: it holds no resource to dispose")]
     public static void Serialize<T>(IBufferWriter<char> destination, T value, YamlSerializerOptions? options = null)
     {
         ArgumentNullException.ThrowIfNull(destination);
@@ -1258,6 +1260,7 @@ public static class YamlSerializer
     /// <param name="value">The value to serialize.</param>
     /// <param name="context">The source-generated serializer context.</param>
     /// <exception cref="ArgumentNullException"><paramref name="destination"/> or <paramref name="context"/> is <see langword="null"/>.</exception>
+    [SuppressMessage("Reliability", "CA2000:Dispose objects before losing scope", Justification = "The writer is given back to the cache of the thread, which resets it for the next call: it holds no resource to dispose")]
     public static void Serialize<T>(IBufferWriter<char> destination, T value, YamlSerializerContext context)
     {
         ArgumentNullException.ThrowIfNull(destination);
@@ -1282,6 +1285,7 @@ public static class YamlSerializer
     /// <param name="inputType">The declared input type.</param>
     /// <param name="options">The serializer options. If <see langword="null"/>, <see cref="YamlSerializerOptions.Default"/> is used.</param>
     /// <exception cref="ArgumentNullException"><paramref name="destination"/> or <paramref name="inputType"/> is <see langword="null"/>.</exception>
+    [SuppressMessage("Reliability", "CA2000:Dispose objects before losing scope", Justification = "The writer is given back to the cache of the thread, which resets it for the next call: it holds no resource to dispose")]
     public static void Serialize(IBufferWriter<char> destination, object? value, Type inputType, YamlSerializerOptions? options = null)
     {
         ArgumentNullException.ThrowIfNull(destination);
@@ -1306,6 +1310,7 @@ public static class YamlSerializer
     /// <param name="inputType">The declared input type.</param>
     /// <param name="context">The source-generated serializer context.</param>
     /// <exception cref="ArgumentNullException"><paramref name="destination"/>, <paramref name="inputType"/>, or <paramref name="context"/> is <see langword="null"/>.</exception>
+    [SuppressMessage("Reliability", "CA2000:Dispose objects before losing scope", Justification = "The writer is given back to the cache of the thread, which resets it for the next call: it holds no resource to dispose")]
     public static void Serialize(IBufferWriter<char> destination, object? value, Type inputType, YamlSerializerContext context)
     {
         ArgumentNullException.ThrowIfNull(destination);
@@ -1329,10 +1334,49 @@ public static class YamlSerializer
         ArgumentNullException.ThrowIfNull(writer);
 
         var yamlWriter = CreateWriter(typeInfo, value, writer);
-        typeInfo.Write(yamlWriter, value);
-        if (!yamlWriter.EndsWithNewLine)
+        yamlWriter.UseBufferedOutput();
+        try
         {
-            writer.Write('\n');
+            typeInfo.Write(yamlWriter, value);
+            if (!yamlWriter.EndsWithNewLine)
+            {
+                yamlWriter.WriteTrailingNewLine();
+            }
+
+            yamlWriter.CompleteBufferedOutput();
+        }
+        finally
+        {
+            yamlWriter.ReleaseBufferedOutput();
+        }
+    }
+
+    // The writer buffers the text while the value is written, and writes it to its destination by blocks
+    private static void WriteBuffered(YamlTypeInfo typeInfo, YamlWriter writer, object? value)
+    {
+        writer.UseBufferedOutput();
+        try
+        {
+            typeInfo.Write(writer, value);
+            writer.CompleteBufferedOutput();
+        }
+        finally
+        {
+            writer.ReleaseBufferedOutput();
+        }
+    }
+
+    private static void WriteBuffered<T>(YamlTypeInfo<T> typeInfo, YamlWriter writer, T value)
+    {
+        writer.UseBufferedOutput();
+        try
+        {
+            typeInfo.Write(writer, value);
+            writer.CompleteBufferedOutput();
+        }
+        finally
+        {
+            writer.ReleaseBufferedOutput();
         }
     }
 
@@ -1357,7 +1401,7 @@ public static class YamlSerializer
         var writer = typeInfo.Options.ReferenceHandling == YamlReferenceHandling.PreserveMinimal
             ? CreateWriter(typeInfo, value, new StringWriter(stringBuilder, System.Globalization.CultureInfo.InvariantCulture))
             : new YamlWriter(stringBuilder, typeInfo.Options);
-        typeInfo.Write(writer, value);
+        WriteBuffered(typeInfo, writer, value);
         if (!writer.EndsWithNewLine)
         {
             stringBuilder.Append('\n');
@@ -1373,7 +1417,7 @@ public static class YamlSerializer
         var writer = typeInfo.Options.ReferenceHandling == YamlReferenceHandling.PreserveMinimal
             ? CreateWriter(typeInfo, value, new StringWriter(stringBuilder, System.Globalization.CultureInfo.InvariantCulture))
             : new YamlWriter(stringBuilder, typeInfo.Options);
-        typeInfo.Write(writer, value);
+        WriteBuffered(typeInfo, writer, value);
         if (!writer.EndsWithNewLine)
         {
             stringBuilder.Append('\n');

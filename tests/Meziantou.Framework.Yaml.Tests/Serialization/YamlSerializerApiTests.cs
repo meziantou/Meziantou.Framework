@@ -761,6 +761,84 @@ public class YamlSerializerApiTests
         Assert.Equal(values, YamlSerializer.Deserialize<List<string>>(expected));
     }
 
+    // The serializer buffers the text by blocks: the values that cross a block, and the strings longer than a block, are
+    // written as they are, to every output
+    [Fact]
+    public void Serialize_WritesDocumentsLargerThanTheBuffer()
+    {
+        var value = new BufferedDocument
+        {
+            Numbers = [.. Enumerable.Range(0, 3000).Select(i => i * 1_000_003L)],
+            Doubles = [.. Enumerable.Range(0, 1000).Select(i => i / 7.0)],
+            Prices = [.. Enumerable.Range(0, 1000).Select(i => i / 100m)],
+            Dates = [.. Enumerable.Range(0, 1000).Select(i => new DateTime(2024, 1, 1, 0, 0, 0, DateTimeKind.Utc).AddSeconds(i))],
+            Texts = [new string('a', 5000), "b" + new string(' ', 9000) + "c", new string('\n', 4200), "d"],
+        };
+
+        var yaml = YamlSerializer.Serialize(value);
+        using var stringWriter = new StringWriter();
+        YamlSerializer.Serialize(stringWriter, value);
+        using var stream = new MemoryStream();
+        YamlSerializer.Serialize(stream, value);
+        var bufferWriter = new System.Buffers.ArrayBufferWriter<char>();
+        YamlSerializer.Serialize(bufferWriter, value);
+
+        Assert.Equal(yaml, stringWriter.ToString());
+        Assert.Equal(System.Text.Encoding.UTF8.GetBytes(yaml), stream.ToArray());
+        Assert.Equal(System.Text.Encoding.UTF8.GetBytes(yaml), YamlSerializer.SerializeToUtf8Bytes(value));
+        Assert.Equal(yaml, bufferWriter.WrittenSpan.ToString());
+
+        var roundTrip = YamlSerializer.Deserialize<BufferedDocument>(yaml)!;
+        Assert.Equal(value.Numbers, roundTrip.Numbers);
+        Assert.Equal(value.Doubles, roundTrip.Doubles);
+        Assert.Equal(value.Prices, roundTrip.Prices);
+        Assert.Equal(value.Dates, roundTrip.Dates);
+        Assert.Equal(value.Texts, roundTrip.Texts);
+    }
+
+    // Most strings are written plain without the checks of the other values they could read as. In a block collection,
+    // the indicators that only start a node are ordinary characters after the first one; in a flow collection, the
+    // flow indicators end the scalar.
+    [Theory]
+    [InlineData("user@example.com", "- user@example.com\n", "[user@example.com]\n")]
+    [InlineData("a{b}", "- a{b}\n", "[\"a{b}\"]\n")]
+    [InlineData("a,b", "- a,b\n", "[\"a,b\"]\n")]
+    [InlineData("x?y", "- x?y\n", "[\"x?y\"]\n")]
+    [InlineData("it's", "- it's\n", "[it's]\n")]
+    [InlineData("a\"b", "- a\"b\n", "[a\"b]\n")]
+    [InlineData("a#b", "- a#b\n", "[a#b]\n")]
+    [InlineData("a #b", "- \"a #b\"\n", "[\"a #b\"]\n")]
+    [InlineData("a: b", "- \"a: b\"\n", "[\"a: b\"]\n")]
+    [InlineData("Note:", "- \"Note:\"\n", "[\"Note:\"]\n")]
+    [InlineData("Customer 0", "- Customer 0\n", "[Customer 0]\n")]
+    [InlineData("trailing ", "- \"trailing \"\n", "[\"trailing \"]\n")]
+    [InlineData("nope", "- nope\n", "[nope]\n")]
+    [InlineData("null", "- \"null\"\n", "[\"null\"]\n")]
+    [InlineData("True", "- \"True\"\n", "[\"True\"]\n")]
+    [InlineData("1 Main Street\nSpringfield", "- \"1 Main Street\\nSpringfield\"\n", "[\"1 Main Street\\nSpringfield\"]\n")]
+    public void Serialize_PlainStrings(string value, string expectedBlock, string expectedFlow)
+    {
+        List<string> values = [value];
+
+        Assert.Equal(expectedBlock, YamlSerializer.Serialize(values));
+        Assert.Equal(expectedFlow, YamlSerializer.Serialize(values, new YamlSerializerOptions { WriteIndented = false }));
+        Assert.Equal(values, YamlSerializer.Deserialize<List<string>>(expectedBlock));
+        Assert.Equal(values, YamlSerializer.Deserialize<List<string>>(expectedFlow));
+    }
+
+    private sealed class BufferedDocument
+    {
+        public List<long>? Numbers { get; set; }
+
+        public List<double>? Doubles { get; set; }
+
+        public List<decimal>? Prices { get; set; }
+
+        public List<DateTime>? Dates { get; set; }
+
+        public List<string>? Texts { get; set; }
+    }
+
     // A lone surrogate is not text: the writer reports it, whatever the output
     [Fact]
     public void SerializeToUtf8Bytes_RejectsLoneSurrogatesLikeSerialize()

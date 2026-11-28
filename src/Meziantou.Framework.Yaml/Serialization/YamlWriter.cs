@@ -19,13 +19,24 @@ public sealed class YamlWriter : YamlReaderWriterBase
     private string? _pendingAnchor;
     private string? _pendingTag;
     private KeyStyle[]? _keyStyles;
+    // The last character written to the destination; the characters of the buffer come after it
     private bool _hasWrittenChar;
     private char _lastWrittenChar;
+
+    // The text that UseBufferedOutput buffers before writing it to the destination
+    private const int OutputBufferSize = 4096;
+    private char[]? _chars;
+    private int _charCount;
     private YamlSequenceItemStyle _blockSequenceMappingStyle;
     private YamlSequenceItemStyle _blockSequenceSequenceStyle;
     private ScalarStyle _stringStyle;
     private bool _suppressNextNewLine;
     private readonly bool _forceBlockStyle;
+
+    // The options that the writer reads for every node, read once
+    private bool _writeIndented;
+    private bool _preferPlainStyle;
+    private bool _isJsonSchema;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="YamlWriter"/> class.
@@ -135,16 +146,20 @@ public sealed class YamlWriter : YamlReaderWriterBase
         return !_referenceWriter.IsCollectionComplete || isValueType || !_referenceWriter.WasCollected(value);
     }
 
-    internal bool EndsWithNewLine => _hasWrittenChar && _lastWrittenChar == '\n';
+    internal bool EndsWithNewLine => HasWrittenChar && LastWrittenChar == '\n';
+
+    private bool HasWrittenChar => _charCount > 0 || _hasWrittenChar;
+
+    private char LastWrittenChar => _charCount > 0 ? _chars![_charCount - 1] : _lastWrittenChar;
 
     /// <summary>Gets a value indicating whether the next character is written at the first column of a line.</summary>
     /// <remarks>A document marker (<c>---</c> or <c>...</c>) only ends the current document there.</remarks>
-    private bool IsAtLineStart => !_hasWrittenChar || _lastWrittenChar == '\n';
+    private bool IsAtLineStart => !HasWrittenChar || LastWrittenChar == '\n';
 
     /// <summary>
     /// Gets a value indicating whether collections are written using the flow style, which keeps the document on a single line.
     /// </summary>
-    private bool IsFlow => !_forceBlockStyle && !Options.WriteIndented;
+    private bool IsFlow => !_forceBlockStyle && !_writeIndented;
 
     /// <summary>Temporarily overrides how nested block collections are emitted when they appear as items in block sequences.</summary>
     /// <param name="mappingStyle">The mapping style override, or <see cref="YamlSequenceItemStyle.Default"/> to keep the current mapping style.</param>
@@ -748,6 +763,27 @@ public sealed class YamlWriter : YamlReaderWriterBase
             return;
         }
 
+        if (_chars is not null && _pendingTag is null && _pendingAnchor is null && !_isJsonSchema)
+        {
+            WriteValuePrefixForScalar();
+            if (_chars.Length - _charCount < FormattedScalarLength)
+            {
+                FlushBufferedOutput();
+            }
+
+            var destination = _chars.AsSpan(_charCount, FormattedScalarLength);
+            value.TryFormat(destination, out var length, "R", CultureInfo.InvariantCulture);
+            if (destination[..length].IndexOfAny('.', 'E', 'e') < 0)
+            {
+                destination[length++] = '.';
+                destination[length++] = '0';
+            }
+
+            _charCount += length;
+            CompleteValueAfterScalar();
+            return;
+        }
+
         Span<char> buffer = stackalloc char[32];
         value.TryFormat(buffer, out var written, "R", CultureInfo.InvariantCulture);
         WriteFloatingPointScalar(buffer, written);
@@ -1324,6 +1360,13 @@ public sealed class YamlWriter : YamlReaderWriterBase
             return;
         }
 
+        if (_chars is { } chars && spaces <= chars.Length - _charCount)
+        {
+            chars.AsSpan(_charCount, spaces).Fill(' ');
+            _charCount += spaces;
+            return;
+        }
+
         if (_indentBuilder.Length != spaces)
         {
             _indentBuilder.Clear();
@@ -1386,6 +1429,9 @@ public sealed class YamlWriter : YamlReaderWriterBase
         _blockSequenceMappingStyle = ResolveOptionStyle(Options.BlockSequenceMappingStyle, YamlSequenceItemStyle.Compact);
         _blockSequenceSequenceStyle = ResolveOptionStyle(Options.BlockSequenceSequenceStyle, YamlSequenceItemStyle.Expanded);
         _stringStyle = Options.ScalarStylePreferences.StringStyle;
+        _writeIndented = Options.WriteIndented;
+        _preferPlainStyle = Options.ScalarStylePreferences.PreferPlainStyle;
+        _isJsonSchema = Options.Schema is YamlSchemaKind.Json;
     }
 
     private bool ShouldCompactSequenceItem(ContainerKind kind)
@@ -1416,6 +1462,9 @@ public sealed class YamlWriter : YamlReaderWriterBase
     private void WriteFormattedPlainScalar<T>(T value, ReadOnlySpan<char> format)
         where T : ISpanFormattable
     {
+        if (TryWriteFormattedScalarInBuffer(value, format))
+            return;
+
         Span<char> buffer = stackalloc char[64];
         if (value.TryFormat(buffer, out var written, format, CultureInfo.InvariantCulture))
         {
@@ -1427,9 +1476,45 @@ public sealed class YamlWriter : YamlReaderWriterBase
     }
 
     // A number of a primitive type: formatted in a stack buffer by a constrained call, which does not box it
+    // The longest text of a number or a date that is formatted in the buffer: a longer one is formatted to a string
+    private const int FormattedScalarLength = 64;
+
+    /// <summary>
+    /// Formats a scalar that is written plain where it is written in the buffer, instead of in a temporary buffer that
+    /// is copied. This is what the other path writes when the scalar has no node property and the schema reads every
+    /// number and date plain, which is not the case of the JSON schema.
+    /// </summary>
+    private bool TryWriteFormattedScalarInBuffer<T>(T value, ReadOnlySpan<char> format)
+        where T : ISpanFormattable
+    {
+        if (_chars is null || _pendingTag is not null || _pendingAnchor is not null || _isJsonSchema)
+            return false;
+
+        WriteValuePrefixForScalar();
+        if (_chars.Length - _charCount < FormattedScalarLength)
+        {
+            FlushBufferedOutput();
+        }
+
+        if (value.TryFormat(_chars.AsSpan(_charCount, FormattedScalarLength), out var written, format, CultureInfo.InvariantCulture))
+        {
+            _charCount += written;
+        }
+        else
+        {
+            Write(value.ToString(format.ToString(), CultureInfo.InvariantCulture));
+        }
+
+        CompleteValueAfterScalar();
+        return true;
+    }
+
     private void WriteNumberScalar<T>(T value)
         where T : ISpanFormattable
     {
+        if (TryWriteFormattedScalarInBuffer(value, format: default))
+            return;
+
         Span<char> buffer = stackalloc char[64];
         if (value.TryFormat(buffer, out var written, format: default, CultureInfo.InvariantCulture))
         {
@@ -1590,6 +1675,12 @@ public sealed class YamlWriter : YamlReaderWriterBase
 
     private void WriteStringCore(ReadOnlySpan<char> value, bool isKey)
     {
+        if (!isKey && IsUnambiguousPlainString(value))
+        {
+            Write(value);
+            return;
+        }
+
         if (value.Length == 0)
         {
             Write("''");
@@ -1601,7 +1692,9 @@ public sealed class YamlWriter : YamlReaderWriterBase
             return;
         }
 
-        if (!Options.ScalarStylePreferences.PreferPlainStyle || ShouldQuoteAmbiguousScalar(value))
+        // A string that cannot be plain, such as one with a line break, is quoted whether it reads as another value or not:
+        // the parsers of the other values are only run for a string that can be plain
+        if (!_preferPlainStyle || !IsPlainSafe(value, isKey) || ShouldQuoteAmbiguousScalar(value) || !IsPlainAllowedBySchema(value))
         {
             Write('"');
             WriteEscaped(value);
@@ -1609,7 +1702,7 @@ public sealed class YamlWriter : YamlReaderWriterBase
             return;
         }
 
-        WriteScalarCore(value, isKey);
+        Write(value);
     }
 
     /// <summary>Writes <paramref name="value"/> using the requested string style.</summary>
@@ -1946,6 +2039,26 @@ public sealed class YamlWriter : YamlReaderWriterBase
     // applies to them, wherever they appear in the scalar and whatever the context.
     private static readonly SearchValues<char> PlainSafeCharacters = SearchValues.Create("ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789 -_./+=~;$()<^\\");
 
+    /// <summary>
+    /// Determines whether a string value is written plain with the checks of <see cref="WriteStringCore"/>, for the most
+    /// common strings: a string that starts with a letter that no null, boolean, number, timestamp or indicator starts
+    /// with, that does not end with a space, and whose characters have no meaning in a plain scalar.
+    /// </summary>
+    private bool IsUnambiguousPlainString(ReadOnlySpan<char> value)
+    {
+        return (_stringStyle is ScalarStyle.Plain || (_stringStyle is ScalarStyle.Any && _preferPlainStyle)) &&
+            !_isJsonSchema &&
+            value.Length > 0 &&
+            char.IsAsciiLetter(value[0]) &&
+            !NonStringScalarStarts.Contains(value[0]) &&
+            value[^1] != ' ' &&
+            !value[1..].ContainsAnyExcept(IsFlow ? PlainSafeCharacters : BlockPlainSafeCharacters);
+    }
+
+    // The characters that have no meaning after the first character of a plain scalar in a block collection: the
+    // indicators that only start a node, and the flow indicators. '#' and ':' depend on the characters around them.
+    private static readonly SearchValues<char> BlockPlainSafeCharacters = SearchValues.Create("ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789 -_./+=~;$()<^\\&*!|>'\"%@`?{}[],");
+
     private bool IsPlainSafe(ReadOnlySpan<char> value, bool isKey)
     {
         // Keep it conservative: if in doubt, quote.
@@ -2173,67 +2286,118 @@ public sealed class YamlWriter : YamlReaderWriterBase
     private bool IsPlainAllowedBySchema(ReadOnlySpan<char> value)
         => Options.Schema is not YamlSchemaKind.Json || YamlScalar.ResolvesToNonString(value, YamlSchemaKind.Json);
 
-    private void Write(string value)
+    /// <summary>
+    /// Buffers the text in a pooled array, which is written to the destination when it is full and by
+    /// <see cref="CompleteBufferedOutput"/>: a fragment is then copied to the array instead of being written by a call
+    /// to the destination. The serializer, which owns the writer, calls it; the text of a writer created with a public
+    /// constructor is written as it comes.
+    /// </summary>
+    internal void UseBufferedOutput()
+    {
+        _chars ??= ArrayPool<char>.Shared.Rent(OutputBufferSize);
+    }
+
+    /// <summary>Writes the buffered text to the destination and gives back the buffer. The writer then writes the text as it comes.</summary>
+    internal void CompleteBufferedOutput()
+    {
+        FlushBufferedOutput();
+        ReleaseBufferedOutput();
+    }
+
+    /// <summary>Ends the document with a line break, which the serializer adds after a value that does not end with one.</summary>
+    internal void WriteTrailingNewLine() => Write('\n');
+
+    /// <summary>Gives back the buffer without writing the text it holds, after an error.</summary>
+    internal void ReleaseBufferedOutput()
+    {
+        if (_chars is { } chars)
+        {
+            _chars = null;
+            _charCount = 0;
+            ArrayPool<char>.Shared.Return(chars);
+        }
+    }
+
+    private void FlushBufferedOutput()
+    {
+        if (_chars is { } chars && _charCount > 0)
+        {
+            var text = chars.AsSpan(0, _charCount);
+            _charCount = 0;
+            WriteToDestination(text);
+        }
+    }
+
+    private void WriteToDestination(ReadOnlySpan<char> value)
     {
         if (_stringBuilder is not null)
         {
             _stringBuilder.Append(value);
-            TrackLastChar(value);
-            return;
+        }
+        else
+        {
+            _writer!.Write(value);
         }
 
-        _writer!.Write(value);
         TrackLastChar(value);
     }
 
+    private void Write(string value) => Write(value.AsSpan());
+
     private void Write(char value)
     {
-        if (_stringBuilder is not null)
+        if (_chars is { } chars)
         {
-            _stringBuilder.Append(value);
-            TrackLastChar(value);
+            if (_charCount == chars.Length)
+            {
+                FlushBufferedOutput();
+            }
+
+            chars[_charCount++] = value;
             return;
         }
 
-        _writer!.Write(value);
+        if (_stringBuilder is not null)
+        {
+            _stringBuilder.Append(value);
+        }
+        else
+        {
+            _writer!.Write(value);
+        }
+
         TrackLastChar(value);
     }
 
     private void Write(ReadOnlySpan<char> value)
     {
-        if (_stringBuilder is not null)
+        if (_chars is { } chars)
         {
-            _stringBuilder.Append(value);
-            TrackLastChar(value);
-            return;
+            if (value.Length <= chars.Length - _charCount)
+            {
+                value.CopyTo(chars.AsSpan(_charCount));
+                _charCount += value.Length;
+                return;
+            }
+
+            FlushBufferedOutput();
+            if (value.Length <= chars.Length)
+            {
+                value.CopyTo(chars);
+                _charCount = value.Length;
+                return;
+            }
         }
 
-        _writer!.Write(value);
-        TrackLastChar(value);
+        WriteToDestination(value);
     }
 
     private void Write(StringBuilder value)
     {
-        if (_stringBuilder is not null)
+        foreach (var chunk in value.GetChunks())
         {
-            _stringBuilder.Append(value);
-            TrackLastChar(value);
-            return;
+            Write(chunk.Span);
         }
-
-        _writer!.Write(value);
-        TrackLastChar(value);
-    }
-
-    private void TrackLastChar(string value)
-    {
-        if (value.Length == 0)
-        {
-            return;
-        }
-
-        _hasWrittenChar = true;
-        _lastWrittenChar = value[value.Length - 1];
     }
 
     private void TrackLastChar(char value)
@@ -2243,17 +2407,6 @@ public sealed class YamlWriter : YamlReaderWriterBase
     }
 
     private void TrackLastChar(ReadOnlySpan<char> value)
-    {
-        if (value.Length == 0)
-        {
-            return;
-        }
-
-        _hasWrittenChar = true;
-        _lastWrittenChar = value[value.Length - 1];
-    }
-
-    private void TrackLastChar(StringBuilder value)
     {
         if (value.Length == 0)
         {

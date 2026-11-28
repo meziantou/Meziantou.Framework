@@ -924,7 +924,7 @@ internal sealed partial class ComputedStyle
 
         // The value often depends on the same property of the parent (inheritance, display, font-size...): it is computed
         // for the ancestors first, from the topmost one, so the recursion does not go as deep as the tree.
-        if (GetInheritanceSource(property) is { } parent && !parent._computed.ContainsKey(property))
+        if (MayDependOnAncestors(definition) && GetInheritanceSource(property) is { } parent && !parent._computed.ContainsKey(property))
         {
             ComputeAncestors(property);
         }
@@ -955,6 +955,22 @@ internal sealed partial class ComputedStyle
 
     /// <summary>Returns whether the computed value of the property is being computed (a dependency cycle when it is needed again).</summary>
     private bool IsComputing(string property) => Engine.ComputingProperties.Contains(this, property);
+
+    /// <summary>
+    /// Returns whether the computed value of the property may need the value of the same property of the ancestors. A property
+    /// that is not inherited and has no cascaded value computes to its initial value, which does not depend on the parent,
+    /// except for the properties whose computation reads the parent (<c>display</c>, <c>justify-items</c>).
+    /// </summary>
+    private bool MayDependOnAncestors(CssPropertyDefinition definition)
+    {
+        if (definition.Inherited || IsHighlight || _effects is not null || _smilAnimations is not null || UnvisitedStyle is not null)
+            return true;
+
+        if (definition.Name is "display" or "justify-items")
+            return true;
+
+        return TryGetCascadedValue(definition.Name, out _);
+    }
 
     private void ComputeAncestors(string property)
     {

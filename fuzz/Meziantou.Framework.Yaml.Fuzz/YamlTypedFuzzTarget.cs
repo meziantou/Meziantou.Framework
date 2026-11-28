@@ -118,6 +118,10 @@ internal static class YamlTypedFuzzTarget
             "Metadata: {<<: [{a: 1}, {a: 2, b: 3}], a: 4, a: 5}\n",
             "Metadata: {a: 1, A: 2}\n",
             "Name: a\n<<: {Count: 1, Name: b}\nCount: 2\nCount: 3\n",
+            "Record: {Code: a, Size: 2}\n",
+            "Record: {Size: 1, Code: b, Size: 2}\n",
+            "Record: {Code: c, <<: {Size: 3, Code: d}}\n",
+            "Record: {code: e, SIZE: 4, Other: 5}\n",
             "Tags: [a, b]\nTags: [c]\n",
             "Children: [{Sku: a, Sku: b}]\n",
             "{Name: flow, Count: 3, Child: {Quantity: 4}}\n",
@@ -162,7 +166,12 @@ internal static class YamlTypedFuzzTarget
         public Collection<TypedChild>? Children { get; set; }
 
         public Dictionary<string, string>? Metadata { get; set; }
+
+        public TypedRecord? Record { get; set; }
     }
+
+    // Created by its constructor
+    internal sealed record TypedRecord(string? Code, int Size);
 
     internal sealed class TypedChild
     {

@@ -195,6 +195,72 @@ public sealed class YamlDuplicateKeyHandlingTests
         Assert.Equal(3, result.P67);
     }
 
+    // The keys of a dictionary are the keys of the mapping only until a merge key adds others: an explicit key is still
+    // a duplicate of an earlier explicit key after a merge, and replaces a merged key without being a duplicate
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void Dictionary_DuplicateKeys_AroundMergeKeys(bool useSourceGeneration)
+    {
+        var options = new YamlSerializerOptions();
+        AssertDuplicateKeysAroundMergeKeys<Dictionary<string, int>>(options, useSourceGeneration);
+        AssertDuplicateKeysAroundMergeKeys<OrderedDictionary<string, int>>(options, useSourceGeneration);
+        AssertDuplicateKeysAroundMergeKeys<SortedDictionary<string, int>>(options, useSourceGeneration);
+
+        var member = Deserialize<DuplicateKeyDictionaryKindsModel>("Values: {a: 1, <<: {a: 10, b: 20}, b: 2}\nOrdered: {a: 1, <<: {a: 10, b: 20}, b: 2}\nSorted: {a: 1, <<: {a: 10, b: 20}, b: 2}\n", options, useSourceGeneration)!;
+        Assert.Equal([new("a", 1), new("b", 2)], member.Values!.OrderBy(pair => pair.Key, StringComparer.Ordinal));
+        Assert.Equal([new("a", 1), new("b", 2)], member.Ordered!);
+        Assert.Equal([new("a", 1), new("b", 2)], member.Sorted!);
+        Assert.Throws<YamlException>(() => Deserialize<DuplicateKeyDictionaryKindsModel>("Values: {a: 1, <<: {b: 20}, a: 2}\n", options, useSourceGeneration));
+        Assert.Throws<YamlException>(() => Deserialize<DuplicateKeyDictionaryKindsModel>("Ordered: {a: 1, <<: {b: 20}, a: 2}\n", options, useSourceGeneration));
+        Assert.Throws<YamlException>(() => Deserialize<DuplicateKeyDictionaryKindsModel>("Sorted: {a: 1, <<: {b: 20}, a: 2}\n", options, useSourceGeneration));
+        Assert.Throws<YamlException>(() => Deserialize<DuplicateKeyDictionaryKindsModel>("Values: {a: 1, A: 2}\n", options with { PropertyNameCaseInsensitive = true }, useSourceGeneration));
+        Assert.HasCount(2, Deserialize<DuplicateKeyDictionaryKindsModel>("Values: {a: 1, A: 2}\n", options, useSourceGeneration)!.Values!);
+    }
+
+    // A key of the dictionary that a member already holds is replaced, it is not a duplicate key of the mapping
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void Dictionary_PopulatedDictionary_KeysItAlreadyHoldsAreNotDuplicates(bool useSourceGeneration)
+    {
+        var result = Deserialize<DuplicateKeyPopulatedDictionaryModel>("Values: {a: 1, b: 2}\n", new YamlSerializerOptions(), useSourceGeneration)!;
+
+        Assert.Equal([new("a", 1), new("b", 2), new("z", 26)], result.Values.OrderBy(pair => pair.Key, StringComparer.Ordinal));
+        Assert.Throws<YamlException>(() => Deserialize<DuplicateKeyPopulatedDictionaryModel>("Values: {a: 1, a: 2}\n", new YamlSerializerOptions(), useSourceGeneration));
+    }
+
+    // An exception of the setter of a member is reported at the key of the member; an invalid contract is not a YAML error
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void Object_MemberExceptions_AreReportedAtTheirKey(bool useSourceGeneration)
+    {
+        var exception = Assert.Throws<YamlException>(() => Deserialize<DuplicateKeyThrowingSetterModel>("Name: a\nValue: 1\nOther: 2\n", new YamlSerializerOptions(), useSourceGeneration));
+        Assert.IsType<InvalidOperationException>(exception.InnerException);
+        Assert.Equal(1, exception.Start.Line);
+        Assert.Equal(0, exception.Start.Column);
+
+        var mergedException = Assert.Throws<YamlException>(() => Deserialize<DuplicateKeyThrowingSetterModel>("Name: a\n<<: {Other: 2, Value: 1}\n", new YamlSerializerOptions(), useSourceGeneration));
+        Assert.IsType<InvalidOperationException>(mergedException.InnerException);
+
+        Assert.Equal(2, Deserialize<DuplicateKeyThrowingSetterModel>("Name: a\nOther: 2\n", new YamlSerializerOptions(), useSourceGeneration)!.Other);
+        Assert.Throws<InvalidOperationException>(() => Deserialize<DuplicateKeyInvalidPopulateModel>("Value: 1\n", new YamlSerializerOptions(), useSourceGeneration));
+    }
+
+    private static void AssertDuplicateKeysAroundMergeKeys<T>(YamlSerializerOptions options, bool useSourceGeneration)
+        where T : IDictionary<string, int>
+    {
+        var merged = Deserialize<T>("a: 1\n<<: {a: 10, b: 20, c: 30}\nb: 2\n", options, useSourceGeneration)!;
+        Assert.Equal([new("a", 1), new("b", 2), new("c", 30)], merged.OrderBy(pair => pair.Key, StringComparer.Ordinal));
+        Assert.Throws<YamlException>(() => Deserialize<T>("a: 1\n<<: {b: 20}\na: 2\n", options, useSourceGeneration));
+        Assert.Throws<YamlException>(() => Deserialize<T>("<<: {a: 10}\na: 1\na: 2\n", options, useSourceGeneration));
+        Assert.Throws<YamlException>(() => Deserialize<T>("a: 1\nA: 2\n", options with { PropertyNameCaseInsensitive = true }, useSourceGeneration));
+        Assert.HasCount(2, Deserialize<T>("a: 1\nA: 2\n", options, useSourceGeneration)!);
+        Assert.Equal(1, Deserialize<T>("a: 1\na: 2\n", options with { DuplicateKeyHandling = YamlDuplicateKeyHandling.FirstWins }, useSourceGeneration)!["a"]);
+        Assert.Equal(2, Deserialize<T>("a: 1\na: 2\n", options with { DuplicateKeyHandling = YamlDuplicateKeyHandling.LastWins }, useSourceGeneration)!["a"]);
+    }
+
     private static T? Deserialize<T>(string yaml, YamlSerializerOptions options, bool useSourceGeneration)
         => useSourceGeneration
             ? YamlSerializer.Deserialize<T>(yaml, new DuplicateKeyHandlingContext(options))
@@ -224,6 +290,46 @@ internal sealed class DuplicateKeyConstructorModel
 internal sealed class DuplicateKeyDictionaryModel
 {
     public Dictionary<string, int>? Values { get; set; }
+}
+
+internal sealed class DuplicateKeyDictionaryKindsModel
+{
+    public Dictionary<string, int>? Values { get; set; }
+
+    public OrderedDictionary<string, int>? Ordered { get; set; }
+
+    public SortedDictionary<string, int>? Sorted { get; set; }
+}
+
+internal sealed class DuplicateKeyPopulatedDictionaryModel
+{
+    [YamlObjectCreationHandling(YamlObjectCreationHandling.Populate)]
+    public Dictionary<string, int> Values { get; set; } = new(StringComparer.Ordinal) { ["a"] = 0, ["z"] = 26 };
+}
+
+internal sealed class DuplicateKeyThrowingSetterModel
+{
+    public string? Name { get; set; }
+
+    private int _value;
+
+    public int Value
+    {
+        get => _value;
+        set
+        {
+            _value = value;
+            throw new InvalidOperationException("The value cannot be set.");
+        }
+    }
+
+    public int Other { get; set; }
+}
+
+internal sealed class DuplicateKeyInvalidPopulateModel
+{
+    [YamlObjectCreationHandling(YamlObjectCreationHandling.Populate)]
+    public int Value { get; }
 }
 
 // More members than the bits of the index of a key
@@ -375,6 +481,12 @@ internal sealed class DuplicateKeyLargeModel
 [YamlSerializable(typeof(DuplicateKeyDictionaryModel))]
 [YamlSerializable(typeof(DuplicateKeyLargeModel))]
 [YamlSerializable(typeof(Dictionary<string, int>))]
+[YamlSerializable(typeof(OrderedDictionary<string, int>))]
+[YamlSerializable(typeof(SortedDictionary<string, int>))]
+[YamlSerializable(typeof(DuplicateKeyDictionaryKindsModel))]
+[YamlSerializable(typeof(DuplicateKeyPopulatedDictionaryModel))]
+[YamlSerializable(typeof(DuplicateKeyThrowingSetterModel))]
+[YamlSerializable(typeof(DuplicateKeyInvalidPopulateModel))]
 internal sealed partial class DuplicateKeyHandlingContext : YamlSerializerContext
 {
     public DuplicateKeyHandlingContext(YamlSerializerOptions options)

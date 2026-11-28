@@ -1779,6 +1779,16 @@ public sealed partial class YamlSerializerContextGenerator : IIncrementalGenerat
         };
     }
 
+    /// <summary>
+    /// Gets whether the <c>dictionary</c> local of a dictionary with string keys finds its keys as the set of the keys
+    /// of the mapping does: it is a dictionary of the BCL created empty with the comparer of the property names.
+    /// </summary>
+    private static bool HasKeysOfMapping(ITypeSymbol dictionaryType)
+    {
+        _ = TryGetDictionaryTypes(dictionaryType, out _, out _, out var kind);
+        return kind is not DictionaryKind.MutableDictionary;
+    }
+
     /// <summary>Gets the expression converting the <c>dictionary</c> local to the dictionary type.</summary>
     private static string GetDictionaryResultExpression(ITypeSymbol dictionaryType)
     {
@@ -4852,6 +4862,27 @@ public sealed partial class YamlSerializerContextGenerator : IIncrementalGenerat
             false => "global::System.StringComparison.Ordinal",
             _ => "options.PropertyNameCaseInsensitive ? global::System.StringComparison.OrdinalIgnoreCase : global::System.StringComparison.Ordinal",
         };
+
+    /// <summary>
+    /// Gets the expression that determines whether the <c>key</c> local, read with
+    /// <c>YamlReader.GetScalarValue(__memberNames{typeIndex})</c>, names the member at <paramref name="memberIndex"/> of that array.
+    /// </summary>
+    /// <remarks>
+    /// The reader returns the instance of the array that is equal to the key, so an ordinal comparison is a comparison of
+    /// the references: the key is not compared again with the name of each member before its own.
+    /// </remarks>
+    private static string GetMemberNameMatchExpression(SourceGenerationOptionsModel options, int typeIndex, int memberIndex)
+    {
+        var memberName = "__memberNames" + typeIndex.ToString(CultureInfo.InvariantCulture) + "[" + memberIndex.ToString(CultureInfo.InvariantCulture) + "]";
+        var referenceEquals = "(object)key == (object)" + memberName;
+        var ignoreCaseEquals = "global::System.String.Equals(key, " + memberName + ", global::System.StringComparison.OrdinalIgnoreCase)";
+        return options.PropertyNameCaseInsensitive switch
+        {
+            true => ignoreCaseEquals,
+            false => referenceEquals,
+            _ => "(options.PropertyNameCaseInsensitive ? " + ignoreCaseEquals + " : " + referenceEquals + ")",
+        };
+    }
 
     private static string GetMergeEnabledExpression(SourceGenerationOptionsModel options)
         => options.Schema switch

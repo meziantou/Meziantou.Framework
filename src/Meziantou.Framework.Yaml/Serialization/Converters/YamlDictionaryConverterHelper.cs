@@ -298,9 +298,14 @@ internal static class YamlDictionaryConverterHelper
         var options = reader.Options;
         dictionary ??= createDictionary(options);
         var mergeEnabled = YamlMergeKey.IsEnabled(options);
-        // The keys of the mapping, for its duplicates and its merge keys. The keys that a merge key must not replace only get
-        // a set of their own when the mapping has a merge key.
-        HashSet<string>? seenKeys = mergeEnabled || options.DuplicateKeyHandling != YamlDuplicateKeyHandling.LastWins ? reader.RentPropertyNameKeySet() : null;
+        var checksDuplicates = options.DuplicateKeyHandling != YamlDuplicateKeyHandling.LastWins;
+
+        // The keys of the mapping, for its duplicates and its merge keys. Until a merge key adds other keys, the keys of a
+        // dictionary that starts empty and compares them as the set does are the keys of the mapping, so they are not
+        // hashed into a set too. The keys that a merge key must not replace only get a set of their own when the mapping
+        // has a merge key.
+        var keysAreDictionaryKeys = dictionary.Count == 0 && ComparesKeysWith<TDictionary, TValue>(dictionary, reader.PropertyNameComparer);
+        HashSet<string>? seenKeys = !keysAreDictionaryKeys && (mergeEnabled || checksDuplicates) ? reader.RentPropertyNameKeySet() : null;
         HashSet<string>? explicitKeys = null;
         if (reader.ReferenceReader is not null && reader.Anchor is not null)
         {
@@ -321,6 +326,13 @@ internal static class YamlDictionaryConverterHelper
 
             if (isMergeKey)
             {
+                if (keysAreDictionaryKeys)
+                {
+                    seenKeys = reader.RentPropertyNameKeySet();
+                    seenKeys.UnionWith(dictionary.Keys);
+                    keysAreDictionaryKeys = false;
+                }
+
                 explicitKeys ??= reader.CopyPropertyNameKeySet(seenKeys!);
                 ReadAndApplyMerge<TDictionary, TValue>(reader, ref valueConverter, dictionary, explicitKeys, createDictionary, containerKind);
                 continue;
@@ -328,7 +340,9 @@ internal static class YamlDictionaryConverterHelper
 
             explicitKeys?.Add(key);
 
-            var wasSeen = seenKeys is not null && !seenKeys.Add(key);
+            var wasSeen = keysAreDictionaryKeys
+                ? checksDuplicates && dictionary.ContainsKey(key)
+                : seenKeys is not null && !seenKeys.Add(key);
             if (wasSeen && options.DuplicateKeyHandling == YamlDuplicateKeyHandling.Error)
             {
                 throw YamlThrowHelper.ThrowDuplicateMappingKey(reader, key);
@@ -349,6 +363,19 @@ internal static class YamlDictionaryConverterHelper
 
         reader.Read();
         return dictionary;
+    }
+
+    // Only the dictionaries of the BCL are known to find a key with the comparer they report
+    private static bool ComparesKeysWith<TDictionary, TValue>(TDictionary dictionary, StringComparer comparer)
+        where TDictionary : class, IDictionary<string, TValue>
+    {
+        if (dictionary.GetType() == typeof(Dictionary<string, TValue>))
+            return Equals(((Dictionary<string, TValue>)(object)dictionary).Comparer, comparer);
+
+        if (dictionary.GetType() == typeof(OrderedDictionary<string, TValue>))
+            return Equals(((OrderedDictionary<string, TValue>)(object)dictionary).Comparer, comparer);
+
+        return false;
     }
 
     internal static TDictionary? ReadDictionary<TDictionary, TKey, TValue>(

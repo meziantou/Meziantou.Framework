@@ -810,22 +810,90 @@ internal static class TypedArrayBuiltins
         var typedArray = ValidateTypedArray(thisValue, "join", out var length);
         var separatorValue = Arg(arguments, 0);
         var separator = separatorValue.IsUndefined ? "," : JsOperations.ToString(separatorValue);
-        var builder = new StringBuilder();
-        for (var k = 0; k < length; k++)
+
+        // No code of the script runs from now on: the elements that are still valid integer indices are the ones below the
+        // current length (the conversion of the separator may have shrunk or detached the buffer: the other ones are undefined,
+        // i.e. empty). The numbers are formatted without a string per element.
+        var validLength = typedArray.TryGetLength(out var currentLength) ? Math.Min(currentLength, length) : 0;
+        var isBigInt = typedArray.ElementType is TypedArrayElementType.BigInt64 or TypedArrayElementType.BigUint64;
+        var output = new JoinBuffer((int)Math.Min((long)length * (separator.Length + 4), 1 << 20));
+        try
         {
-            if (k > 0)
+            Span<char> number = stackalloc char[NumberFormatting.MaxLength];
+            long work = 0;
+            for (var k = 0; k < length; k++)
             {
-                StringOperations.Append(builder, separator);
+                if (k > 0)
+                {
+                    work += output.Append(separator) + 1;
+                }
+
+                if (k < validLength)
+                {
+                    var element = typedArray.GetElement(k);
+                    var written = isBigInt ? output.Append(JsOperations.ToString(element))
+                        : NumberFormatting.TryGetSmallInteger(element.NumberValue) is { } smallInteger ? output.Append(smallInteger)
+                        : output.Append(number[..NumberFormatting.Format(element.NumberValue, number)]);
+                    work += written + 1;
+                }
+
+                // (the work is counted as the appends of a string builder would, by groups of elements)
+                if ((k & 1023) == 1023)
+                {
+                    JsEngine.CountCurrentWork(work);
+                    work = 0;
+                }
             }
 
-            var element = GetElement(typedArray, k);
-            if (!element.IsUndefined)
+            JsEngine.CountCurrentWork(work);
+            return output.ToString();
+        }
+        finally
+        {
+            output.Dispose();
+        }
+    }
+
+    /// <summary>The characters of the result of %TypedArray%.prototype.join, in a pooled buffer.</summary>
+    private struct JoinBuffer(int capacity) : IDisposable
+    {
+        private char[] _buffer = System.Buffers.ArrayPool<char>.Shared.Rent(Math.Max(capacity, 16));
+        private int _length;
+
+        /// <summary>Appends characters, and returns their number.</summary>
+        public int Append(ReadOnlySpan<char> value)
+        {
+            if (value.Length > _buffer.Length - _length)
             {
-                StringOperations.Append(builder, JsOperations.ToString(element));
+                Grow(value.Length);
             }
+
+            value.CopyTo(_buffer.AsSpan(_length));
+            _length += value.Length;
+            return value.Length;
         }
 
-        return builder.ToString();
+        private void Grow(int additional)
+        {
+            var required = (long)_length + additional;
+            StringOperations.CheckLength(required);
+            var grown = System.Buffers.ArrayPool<char>.Shared.Rent((int)Math.Min(Math.Max(required, (long)_buffer.Length * 2), JsString.MaxLength));
+            _buffer.AsSpan(0, _length).CopyTo(grown);
+            System.Buffers.ArrayPool<char>.Shared.Return(_buffer);
+            _buffer = grown;
+        }
+
+        public readonly override string ToString()
+        {
+            StringOperations.CheckLength(_length);
+            return new string(_buffer, 0, _length);
+        }
+
+        public void Dispose()
+        {
+            System.Buffers.ArrayPool<char>.Shared.Return(_buffer);
+            _buffer = [];
+        }
     }
 
     /// <summary>%TypedArray%.prototype.map(callback [, thisArg])</summary>

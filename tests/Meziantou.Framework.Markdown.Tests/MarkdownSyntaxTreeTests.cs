@@ -3738,6 +3738,32 @@ public sealed class MarkdownSyntaxTreeTests
         Assert.False(bullet.IsTight);
     }
 
+    [Theory]
+    [InlineData("- a\n- b\n", "T")]
+    [InlineData("- a\n\n- b\n", "L")]
+    [InlineData("- a\r\n- b\r\n", "T")]
+    [InlineData("- a\r\n\r\n- b\r\n", "L")]
+    [InlineData("- a\r- b\r", "T")]
+    [InlineData("- a\r\r- b\r", "L")]
+    [InlineData("- a\n \t\n- b\n", "L")]
+    [InlineData("> - a\n> - b\n", "T")]
+    [InlineData("> - a\n>\n> - b\n", "L")]
+    [InlineData("> > - a\n> >\n> > - b\n", "L")]
+    [InlineData("> > - a\n>\n> > - b\n", "T,T")]
+    [InlineData("- a\n  > b\n  >\n  > c\n- d\n", "T")]
+    [InlineData("- a\n\n  b\n- c\n", "L")]
+    [InlineData("- a\n  ```\n  x\n\n  ```\n- b\n", "T")]
+    [InlineData("- a\n\f\n- b\n", "T")]
+    [InlineData("- a\n\u2028\n- b\n", "T")]
+    [InlineData("- a \v\n\n- b\n", "L")]
+    [InlineData("1. a\n   - b\n\n   - c\n2. d\n", "T,L")]
+    public void ListTightnessReadsTheBlankLinesBetweenItsBlocks(string text, string expected)
+    {
+        var lists = MarkdownSyntaxTree.ParseText(text).GetRoot().DescendantNodes().OfType<MarkdownListSyntax>();
+
+        Assert.Equal(expected, string.Join(',', lists.Select(list => list.IsTight ? "T" : "L")));
+    }
+
     [Fact]
     public void TaskListItemIsChecked()
     {

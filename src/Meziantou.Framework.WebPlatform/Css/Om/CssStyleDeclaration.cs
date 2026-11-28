@@ -903,6 +903,22 @@ public partial class CssStyleDeclaration : IReadOnlyList<string>
                     }
 
                     break;
+
+                // A bad url (e.g. "url(a\n@") is closed too: the closers written after it would be part of it (fuzz regression).
+                // Its content is not used, so an escaped EOF is removed rather than replaced
+                case CssTokenType.BadUrl:
+                    if (escapedEof)
+                    {
+                        text = text[..^1];
+                    }
+
+                    if (!text.EndsWith(')', StringComparison.Ordinal) || CountTrailingBackslashes(text[..^1]) % 2 == 1)
+                    {
+                        text += ")";
+                    }
+
+                    break;
+
                 default:
                     if (escapedEof)
                     {

@@ -60,6 +60,11 @@ public sealed class CssMinifyFormatterTests
         // ("}" is in the parentheses: it does not end the rule)
         Assert.Equal("a{margin:var(--m) " + nesting + "\"b\nc }" + new string(')', 300) + "}", minified);
         Assert.Equal(minified, Minify(minified));
+
+        // A bad url left open at the end of the style sheet is closed before the blocks
+        minified = Minify("a { margin: var(--m) " + nesting + "url(a\n@");
+        Assert.Equal("a{margin:var(--m) " + nesting + "url(a\n@)" + new string(')', 300) + "}", minified);
+        Assert.Equal(minified, Minify(minified));
     }
 
     [Fact]

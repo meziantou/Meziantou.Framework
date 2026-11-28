@@ -31,6 +31,9 @@ internal sealed class PngOptimizedLayout
 {
     private readonly uint _step;
 
+    // The bytes of the samples of two 16-bit wide pixels in the order of the scanline (the bytes after them are not used)
+    private readonly Vector128<byte> _wideOrder;
+
     private PngOptimizedLayout(byte colorType, byte bitDepth, bool isWide16, PngWideColor? key, PngIndexedRows? palette)
     {
         ColorType = colorType;
@@ -47,6 +50,40 @@ internal sealed class PngOptimizedLayout
         };
 
         _step = bitDepth < 8 ? (isWide16 ? 65535u : 255u) / ((1u << bitDepth) - 1) : 1;
+        if (isWide16 && bitDepth >= 8 && palette is null)
+        {
+            _wideOrder = CreateWideOrder(colorType, bitDepth);
+        }
+    }
+
+    // The 16-bit samples are little-endian in the wide rows: a 16-bit scanline swaps their bytes, an 8-bit one keeps the high byte
+    private static Vector128<byte> CreateWideOrder(byte colorType, byte bitDepth)
+    {
+        ReadOnlySpan<byte> channels = colorType switch
+        {
+            0 => [0],
+            2 => [0, 1, 2],
+            4 => [0, 3],
+            _ => [0, 1, 2, 3],
+        };
+
+        Span<byte> order = stackalloc byte[Vector128<byte>.Count];
+        order.Clear();
+        var index = 0;
+        for (var pixel = 0; pixel < 2; pixel++)
+        {
+            foreach (var channel in channels)
+            {
+                var high = (byte)((8 * pixel) + (2 * channel) + 1);
+                order[index++] = high;
+                if (bitDepth == 16)
+                {
+                    order[index++] = (byte)(high - 1);
+                }
+            }
+        }
+
+        return Vector128.Create<byte>(order);
     }
 
     /// <summary>Gets the IHDR color type: 0 gray, 2 RGB, 3 indexed, 4 gray and alpha, 6 RGBA.</summary>
@@ -206,7 +243,8 @@ internal sealed class PngOptimizedLayout
     /// <param name="scanline">The scanline, <see cref="GetScanlineLength"/> bytes.</param>
     /// <remarks>
     /// The 8-bit samples of contiguous pixels of 8-bit wide rows without a mask are the bytes of the pixels, some of them
-    /// dropped: they are selected by whole vectors. The result is identical to <see cref="WriteSamplesScalar"/>, the reference.
+    /// dropped, and the 8-bit and 16-bit samples of 16-bit wide rows are their bytes reordered: they are selected by whole
+    /// vectors. The result is identical to <see cref="WriteSamplesScalar"/>, the reference.
     /// </remarks>
     public void WriteSamples(ReadOnlySpan<byte> row, int start, int step, int count, ReadOnlySpan<byte> mask, Span<byte> unpacked, Span<byte> scanline)
     {
@@ -236,8 +274,14 @@ internal sealed class PngOptimizedLayout
             if (done == count)
                 return;
         }
+        else if (step == 1 && mask.IsEmpty && BitDepth >= 8 && IsWide16 && Palette is null && UseVectors)
+        {
+            done = SelectWide(row.Slice(start * 8, count * 8), scanline, _wideOrder, Channels * BitDepth / 4);
+            if (done == count)
+                return;
+        }
 
-        WriteSamplesScalar(row, start + done, step, count - done, mask, unpacked, scanline[(done * Channels)..]);
+        WriteSamplesScalar(row, start + done, step, count - done, mask, unpacked, scanline[(done * Channels * BitDepth / 8)..]);
     }
 
     private static bool UseVectors => Vector128.IsHardwareAccelerated && BitConverter.IsLittleEndian;
@@ -256,6 +300,26 @@ internal sealed class PngOptimizedLayout
         for (; x + 6 <= count; x += 4)
         {
             unsafe { Vector128.Shuffle(Vector128.LoadUnsafe(ref input, (nuint)(4 * x)), order).StoreUnsafe(ref output, (nuint)(3 * x)); }
+        }
+
+        return x;
+    }
+
+    /// <summary>
+    /// Writes the samples of the leading 16-bit wide pixels, two per step (the bytes stored after them are overwritten by the
+    /// next step or by the scalar tail).
+    /// </summary>
+    /// <returns>The number of pixels written.</returns>
+    private static int SelectWide(ReadOnlySpan<byte> pixels, Span<byte> scanline, Vector128<byte> order, int bytesPerTwoPixels)
+    {
+        ref var input = ref unsafe(MemoryMarshal.GetReference(pixels));
+        ref var output = ref unsafe(MemoryMarshal.GetReference(scanline));
+        var count = pixels.Length / 8;
+        var length = Math.Min(scanline.Length, count * bytesPerTwoPixels / 2);
+        var x = 0;
+        for (var position = 0; x + 2 <= count && position + Vector128<byte>.Count <= length; x += 2, position += bytesPerTwoPixels)
+        {
+            unsafe { Vector128.Shuffle(Vector128.LoadUnsafe(ref input, (nuint)(8 * x)), order).StoreUnsafe(ref output, (nuint)position); }
         }
 
         return x;

@@ -254,6 +254,10 @@ internal sealed partial class Vp8LEncoder
     /// </summary>
     private sealed class ResidualStatistics
     {
+        // The initial count of each residual value: small magnitudes are likely
+        private static readonly int[] Priors = CreatePriors();
+        private static readonly long PriorTotal = Priors.Sum(prior => (long)prior);
+
         private readonly int[] _counts;
         private readonly long[] _totals;
         private readonly int[] _bits;
@@ -265,16 +269,23 @@ internal sealed partial class Vp8LEncoder
             _bits = new int[channels * 256];
             for (var channel = 0; channel < channels; channel++)
             {
-                for (var value = 0; value < 256; value++)
-                {
-                    var magnitude = Math.Min(value, 256 - value);
-                    var prior = Math.Max(1, (int)(64 * Math.Pow(0.75, magnitude)));
-                    _counts[(channel * 256) + value] = prior;
-                    _totals[channel] += prior;
-                }
+                Priors.CopyTo(_counts, channel * 256);
+                _totals[channel] = PriorTotal;
             }
 
             Refresh();
+        }
+
+        private static int[] CreatePriors()
+        {
+            var priors = new int[256];
+            for (var value = 0; value < 256; value++)
+            {
+                var magnitude = Math.Min(value, 256 - value);
+                priors[value] = Math.Max(1, (int)(64 * Math.Pow(0.75, magnitude)));
+            }
+
+            return priors;
         }
 
         /// <summary>Recomputes the bit costs from the counts.</summary>

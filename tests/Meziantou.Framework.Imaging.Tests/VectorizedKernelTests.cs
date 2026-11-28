@@ -358,18 +358,26 @@ public sealed class VectorizedKernelTests
     }
 
     [Theory]
-    [InlineData(0)]
-    [InlineData(2)]
-    [InlineData(4)]
-    [InlineData(6)]
+    [InlineData(0, 8, false)]
+    [InlineData(2, 8, false)]
+    [InlineData(4, 8, false)]
+    [InlineData(6, 8, false)]
+    [InlineData(0, 8, true)]
+    [InlineData(2, 8, true)]
+    [InlineData(4, 8, true)]
+    [InlineData(6, 8, true)]
+    [InlineData(0, 16, true)]
+    [InlineData(2, 16, true)]
+    [InlineData(4, 16, true)]
+    [InlineData(6, 16, true)]
     [SuppressMessage("Security", "CA5394:Do not use insecure randomness", Justification = "Deterministic seeded test inputs.")]
-    public void PngOptimizedSamplesMatchTheScalarReference(byte colorType)
+    public void PngOptimizedSamplesMatchTheScalarReference(byte colorType, byte bitDepth, bool isWide16)
     {
-        var random = new Random(colorType);
-        var layout = PngOptimizedLayout.Truecolor(colorType, bitDepth: 8, isWide16: false);
-        foreach (var width in new[] { 1, 3, 4, 5, 6, 7, 8, 9, 15, 16, 17, 21, 31, 32, 33, 100 })
+        var random = new Random(colorType + bitDepth);
+        var layout = PngOptimizedLayout.Truecolor(colorType, bitDepth, isWide16);
+        foreach (var width in new[] { 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 15, 16, 17, 21, 31, 32, 33, 100 })
         {
-            var row = new byte[width * 4];
+            var row = new byte[width * layout.WideBytesPerPixel];
             random.NextBytes(row);
             foreach (var (start, step) in new[] { (0, 1), (1, 1), (width / 3, 1), (0, 2) })
             {

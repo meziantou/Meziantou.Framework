@@ -1,3 +1,5 @@
+using System.Runtime.Intrinsics;
+
 namespace Meziantou.Framework.Imaging.Internals;
 
 /// <summary>The layout of the symbol histograms of a prefix code group, and the estimates of their coded size.</summary>
@@ -55,6 +57,19 @@ internal sealed partial class Vp8LEncoder
         var last = -1;
         for (var i = 0; i < counts.Length; i++)
         {
+            // Most histograms of small images are sparse: whole vectors of unused symbols are skipped
+            if (i + Vector128<uint>.Count <= counts.Length && IsUnused(counts, other, i))
+            {
+                if (previousUsed)
+                {
+                    gaps++;
+                }
+
+                previousUsed = false;
+                i += Vector128<uint>.Count - 1;
+                continue;
+            }
+
             var count = merged ? counts[i] + other[i] : counts[i];
             if (count == 0)
             {
@@ -79,10 +94,17 @@ internal sealed partial class Vp8LEncoder
         if (used == 2 && last < NumLiteralCodes)
             return 19 + total;
 
+        // The symbols are added in the order of the alphabet, as the rounding of the sum depends on it
         var log2Total = Log2Count(total);
         var bits = 40.0 + (3.0 * used) + (7.0 * gaps);
-        for (var i = 0; i < counts.Length; i++)
+        for (var i = 0; i <= last; i++)
         {
+            if (i + Vector128<uint>.Count <= counts.Length && IsUnused(counts, other, i))
+            {
+                i += Vector128<uint>.Count - 1;
+                continue;
+            }
+
             var count = merged ? counts[i] + other[i] : counts[i];
             if (count != 0)
             {
@@ -91,6 +113,17 @@ internal sealed partial class Vp8LEncoder
         }
 
         return bits;
+
+        static bool IsUnused(ReadOnlySpan<uint> counts, ReadOnlySpan<uint> other, int index)
+        {
+            var vector = Vector128.Create(counts.Slice(index, Vector128<uint>.Count));
+            if (!other.IsEmpty)
+            {
+                vector |= Vector128.Create(other.Slice(index, Vector128<uint>.Count));
+            }
+
+            return vector == Vector128<uint>.Zero;
+        }
     }
 
     private static double Log2Count(long value) => value < Log2Table.Length ? Log2Table[value] : Math.Log2(value);

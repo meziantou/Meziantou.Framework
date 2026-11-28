@@ -1,12 +1,11 @@
 using System.Text;
 using BenchmarkDotNet.Attributes;
-using SY = System.Text.Yaml;
 
 namespace Meziantou.Framework.Yaml.Benchmarks;
 
 /// <summary>
-/// Reads every token of the documents of Styml's benchmark corpus with the prototype <see cref="Utf8YamlReader"/>, the
-/// existing <see cref="Parser"/> and Styml's <c>Utf8YamlReader</c>.
+/// Reads every token of the documents of the benchmark corpus with <see cref="Utf8YamlReader"/> and the existing
+/// <see cref="Parser"/>.
 /// </summary>
 [MemoryDiagnoser]
 public class ReaderBenchmarks
@@ -29,7 +28,7 @@ public class ReaderBenchmarks
         _decodeBuffer = new byte[(_utf8.Length * 2) + 16];
 
         // The readers do not split the document into the same tokens
-        Console.WriteLine(FormattableString.Invariant($"// Tokens of {Document}: Utf8YamlReader {Utf8YamlReader_Tokens()}, Parser {Parser_Events()}, Styml {Styml_Tokens()}"));
+        Console.WriteLine(FormattableString.Invariant($"// Tokens of {Document}: Utf8YamlReader {Utf8YamlReader_Tokens()}, Parser {Parser_Events()}"));
     }
 
     [Benchmark(Baseline = true)]
@@ -119,34 +118,5 @@ public class ReaderBenchmarks
         }
 
         return count;
-    }
-
-    [Benchmark]
-    public int Styml_Tokens()
-    {
-        var reader = new SY.Utf8YamlReader(_utf8);
-        var count = 0;
-        while (reader.Read())
-        {
-            count++;
-        }
-
-        return count;
-    }
-
-    [Benchmark]
-    public int Styml_TokensAndGetString()
-    {
-        var reader = new SY.Utf8YamlReader(_utf8);
-        var length = 0;
-        while (reader.Read())
-        {
-            if (reader.TokenType is SY.YamlTokenType.String or SY.YamlTokenType.PropertyName)
-            {
-                length += reader.GetString()!.Length;
-            }
-        }
-
-        return length;
     }
 }

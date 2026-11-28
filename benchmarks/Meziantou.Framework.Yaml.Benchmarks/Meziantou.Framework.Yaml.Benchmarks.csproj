@@ -7,9 +7,6 @@
 
    <ItemGroup>
      <PackageReference Include="BenchmarkDotNet" Version="0.15.8" />
-     <!-- Compared with Meziantou.Framework.Yaml by every benchmark class. 'IncludeAssets' keeps the analyzers of the
-          package, which the SDK removes by default: the source generator writes StymlBenchmarkYamlContext -->
-     <PackageReference Include="Styml" Version="0.1.1" IncludeAssets="all" />
    </ItemGroup>
 
    <ItemGroup>

@@ -304,6 +304,33 @@ public sealed class ZipArchiveWriteTests
     }
 
     [Fact]
+    public void ForwardOnlyReader_StoredContentThatLooksLikeTheDescriptorOfAnEmptyContent()
+    {
+        // 12 zero bytes are the descriptor of an empty content (a CRC-32 and sizes of 0), followed by the signature of the
+        // descriptor of the entry: the content is read to the descriptor, not to the zeros
+        using var output = new MemoryStream();
+        using (var archive = new ZipArchive(ZipTestData.CreateNonSeekableWriteStream(output), ZipArchiveMode.Create, leaveOpen: true, readerOptions: null, new ZipCompressionOptions { CompressionMethod = ZipCompressionMethod.Stored }))
+        {
+            using (var stream = archive.CreateEntry("zeros.bin").Open())
+            {
+                stream.Write(new byte[12]);
+            }
+
+            using (var stream = archive.CreateEntry("next.txt").Open())
+            {
+                stream.Write("next"u8);
+            }
+        }
+
+        using var reader = ArchiveReader.Create(ZipTestData.CreateForwardOnlyStream(output.ToArray(), 7));
+        Assert.True(reader.MoveToNextEntry());
+        Assert.Equal(new byte[12], ZipTestData.ReadAll(reader.OpenEntryStream()));
+        Assert.True(reader.MoveToNextEntry());
+        Assert.Equal("next"u8.ToArray(), ZipTestData.ReadAll(reader.OpenEntryStream()));
+        Assert.False(reader.MoveToNextEntry());
+    }
+
+    [Fact]
     public void Errors()
     {
         using var archive = new ZipArchive(new MemoryStream(), ZipArchiveMode.Create);

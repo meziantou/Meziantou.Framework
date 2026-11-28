@@ -801,6 +801,13 @@ internal static partial class CssSerializer
     /// <summary>https://drafts.csswg.org/cssom/#serialize-a-css-component-value: numbers are serialized like JavaScript numbers, with at most 6 decimals.</summary>
     public static string SerializeNumber(double value)
     {
+        // A number too large for a double (1e400) is infinite: it is clamped to the largest finite value
+        // (https://drafts.csswg.org/css-values-4/#numeric-ranges), as "Infinity" is an identifier, read back as another value
+        if (double.IsInfinity(value))
+        {
+            value = value > 0 ? double.MaxValue : double.MinValue;
+        }
+
         var rounded = Math.Round(value, 6, MidpointRounding.AwayFromZero);
         if (rounded == 0)
             return "0";

@@ -1118,6 +1118,17 @@ public class BarCodeAdditionalTypesTests
     }
 
     [Fact]
+    public void Decode_Code39WithAsManyRunsAsUpcA_IsNotReadAsUpcA()
+    {
+        // 4 characters and the start and stop characters are 59 runs, as many as UPC-A, whose digits match the runs with a valid check digit
+        var barcode = Barcode.CreateCode39("8.2", includeChecksum: true);
+
+        var result = BarcodeDecoder.Decode(barcode);
+
+        Assert.Equal((BarcodeType.Code39, "8.24"), (result.Type, result.Text));
+    }
+
+    [Fact]
     public void Decode_InvalidModules()
     {
         Assert.Throws<ArgumentNullException>("barcode", () => BarcodeDecoder.Decode((Barcode)null!));

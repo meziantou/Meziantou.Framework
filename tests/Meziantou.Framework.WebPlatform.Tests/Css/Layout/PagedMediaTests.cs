@@ -1308,6 +1308,69 @@ public sealed class PagedMediaTests : IDisposable
         static string Words(int count) => string.Join(' ', Enumerable.Repeat("XXXX", count));
     }
 
+    [Theory]
+    [InlineData("<div style='display: grid'><div id=b style='display: grid'><div>{0}</div></div></div>")]
+    [InlineData("<div style='display: grid'><div id=b style='display: flex'><div>{0}</div></div></div>")]
+    [InlineData("<div style='display: flex'><div id=b style='display: grid'><div>{0}</div></div></div>")]
+    [InlineData("<div style='display: flex; flex-direction: column'><div id=b style='display: flex; flex-direction: column'><div>{0}</div></div></div>")]
+    [InlineData("<div style='display: grid; grid-template-columns: 1fr 1fr; align-items: start'><div>XXXX</div><div>XXXX</div><div id=b style='grid-row: span 2; display: grid; grid-template-rows: subgrid'><div>{0}</div></div><div></div></div>")]
+    public void Pages_ItemThatIsAFlexOrGridContainerGrowsWithItsContent(string html)
+    {
+        // The item is a flex or grid container (a subgrid of the rows of its grid): the lines of its item that the breaks push
+        // make it grow, and its container with it, so that the paragraph after the container follows it
+        var markup = string.Format(CultureInfo.InvariantCulture, html, string.Join(' ', Enumerable.Repeat("XXXX", 21))) + "<p id=p style='margin: 0'>XXXX</p>";
+        var document = Parse("<style>@page { size: 100px 25px; margin: 0 }</style>" + markup);
+        using var session = document.BeginPrint(Options);
+        var pages = session.GetPages();
+
+        var b = GetPageRects(pages, document.GetElementById("b")!)[^1];
+        var p = GetPageRects(pages, document.GetElementById("p")!)[0];
+        Assert.True(p.Page > b.Page || (p.Page == b.Page && p.Rect.Y >= b.Rect.Bottom - 0.01), $"{p} is before the end of {b}");
+        Assert.Equal(markup.Split("XXXX").Length - 1, pages.Sum(page => CountWords(page.Content)));
+    }
+
+    [Fact]
+    public void Pages_EmptyFlexContainerAtABreakIsBeforeTheBreak()
+    {
+        // The flex container without block size is at the position of the break before the paragraph pushed by its orphans and
+        // widows: it is before the break with its items, as the paragraph without block size after it
+        var document = Parse("""
+            <style>@page { size: 400px 30px; margin: 0 }</style>
+            <p style='margin: 0'>XXXX XXXX XXXX XXXX XXXX XXXX XXXX XXXX XXXX XXXX XXXX XXXX</p>
+            <div id=c style='display: flex; align-items: flex-start'><div id=a style='flex: 1 1 0; min-width: 0'></div><div id=b style='flex: none; contain: size; width: 0; height: 0'></div></div>
+            <p id=e style='margin: 0'></p>
+            <p id=p style='margin: 0'>XXXX XXXX XXXX XXXX XXXX XXXX XXXX XXXX XXXX XXXX XXXX XXXX</p>
+            """);
+        using var session = document.BeginPrint(Options);
+        var pages = session.GetPages();
+
+        Assert.Equal((0, new PhysicalRect(0, 20, 400, 0)), Assert.Single(GetPageRects(pages, document.GetElementById("c")!)));
+        Assert.Equal((0, new PhysicalRect(0, 20, 400, 0)), Assert.Single(GetPageRects(pages, document.GetElementById("a")!)));
+        Assert.Equal((0, new PhysicalRect(400, 20, 0, 0)), Assert.Single(GetPageRects(pages, document.GetElementById("b")!)));
+        Assert.Equal((0, new PhysicalRect(0, 20, 400, 0)), Assert.Single(GetPageRects(pages, document.GetElementById("e")!)));
+        Assert.Equal((1, new PhysicalRect(0, 0, 400, 20)), Assert.Single(GetPageRects(pages, document.GetElementById("p")!)));
+    }
+
+    [Fact]
+    public void Pages_ParagraphAfterASlicedLineBoxThatKeepsItsLayoutFollowsItsRest()
+    {
+        // The inline-block taller than the page is sliced by the break; in the 400px wide page area of the second page, the line
+        // would hold words beside it: its rest keeps the layout of the first page (15px), and the lines of the paragraph after it
+        // in the line, which start the strip of the new inline size, follow it. Its two lines do not fit in the rest of the page
+        // (orphans and widows): they are pushed to the third page, with the empty paragraph after them
+        var document = Parse("""
+            <style>@page { size: 400px 30px; margin: 0 } @page :first { size: 200px 30px }</style>
+            <p id=p style='margin: 0'><span style='display: inline-block; width: 250px; height: 45px; vertical-align: top'></span>XXXX XXXX XXXX XXXX XXXX XXXX XXXX XXXX XXXX XXXX XXXX XXXX</p>
+            <p id=e style='margin: 0'></p>
+            """);
+        using var session = document.BeginPrint(Options);
+        var pages = session.GetPages();
+
+        Assert.Equal(3, pages.Count);
+        Assert.Equal([0, 0, 12], pages.Select(page => CountWords(page.Content)));
+        Assert.Equal((2, new PhysicalRect(0, 20, 400, 0)), Assert.Single(GetPageRects(pages, document.GetElementById("e")!)));
+    }
+
     [Fact]
     public void Pages_GridRowWithASubgridIsLaidOutInAPageOfAnotherInlineSize()
     {
@@ -1412,27 +1475,31 @@ public sealed class PagedMediaTests : IDisposable
     }
 
     [Fact]
-    public void Pages_ParagraphOfANestedGridItemThatEndsAfterItsGridItemIsLaidOutBeforeAPageOfAnotherInlineSize()
+    public void Pages_ParagraphsOfNestedGridItemsGrowTheirGridItemsBeforeAPageOfAnotherInlineSize()
     {
-        // The grid is broken inside its rows (the first item avoids breaks), so it keeps the layout of the 400px wide strip of
-        // the first page in the 300px wide pages. In the pages of 25px (two lines and 5px), the paragraph of the nested grid of
-        // the last item (20 lines, 200px in the strip) ends two pages after the end of its grid item: the paragraph after the
-        // grid, which starts the page after the grid item, does not start a page laid out again in the inline size of the next
-        // pages (the last lines of the nested paragraph would be in no page). It keeps the layout of the strip
+        // The grid is broken inside its first row (the first item avoids breaks), so the row keeps the layout of the 400px wide
+        // strip of the first page in the 300px wide pages. In the pages of 25px (two lines and 5px), the paragraph of the nested
+        // grid of the second item (20 lines, 200px in the strip) grows its grid item and the row, up to the page 9. The second row
+        // starts there, 5px before the end of the page (the first line of its paragraph is sliced, its rest is at the start of
+        // the page 10, which counts its words again): the page after the break between the rows is laid out again in its inline
+        // size (one word per line in the 75px wide columns of the nested grid), and the paragraph after the grid follows the
+        // paragraph of the nested grid of the last item
         var document = Parse($$"""
             <style>@page { size: 300px 25px; margin: 0 } @page :first { size: 400px 25px }</style>
             <div style='display: grid; grid-template-columns: 1fr 1fr; align-items: start'>
               <div style='height: 100px; break-inside: avoid'><div style='display: grid; grid-template-columns: 1fr 1fr; align-items: start'><div></div><div style='height: 50px'></div></div></div>
-              <div><div style='display: grid; grid-template-columns: 1fr 1fr; align-items: start'><div>{{Words(39)}}</div><div style='height: 50px'></div></div></div>
+              <div><div style='display: grid; grid-template-columns: 1fr 1fr; align-items: start'><div id=c>{{Words(39)}}</div><div style='height: 50px'></div></div></div>
               <div><div style='display: grid; grid-template-columns: 1fr 1fr; align-items: start'><div id=a>{{Words(39)}}</div><div style='height: 50px'></div></div></div>
             </div>
             <p id=b style='margin: 0'>{{Words(2)}}</p>
             """);
         using var session = document.BeginPrint(Options);
         var pages = session.GetPages();
-        Assert.Equal(80, pages.Sum(page => CountWords(page.Content)));
-        Assert.Equal(17, GetPageRects(pages, document.GetElementById("a")!)[^1].Page);
-        Assert.Equal((16, new PhysicalRect(0, 0, 400, 10)), Assert.Single(GetPageRects(pages, document.GetElementById("b")!)));
+        Assert.Equal(82, pages.Sum(page => CountWords(page.Content)));
+        Assert.Equal((9, new PhysicalRect(200, 0, 100, 20)), GetPageRects(pages, document.GetElementById("c")!)[^1]);
+        Assert.Equal((9, new PhysicalRect(0, 20, 100, 5)), GetPageRects(pages, document.GetElementById("a")!)[0]);
+        Assert.Equal((27, new PhysicalRect(0, 0, 75, 10)), GetPageRects(pages, document.GetElementById("a")!)[^1]);
+        Assert.Equal((27, new PhysicalRect(0, 10, 300, 10)), Assert.Single(GetPageRects(pages, document.GetElementById("b")!)));
 
         static string Words(int count) => string.Join(' ', Enumerable.Repeat("XXXX", count));
     }

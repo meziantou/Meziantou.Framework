@@ -79,7 +79,9 @@ internal readonly record struct ZipDataDescriptor(uint Crc, long CompressedSize,
         if (stored && usize != csize)
             return false;
 
-        if (requireNextSignature && (data[length] != 'P' || data[length + 1] != 'K'))
+        // A header follows the descriptor, not another descriptor: a stored content of 12 zero bytes is the descriptor of an
+        // empty content (CRC-32 and sizes of 0) followed by the signature of its own descriptor
+        if (requireNextSignature && (data[length] != 'P' || data[length + 1] != 'K' || BinaryPrimitives.ReadUInt32LittleEndian(data[length..]) == ZipEntryInfo.DataDescriptorSignature))
             return false;
 
         descriptor = new ZipDataDescriptor(descriptorCrc, compressedSize, (long)usize);

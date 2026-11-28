@@ -1405,10 +1405,14 @@ internal sealed partial class TextLayoutEngine
         plan.Reverse();
         return plan;
 
+        // Of two ways to reach a position that cost the same, the one whose last line starts later is kept: the lines before
+        // hold more of the text, as greedy breaking chooses. Two breaks can measure the same: before and after a mark that the
+        // paragraph shapes with the character before it (a virama after a symbol), whose advance is in the measure of both,
+        // and the line that ends before the mark is narrower once it is shaped alone.
         void Relax(int from, int to, double cost, bool isHyphenated, bool isForced)
         {
             var total = costs[from - start] + cost;
-            if (total < costs[to - start])
+            if (total < costs[to - start] || (total == costs[to - start] && from > previous[to - start]))
             {
                 costs[to - start] = total;
                 previous[to - start] = from;

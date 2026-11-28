@@ -1280,6 +1280,19 @@ public sealed class ImageRendererTests
         Assert.Equal(text, Assert.Single(image.ReadBarcodes2D()).Text);
     }
 
+    [Fact]
+    public void ReadBarcodes2D_DataMatrixWhoseDataLooksLikeAnAztecSymbol()
+    {
+        // The modules of this 72x72 symbol have an Aztec bullseye, and an Aztec symbol is read inside it (fuzz regression)
+        const string Text = "^_o\uDC911\uDC91\uDC91\uDC91\uDC91\u0011\u0000\u0000@^_*ABC\u0009\u0000\u0000\u0000\u0000\uDCCB\uDCCB\uDCCB\uDCCB;\uDCCB\uDCCB\uDCCB\uDCCB\uDCCB\uDCCB\uDCCB\uDCCB\uDCCB\uDCCB\uDCCB\uDCCB\uDCCB\uDCCB\uDCCB\uDCCB\uDCCB\uDCCB\uDCCB\uDCCB\uDCCB\uDCCB\uDCCB\uDCCB\uDCCB\uDCCB\uDCCB\uDCCB\uDCCB\uDCCB\uDCCB\uDCCB\uDCCB\uDCCB\uDCCB\uDCCB\u0000\u0000\u0000\u0000\uDCCB\uDCCB\uDCCB\uDCCB\uDCCB\uDCCB\uDCCB\uDCCB\uDCCB\uDCCB\uDCCB\uDCCB\uDCCB\uDCCB\uDCCB\uDCCB\uDCCB\uDCCB\uDCCB\uDCCB\uDCCB\uDCCB\uDCCB\uDCCB\uDCCB\uDCCB\uDCCB\uDCCB\uDCCB\uDCCB\uDCCB\uDCCB\uDCCB\uDCCB\uDCCB\uDCCB\uDCCB\uDCCB\uDCCB\uDCCBN\uDCC3\uDCCB\uDCCB\uDCCB\uDCCB\uDCCB\uDCCB\u0000\u0000>\u0000-";
+        var barcode = Barcode2D.CreateDataMatrix(Text);
+        using var image = barcode.ToImage(new Barcode2DRenderOptions { ModuleSize = 3 });
+
+        var result = Assert.Single(image.ReadBarcodes2D());
+
+        Assert.Equal((Barcode2DType.DataMatrix, Barcode2DDecoder.Decode(barcode).Text), (result.Result.Type, result.Text));
+    }
+
     [Theory]
     [InlineData("Same label", "Same label", false)]
     [InlineData("Upper label", "Lower label", false)]

@@ -514,6 +514,14 @@ public static class MarkdownFormatter
                                 }
                                 else
                                 {
+                                    // The blank line ends the paragraph of a block quote before the table, as the empty line of
+                                    // the block quote written for it does: only one of them is written, as formatting the text
+                                    // again writes it (fuzz regression)
+                                    if (previous is MarkdownBlockQuoteSyntax or MarkdownAlertSyntax && lines.Count > previousStart && lines[^1] == ">")
+                                    {
+                                        lines.RemoveAt(lines.Count - 1);
+                                    }
+
                                     AddBlankLine(lines);
                                 }
                             }

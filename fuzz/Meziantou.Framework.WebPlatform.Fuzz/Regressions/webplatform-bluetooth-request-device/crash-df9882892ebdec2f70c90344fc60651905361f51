@@ -1,0 +1,4 @@
+{"devices":[
+  {"nam¿¿¿¿¿¿¿¿¿e":"Health Thermometer","services":["generic_access","health_thermometer"],"manufacturerData":{"1":[1,2],"2":[3,4]}},
+  {"name":"Heart Rate","services":["generic_access","heart_rate"]},
+  {"name":"","services":[],"serviceData":{"00001234-00001-000-8000-00805f9b34fb":[5,6]}}],"options":{"filters":[{"name":""}]}}

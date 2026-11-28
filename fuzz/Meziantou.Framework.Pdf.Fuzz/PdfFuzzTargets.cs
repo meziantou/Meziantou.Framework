@@ -1071,8 +1071,9 @@ public static class PdfFuzzTargets
         {
             foreach (var line in page.ExtractTextLayout().Lines)
             {
-                // The glyphs of a line can go a little beyond its box (accents, the footer in the margin)
-                FuzzAssert.True(line.Bounds.Left >= 19 && line.Bounds.Right <= size.Width - 19, $"A line is outside of the margins: {line.Text} {line.Bounds}");
+                // The glyphs of a line can go a little beyond its box (accents, the footer in the margin). A line of one character
+                // cannot be broken: its glyph can be wider than the cell of a narrow column (8 columns in a column of the page)
+                FuzzAssert.True((line.Bounds.Left >= 19 && line.Bounds.Right <= size.Width - 19) || line.Text.Trim().Length <= 1, $"A line is outside of the margins: {line.Text} {line.Bounds}");
                 FuzzAssert.True(line.Bounds.Bottom >= 0 && line.Bounds.Top <= size.Height, $"A line is outside of the page: {line.Text} {line.Bounds}");
             }
         }

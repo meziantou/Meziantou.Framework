@@ -325,10 +325,10 @@ public static class LocatorFuzzTargets
         return exact ? string.Equals(normalizedText, normalizedArgument, StringComparison.Ordinal) : normalizedText.Contains(normalizedArgument, StringComparison.OrdinalIgnoreCase);
     }
 
-    /// <summary>The smallest elements whose text matches: the element is not in the head, and the text of none of its children matches.</summary>
+    /// <summary>The smallest elements whose text matches: the element is not in the head nor in an element whose text is skipped, and the text of none of its children matches.</summary>
     private static bool IsReferenceSmallestTextMatch(Document document, Element element, string argument, bool exact)
     {
-        if (IsSkippedForText(element) || (document.Head is { } head && head.Contains(element)) || !IsReferenceTextMatch(GetReferenceText(element), argument, exact))
+        if (IsSkippedForText(element) || (document.Head is { } head && head.Contains(element)) || element.Ancestors().OfType<Element>().Any(IsSkippedForText) || !IsReferenceTextMatch(GetReferenceText(element), argument, exact))
             return false;
 
         var children = element.Children.Concat(element.ShadowRoot?.Children ?? Enumerable.Empty<Element>());

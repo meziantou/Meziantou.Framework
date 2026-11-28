@@ -1030,6 +1030,27 @@ public sealed class PdfDocumentTests
     }
 
     [Fact]
+    public void AutoTagWritesNothingAfterAnInlineImageCutByTheEndOfTheContent()
+    {
+        // The image has no EI: its data is every byte after ID, so a marked-content operator after it would become its data
+        const string Content = "BT /F1 12 Tf 72 700 Td (Text) Tj ET\nq 50 0 0 50 72 400 cm BI /W 2 /H 2 /CS /G /BPC 8 ID ";
+        var file = new HandWrittenPdf()
+            .Add(1, "<< /Type /Catalog /Pages 2 0 R >>")
+            .Add(2, "<< /Type /Pages /Kids [3 0 R] /Count 1 /MediaBox [0 0 200 800] /Resources << /Font << /F1 4 0 R >> >> >>")
+            .Add(3, "<< /Type /Page /Parent 2 0 R /Contents 5 0 R >>")
+            .Add(4, "<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica /Encoding /WinAnsiEncoding >>")
+            .Add(5, HandWrittenPdf.Stream(Content))
+            .ToArray();
+        var document = PdfDocument.Open(file);
+
+        document.AutoTag();
+
+        var content = Encoding.Latin1.GetString(PdfDocument.Open(document.ToByteArray()).Pages[0].GetContentData());
+        Assert.Contains("BDC", content, StringComparison.Ordinal);
+        Assert.EndsWith("BI /W 2 /H 2 /CS /G /BPC 8 ID ", content, StringComparison.Ordinal);
+    }
+
+    [Fact]
     public void ConvertToPdfA_LevelANeedsTheTextOfTheGlyphs()
     {
         var font = (EmbeddedPdfFont)PdfFont.Load(RepositoryPaths.Fonts / "noto-sans/NotoSans-Regular.subset.ttf");

@@ -1212,15 +1212,17 @@ internal sealed class BlockParser
             return null;
         }
 
+        // The text after them is trimmed of spaces and tabs only, as the content of a heading: a vertical tab or a form feed at
+        // the end of the line is in the text, and in the span of the block, as it is without attributes
         brace += start;
         var rest = end;
         var restEnd = lineEnd;
-        while (rest < restEnd && TableScanner.IsSpace(_text[rest]))
+        while (rest < restEnd && Scanners.IsSpaceOrTab(_text[rest]))
         {
             rest++;
         }
 
-        while (restEnd > rest && TableScanner.IsSpace(_text[restEnd - 1]))
+        while (restEnd > rest && Scanners.IsSpaceOrTab(_text[restEnd - 1]))
         {
             restEnd--;
         }

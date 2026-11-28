@@ -1155,6 +1155,18 @@ public sealed class WasmRuntimeTests
     }
 
     [Theory]
+    [InlineData(@"(module (func (export ""\u{ff323220}"")))")]
+    [InlineData(@"(module (func (export ""\u{110000}"")))")]
+    [InlineData(@"(module (func (export ""\u{d800}"")))")]
+    public void WatToWasm_EscapeOfAnInvalidCodePoint_Throws(string text)
+    {
+        // 8 hexadecimal digits are a negative number of 32 bits, not a code point (fuzz regression)
+        var exception = Assert.Throws<FormatException>(() => WasmRuntime.WatToWasm(text));
+
+        Assert.Contains("invalid code point", exception.Message, StringComparison.Ordinal);
+    }
+
+    [Theory]
     [InlineData("(module (func (try (do) (delegate))))", "malformed delegate: expected a label")]
     [InlineData("(module (func (try (do) (delegate 0 1))))", "malformed delegate: expected a label")]
     [InlineData("(module (func (try (do) (delegate 0) (delegate 0))))", "malformed try: a clause follows delegate")]

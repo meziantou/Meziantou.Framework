@@ -753,13 +753,66 @@ internal static class Barcode2DLocator
     private static void Add(List<Barcode2DImageResult> results, Barcode2DImageResult result)
     {
         var center = new PointD(result.Corners.Average(corner => corner.X), result.Corners.Average(corner => corner.Y));
-        foreach (var existing in results)
+        for (var i = 0; i < results.Count; i++)
         {
+            var existing = results[i];
             var existingCenter = new PointD(existing.Corners.Average(corner => corner.X), existing.Corners.Average(corner => corner.Y));
             if (existing.Result.Type == result.Result.Type && existing.Result.Text == result.Result.Text && existingCenter.DistanceTo(center) < existing.Corners[0].DistanceTo(existing.Corners[2]) / 2)
                 return;
+
+            // Symbols do not overlap: a symbol whose center is inside another one is read from the modules of the other one
+            // (the bullseye of an Aztec symbol in the data of a Data Matrix symbol). The larger one is the symbol.
+            if (Contains(existing.Corners, center) || Contains(result.Corners, existingCenter))
+            {
+                if (GetArea(result.Corners) > GetArea(existing.Corners))
+                {
+                    results[i] = result;
+                }
+
+                return;
+            }
         }
 
         results.Add(result);
+    }
+
+    /// <summary>Indicates whether a point is inside a convex quadrilateral: on the same side of its 4 edges.</summary>
+    private static bool Contains(IReadOnlyList<PointD> corners, PointD point)
+    {
+        var sign = 0;
+        for (var i = 0; i < corners.Count; i++)
+        {
+            var a = corners[i];
+            var b = corners[(i + 1) % corners.Count];
+            var cross = ((b.X - a.X) * (point.Y - a.Y)) - ((b.Y - a.Y) * (point.X - a.X));
+            var side = Math.Sign(cross);
+            if (side == 0)
+                continue;
+
+            if (sign == 0)
+            {
+                sign = side;
+            }
+            else if (side != sign)
+            {
+                return false;
+            }
+        }
+
+        return sign != 0;
+    }
+
+    /// <summary>The area of a polygon (shoelace formula).</summary>
+    private static double GetArea(IReadOnlyList<PointD> corners)
+    {
+        var sum = 0d;
+        for (var i = 0; i < corners.Count; i++)
+        {
+            var a = corners[i];
+            var b = corners[(i + 1) % corners.Count];
+            sum += (a.X * b.Y) - (b.X * a.Y);
+        }
+
+        return Math.Abs(sum) / 2;
     }
 }

@@ -81,6 +81,10 @@ public static partial class WebPlatformFuzzTargets
     /// </summary>
     public static void BluetoothRequestDeviceTarget(ReadOnlySpan<byte> data)
     {
+        // A JSON node decodes its strings when they are read: invalid UTF-8 would throw then, in the description of the devices
+        if (!System.Text.Unicode.Utf8.IsValid(data))
+            return;
+
         JsonObject? json;
         try
         {

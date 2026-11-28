@@ -2785,7 +2785,8 @@ documents (see [Paged media](#paged-media-csslayoutpaged-layoutenginepagedcs)).
     (`BreakCandidate.AvoidDepth`; as in the browsers, a break outside of the innermost avoided box).
   - Several breaks may be at the same position (before and after a box without block size): the candidates and such boxes are
     ordered as in the content (`BreakCandidate.Sequence`, `FragmentationFlow.GetEmptyOrdinal`), the latest break that fits is
-    taken, and a box without block size at the end of a fragmentainer stays in it (`FlowMap.MapEmpty`). The break after
+    taken, and a box without block size at the end of a fragmentainer stays in it (`FlowMap.MapEmpty`), with the items
+    of its parallel flows at its position when it is a flex or grid container (`Commit`, `FragmentSlicer`). The break after
     the content of a flow whose parallel flows continue is after the boxes without block size at its position: the contents
     that overflow them (a box with `height: 0`) start in that fragmentainer and are broken there.
   - A forced break at the start of a fragmentainer is taken when it is at a class A break point (after a box without block
@@ -2817,7 +2818,9 @@ documents (see [Paged media](#paged-media-csslayoutpaged-layoutenginepagedcs)).
     the result is one `FlowMap` per flow (the fragmentainer and the offset of each position of the strip), which the slicer
     uses for the fragments of the flow.
   - The block-end edge of an item follows its contents when its block size is automatic (the item grows when its contents
-    are pushed by its breaks; a stretched item is at least as tall as its track; as in Blink, its fragments are not taller
+    are pushed by its breaks, also the contents of its own parallel flows when it is a flex or grid container: its contents
+    are not placed while they continue, `AdvanceResult.HasUnfinishedFlows`, although its flow reaches its end with the break
+    after its content; a stretched item is at least as tall as its track; as in Blink, its fragments are not taller
     together than its `max-height`, `ParallelItem.MaxEnd`: the item then ends and its contents overflow it; the block size
     of its fragments in the previous fragmentainers is the one they consumed, `ParallelItem.MaxConsumed`, not the distance
     in the strip), and is placed by the flow of the container
@@ -3384,7 +3387,9 @@ page box and the fragment of its page area) and `Paint()` their display lists (s
   boxes broken at that break end there (the block size of the fragmentainer), and the fragments of the page before it, from the
   strip (`BuildPageContent`, without the boxes fixed to the viewport), are the content that starts the first page of the next
   segment (`CarriedContent`, copied), which starts at that break: the breaker starts its first page after their block size
-  (`FragmentationFlow.ResumeLeadingBlockSize`, added to the display offset of the start of the flow, as a repeated header), and
+  (`FragmentationFlow.ResumeLeadingBlockSize`, added to the display offset of the start of the flow, as a repeated header,
+  also when the anchor is at the start of the strip, e.g. the lines of a paragraph after its sliced line box; the content after
+  it can be pushed to the next page, which is not empty), and
   the page keeps its page selection (`FindPageBreaks`). The split is undone (`RejectSplit`: the floats pushed, the boxes
   fragmented and the broken boxes laid out again are found again from the start) when the breaker does not end the page there,
   or when the rest of the page has content before the anchor in the tree order, other than its ancestors

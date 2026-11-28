@@ -48,7 +48,7 @@ await page.GetByTestId("user").GetByRole("button", "Delete").ClickAsync();
 | Method | Finds the elements |
 | --- | --- |
 | [GetByRole](cref:Meziantou.AspNetCore.Testing.LocatorScope.GetByRole) | With an ARIA role, an accessible name and the states of [GetByRoleOptions](cref:Meziantou.AspNetCore.Testing.GetByRoleOptions) (`Checked`, `Disabled`, `Expanded`, `Pressed`, `Selected`, `Level`) |
-| [GetByText](cref:Meziantou.AspNetCore.Testing.LocatorScope.GetByText) | The smallest elements that contain a text: an element is found when none of its children contains the text |
+| [GetByText](cref:Meziantou.AspNetCore.Testing.LocatorScope.GetByText) | The smallest elements that contain a text: an element is found when none of its children contains the text. The content of the `script`, `style`, `noscript` and `template` elements is not text, and the elements in it are not found |
 | [GetByLabel](cref:Meziantou.AspNetCore.Testing.LocatorScope.GetByLabel) | Labelled by `aria-labelledby`, `aria-label` or a `label` element |
 | [GetByPlaceholder](cref:Meziantou.AspNetCore.Testing.LocatorScope.GetByPlaceholder), [GetByAltText](cref:Meziantou.AspNetCore.Testing.LocatorScope.GetByAltText), [GetByTitle](cref:Meziantou.AspNetCore.Testing.LocatorScope.GetByTitle) | With a `placeholder`, `alt` or `title` attribute |
 | [GetByTestId](cref:Meziantou.AspNetCore.Testing.LocatorScope.GetByTestId) | With a test identifier: `data-testid`, or the attribute of [TestPageSettings.TestIdAttribute](cref:Meziantou.AspNetCore.Testing.TestPageSettings.TestIdAttribute) |

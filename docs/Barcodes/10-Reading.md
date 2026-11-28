@@ -52,7 +52,9 @@ photographs and images without symbols. For the photographs they read and their 
 [ReadBarcodes2D](cref:Meziantou.Framework.Imaging.Barcodes.Barcode2DImageReader.ReadBarcodes2D) reads the Data Matrix,
 PDF417 and Aztec symbols of an image the same way, with
 [Barcode2DReadingOptions](cref:Meziantou.Framework.Imaging.Barcodes.Barcode2DReadingOptions). Data Matrix and Aztec
-symbols can be in any orientation; the rows of a PDF417 symbol must be about horizontal or vertical.
+symbols can be in any orientation; the rows of a PDF417 symbol must be about horizontal or vertical. Symbols do not
+overlap: when a symbol is read inside another one (the modules of a Data Matrix symbol that look like the bullseye of an
+Aztec symbol), only the larger one is returned.
 
 <!-- ref:../../tests/Meziantou.Framework.Imaging.Barcodes.Tests/ImageRendererTests.cs;region=ImagingBarcodes_ReadBarcodes2D;format=md-fenced-code-block;dedent=true -->
 ```csharp

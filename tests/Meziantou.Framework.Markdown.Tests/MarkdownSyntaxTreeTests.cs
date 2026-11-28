@@ -714,6 +714,18 @@ public sealed class MarkdownSyntaxTreeTests
         Assert.Contains(expected, MarkdownHtmlRenderer.ToHtml(tree), StringComparison.Ordinal);
     }
 
+    [Theory]
+    [InlineData("# a f\v")]
+    [InlineData("# a{e=\"f\"}b f\v")]
+    [InlineData("# a{e=\"f\"}\f")]
+    public void HeadingWithGenericAttributes_EndsAtTheLastCharacterThatIsNotASpaceOrATab(string text)
+    {
+        // A vertical tab or a form feed at the end of the line is in the heading, with attributes or not, as in CommonMark
+        var heading = MarkdownSyntaxTree.ParseText(text, new MarkdownParseOptions { Extensions = MarkdownExtensions.GenericAttributes }).GetRoot().DescendantNodes().OfType<MarkdownHeadingSyntax>().Single();
+
+        Assert.Equal(text.Length, heading.Span.End);
+    }
+
     [Fact]
     public void GenericAttributesHaveTheirTarget()
     {
@@ -2358,6 +2370,20 @@ public sealed class MarkdownSyntaxTreeTests
         Assert.IsType<MarkdownTableSyntax>(GetLastBlock(formatted.GetRoot().Blocks[^1]));
 
         static MarkdownBlockSyntax GetLastBlock(MarkdownBlockSyntax block) => block is MarkdownFootnoteDefinitionSyntax footnote ? footnote.Blocks[^1] : block;
+    }
+
+    [Fact]
+    public void FormatterEndsABlockQuoteBeforeARowOfTextWithOneBlankLine()
+    {
+        // The rows would be lazy lines of the paragraph of the block quote: a blank line ends it, not also an empty line of the
+        // block quote, which formatting the text again removes (fuzz regression)
+        var extensions = Enum.GetValues<MarkdownExtensions>().Aggregate(MarkdownExtensions.None, (all, extension) => all | extension);
+        var tree = MarkdownSyntaxTree.ParseText(">t\n>\nx|\n|-\nc", new MarkdownParseOptions { Extensions = extensions });
+        var formatted = MarkdownFormatter.Format(tree);
+
+        Assert.Equal("> t\n\nx|\n|-\nc\n", formatted.GetRoot().ToFullString());
+        Assert.Equal("> t\n\nx|\n|-\nc\n", MarkdownFormatter.FormatText(formatted, MarkdownFormattingOptions.Default));
+        Assert.Equal(MarkdownHtmlRenderer.ToHtml(tree), MarkdownHtmlRenderer.ToHtml(formatted));
     }
 
     [Theory]

@@ -31,7 +31,9 @@ public abstract class MimeEntity
     /// <summary>Gets or sets the identifier of the content, without its angle brackets, which an HTML body references with <c>cid:</c> URLs.</summary>
     public string? ContentId
     {
-        get => Headers["Content-ID"]?.Trim().TrimStart('<').TrimEnd('>');
+        // A msg-id cannot contain encoded words (RFC 2047, section 5): decoding them can give line breaks, which a header
+        // cannot hold, so that the identifier is written as another one
+        get => Headers.Find("Content-ID")?.RawValue.Trim().TrimStart('<').TrimEnd('>');
         set => Headers.Set("Content-ID", value is null ? null : MimeHeader.CreateRaw("Content-ID", "<" + value + ">"));
     }
 

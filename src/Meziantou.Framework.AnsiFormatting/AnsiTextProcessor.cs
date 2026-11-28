@@ -573,10 +573,17 @@ public static class AnsiTextProcessor
 
     private static void AddRun(List<AnsiTextRun> runs, AnsiStyle style, int start, int end)
     {
-        if (end > start)
+        if (end <= start)
+            return;
+
+        // A style that comes back after a style without text (red, blue, red) continues the run before it
+        if (runs.Count > 0 && runs[^1] is { } previous && previous.End == start && previous.Style == style)
         {
-            runs.Add(new AnsiTextRun(start, end, style));
+            runs[^1] = previous with { End = end };
+            return;
         }
+
+        runs.Add(new AnsiTextRun(start, end, style));
     }
 
     // The style while parsing, without allocations. A color is NoColor (the default color), an indexed color, or an RGB color.

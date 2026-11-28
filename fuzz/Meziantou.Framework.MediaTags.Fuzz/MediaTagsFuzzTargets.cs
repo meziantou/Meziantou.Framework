@@ -163,9 +163,15 @@ public static partial class MediaTagsFuzzTargets
         FuzzAssert.True(written.AsSpan().SequenceEqual(otherOutput.ToArray()), $"The file written after {prefixLength} other bytes, {maxBytesPerRead} byte(s) at a time, to an output that cannot seek, differs");
 
         // An MP3 file is any file behind an ID3v2 tag, so the written tag can reveal another format behind it
+        // A forced format can be written to a file that is not detected as it, such as an MP4 file without an ftyp box (a
+        // QuickTime file): the written file is not detected either, but not as another format
         if (format is not MediaFormat.Mp3)
         {
-            FuzzAssert.Equal<MediaFormat?>(format, Detect(written, 0), "The format detected in the written file differs");
+            var writtenFormat = Detect(written, 0);
+            if (writtenFormat is not null || Detect(file, 0) == format)
+            {
+                FuzzAssert.Equal<MediaFormat?>(format, writtenFormat, "The format detected in the written file differs");
+            }
         }
 
         var readBack = MediaFile.ReadTags(new MemoryStream(written, writable: false), format);

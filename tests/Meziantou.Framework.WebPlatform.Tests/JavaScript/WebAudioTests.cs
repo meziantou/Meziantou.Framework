@@ -717,8 +717,27 @@ public sealed class WebAudioTests : IDisposable
     [Fact]
     public void DecodeAudioData_DecodesAFlacStream()
     {
-        // A 16-bit stereo stream at 8000 Hz with one frame of 4 samples: the left channel is verbatim, the side channel
-        // (left - right) is constant
+        var buffer = Decode(new OfflineAudioContext(1, 128, 8000), CreateFlac(frameSampleRate: null));
+
+        Assert.Equal(4u, buffer.Length);
+        Assert.Equal([1000 / 32768f, -2000 / 32768f, 0.5f, -0.5f], buffer.GetChannelData(0).ToArray());
+        Assert.Equal([1100 / 32768f, -1900 / 32768f, 16484 / 32768f, -16284 / 32768f], buffer.GetChannelData(1).ToArray());
+    }
+
+    [Fact]
+    public void DecodeAudioData_RejectsAFlacFrameWithAnUnsupportedSampleRate()
+    {
+        // The STREAMINFO block has a supported sample rate, the frame overrides it with one that an AudioBuffer does not support
+        var task = new OfflineAudioContext(1, 128, 8000).DecodeAudioData(CreateFlac(frameSampleRate: 1000));
+
+        Assert.True(task.IsFaulted);
+        Assert.Equal("EncodingError", Assert.IsType<DomException>(task.Exception!.InnerException).Name);
+    }
+
+    // A 16-bit stereo stream at 8000 Hz with one frame of 4 samples: the left channel is verbatim, the side channel
+    // (left - right) is constant. The frame has the sample rate of STREAMINFO, or its own one (in Hz).
+    private static byte[] CreateFlac(int? frameSampleRate)
+    {
         var bits = new System.Text.StringBuilder();
         void Write(long value, int count)
         {
@@ -742,12 +761,17 @@ public sealed class WebAudioTests : IDisposable
 
         Write(0xFFF8, 16); // The frame header
         Write(6, 4); // The block size in 8 bits
-        Write(0, 4); // The sample rate of STREAMINFO
+        Write(frameSampleRate is null ? 0 : 13, 4); // The sample rate of STREAMINFO, or in 16 bits (Hz)
         Write(8, 4); // Left and side
         Write(4, 3); // 16 bits
         Write(0, 1);
         Write(0, 8); // Frame 0
         Write(3, 8); // Block size - 1
+        if (frameSampleRate is { } rate)
+        {
+            Write(rate, 16);
+        }
+
         Write(0, 8); // CRC-8
 
         Write(0b0_000001_0, 8); // A verbatim subframe
@@ -769,11 +793,7 @@ public sealed class WebAudioTests : IDisposable
             flac[i] = Convert.ToByte(bits.ToString(i * 8, 8), 2);
         }
 
-        var buffer = Decode(new OfflineAudioContext(1, 128, 8000), flac);
-
-        Assert.Equal(4u, buffer.Length);
-        Assert.Equal([1000 / 32768f, -2000 / 32768f, 0.5f, -0.5f], buffer.GetChannelData(0).ToArray());
-        Assert.Equal([1100 / 32768f, -1900 / 32768f, 16484 / 32768f, -16284 / 32768f], buffer.GetChannelData(1).ToArray());
+        return flac;
     }
 
     [Fact]

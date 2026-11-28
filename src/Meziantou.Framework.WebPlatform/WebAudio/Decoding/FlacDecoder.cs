@@ -100,7 +100,9 @@ internal static class FlacDecoder
         if (output.Frames == 0)
             throw new InvalidDataException("The FLAC stream has no audio frame");
 
-        if (streamInfo.TotalSamples == 0)
+        // The headers of the frames can give another sample rate than the STREAMINFO block, which the length was checked with:
+        // a lower one gives more frames once resampled (or is not supported)
+        if (streamInfo.TotalSamples == 0 || sampleRate != streamInfo.SampleRate)
         {
             checkLength(sampleRate, output.Frames);
         }

@@ -62,6 +62,7 @@ public sealed class ArchitectureDiagramParserTests
     [InlineData("architecture-beta\nservice a\nalign row a", "An alignment has two members at least.")]
     [InlineData("architecture-beta\ngroup g in g", "cannot be placed within itself")]
     [InlineData("architecture-beta\nservice L", "'L' is a keyword and cannot be an identifier.")]
+    [InlineData("architecture-beta\nservice -a", "the identifier of the service is expected")] // A dash is only inside an identifier (fuzz regression)
     public void InvalidArchitectureDiagrams(string text, string expected)
     {
         var exception = Assert.Throws<MermaidParseException>(() => MermaidDocument.Parse(text));

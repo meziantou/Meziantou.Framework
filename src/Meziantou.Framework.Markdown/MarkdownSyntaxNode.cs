@@ -177,7 +177,36 @@ public abstract class MarkdownSyntaxNode : SyntaxNode
     {
         if (field.IsDefault)
         {
-            field = [.. ChildNodes().OfType<T>()];
+            // The children are enumerated as a ChildSyntaxList, which allocates no enumerator: the first pass counts the nodes, so
+            // that the array has their exact size, and creates them, so that the second pass reads them from the cache
+            var children = ChildNodesAndTokens();
+            var count = 0;
+            foreach (var child in children)
+            {
+                if (child.AsNode() is T)
+                {
+                    count++;
+                }
+            }
+
+            if (count == 0)
+            {
+                field = [];
+            }
+            else
+            {
+                var nodes = new T[count];
+                var index = 0;
+                foreach (var child in children)
+                {
+                    if (child.AsNode() is T node)
+                    {
+                        nodes[index++] = node;
+                    }
+                }
+
+                field = ImmutableCollectionsMarshal.AsImmutableArray(nodes);
+            }
         }
 
         return field;

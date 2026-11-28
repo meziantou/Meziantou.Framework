@@ -68,7 +68,14 @@ public sealed class MarkdownListSyntax : MarkdownBlockSyntax
     private bool ComputeIsTight()
     {
         var items = Items;
-        var quoteDepth = Ancestors().Count(ancestor => ancestor is MarkdownBlockQuoteSyntax);
+        var quoteDepth = 0;
+        for (var ancestor = Parent; ancestor is not null; ancestor = ancestor.Parent)
+        {
+            if (ancestor is MarkdownBlockQuoteSyntax)
+            {
+                quoteDepth++;
+            }
+        }
         if (HasBlankLineBetween(items, quoteDepth))
         {
             return false;
@@ -147,16 +154,65 @@ public sealed class MarkdownListSyntax : MarkdownBlockSyntax
     // first one, unless it ends the line, such as a line of code, and the lines before the second.
     private static bool IsBlankLineBetween(SyntaxToken last, SyntaxToken first, int quoteDepth)
     {
-        var gap = (last.TrailingTrivia.ToFullString() + first.LeadingTrivia.ToFullString()).ReplaceLineEndings("\n").Split('\n');
-        for (var j = last.Text is [.., '\n' or '\r'] ? 0 : 1; j < gap.Length - 1; j++)
+        // The lines of the gap are read in the text of the trivia, without creating it: each line that a line ending ends is
+        // checked, from the second one unless the first token ends its line. The line endings are the ones of
+        // string.ReplaceLineEndings, a \r\n being one even when the trivia of the two tokens split it.
+        var state = new GapState(firstLineToCheck: last.Text is [.., '\n' or '\r'] ? 0 : 1, quoteDepth);
+        foreach (var trivia in last.TrailingTrivia)
         {
-            if (gap[j].Count(c => c == '>') <= quoteDepth)
+            if (state.HasBlankLine(trivia.ToString()))
+            {
+                return true;
+            }
+        }
+
+        foreach (var trivia in first.LeadingTrivia)
+        {
+            if (state.HasBlankLine(trivia.ToString()))
             {
                 return true;
             }
         }
 
         return false;
+    }
+
+    private struct GapState(int firstLineToCheck, int quoteDepth)
+    {
+        private int _line;
+        private int _quoteMarkers;
+        private bool _afterCarriageReturn;
+
+        public bool HasBlankLine(string text)
+        {
+            foreach (var c in text)
+            {
+                var afterCarriageReturn = _afterCarriageReturn;
+                _afterCarriageReturn = c == '\r';
+                if (c is '\r' or '\n' or '\f' or '\u0085' or '\u2028' or '\u2029')
+                {
+                    // The \n of a \r\n ends the line that the \r ended
+                    if (c == '\n' && afterCarriageReturn)
+                    {
+                        continue;
+                    }
+
+                    if (_line >= firstLineToCheck && _quoteMarkers <= quoteDepth)
+                    {
+                        return true;
+                    }
+
+                    _line++;
+                    _quoteMarkers = 0;
+                }
+                else if (c == '>')
+                {
+                    _quoteMarkers++;
+                }
+            }
+
+            return false;
+        }
     }
 
     public override void Accept(MarkdownSyntaxVisitor visitor)

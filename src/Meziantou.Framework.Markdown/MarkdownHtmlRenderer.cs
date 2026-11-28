@@ -1018,7 +1018,8 @@ public static class MarkdownHtmlRenderer
                     Markup.Append("<h").Append(heading.Level);
                     AppendAttributes(heading, id: _autoIdentifiers ? heading.Identifier : null);
                     Markup.Append('>');
-                    if (HasPragmaAnchorInside(heading))
+                    // Most documents have no pragma lines: the inlines are not enumerated for them
+                    if (_pragmaAnchors is not null && HasPragmaAnchorInside(heading))
                     {
                         AppendPragmaAnchor(heading);
                     }

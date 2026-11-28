@@ -318,15 +318,27 @@ internal sealed partial class GridLayoutAlgorithm
                 inlineArea = IntrinsicSizing.GetContribution(_context, item.Box, _writingDirection, containingBlockBlockSize: null, stretchesBlockSize: false).MaxContent;
             }
 
-            var fragment = axis == GridAxis.Rows ? LayoutItem(item, inlineArea, blockArea: null) : LayoutItem(item, inlineArea: null, otherAreaSize);
-            var size = _writingDirection.ToLogical(fragment.Size);
+            PhysicalSize fragmentSize;
+            double intrinsicBlockSize;
+            if (axis == GridAxis.Rows && CanMeasureContribution(item))
+            {
+                (fragmentSize, intrinsicBlockSize) = _context.MeasureContribution(item.Box, CreateItemSpace(item, inlineArea, blockArea: null) with { MeasuresContribution = true });
+            }
+            else
+            {
+                var fragment = axis == GridAxis.Rows ? LayoutItem(item, inlineArea, blockArea: null) : LayoutItem(item, inlineArea: null, otherAreaSize);
+                fragmentSize = fragment.Size;
+                intrinsicBlockSize = fragment.IntrinsicBlockSize;
+            }
+
+            var size = _writingDirection.ToLogical(fragmentSize);
             var margins = GetMargins(item, (axis == GridAxis.Rows ? otherAreaSize : null) ?? 0);
             result.Margins = axis == GridAxis.Rows ? margins.BlockSum() : margins.InlineSum();
             var outer = (axis == GridAxis.Rows ? size.Block : size.Inline) + result.Margins;
             result.MinContent = outer;
             result.MaxContent = outer;
             result.DependsOnContainingBlock = DependsOnContainingBlock(preferred, inBlockAxis: true);
-            sizing = CreateItemSizing(item, axis, areaSize: null, otherAreaSize) with { ContentSize = fragment.IntrinsicBlockSize };
+            sizing = CreateItemSizing(item, axis, areaSize: null, otherAreaSize) with { ContentSize = intrinsicBlockSize };
         }
 
         result.PaddingAndBorder = sizing.PaddingAndBorder;
@@ -356,6 +368,17 @@ internal sealed partial class GridLayoutAlgorithm
 
         return result;
     }
+
+    /// <summary>
+    /// Returns whether the contribution of an item to the rows can be measured by a layout that does not lay out its own items
+    /// (see <see cref="ConstraintSpace.MeasuresContribution"/>): the item is a grid container (not a subgrid: its layout depends on
+    /// the tracks of the grid), in the writing mode of the grid, whose size does not depend on the overflow of its items (it is not
+    /// a scroll container, whose scrollbars depend on it). The fragment of the measure is not kept as the layout of the item. The
+    /// layouts without the layout cache (e.g. the verification of the incremental layout) lay out the items.
+    /// </summary>
+    private bool CanMeasureContribution(GridItem item)
+        => _context.UsesLayoutCache && !_isLanes && item.Box.Display.Inside == DisplayInside.Grid && item.Box.Kind != ContainerBoxKind.Replaced
+            && !item.IsOrthogonal && !item.SubgridsColumns && !item.SubgridsRows && !ScrollContainers.IsScrollContainer(item.Box);
 
     /// <summary>
     /// Returns whether a preferred size behaves as <c>auto</c> or depends on the size of the containing block (a percentage,

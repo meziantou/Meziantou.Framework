@@ -312,8 +312,9 @@ internal sealed partial class GridLayoutAlgorithm
         // container is indefinite), at least the line of the caret of an editing host without items
         var gridBlockSize = GetContentBlockSizeWithCaretLine(_contentBlockSize);
 
-        // The measure of the intrinsic block size only needs the sizes of the rows: the items are measured, not laid out
-        if (_content.MeasuresIntrinsicBlockSize)
+        // The measure of the intrinsic block size, and of the contribution of the container to the rows of its parent grid, only
+        // need the sizes of the rows: the items are measured, not laid out
+        if (_content.MeasuresIntrinsicBlockSize || _content.MeasuresContribution)
             return new ContentLayoutResult(gridBlockSize);
 
         // https://drafts.csswg.org/css-grid-2/#algo-grid-sizing: "Finally, align the tracks within the grid container according to

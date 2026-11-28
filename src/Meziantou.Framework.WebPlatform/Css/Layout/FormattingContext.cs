@@ -185,6 +185,9 @@ internal readonly record struct ContentArea(WritingDirection WritingDirection, L
     /// <summary>Whether the box is laid out to find its automatic block size (see <see cref="ConstraintSpace.MeasuresAutomaticBlockSize"/>).</summary>
     public bool MeasuresAutomaticBlockSize { get; init; }
 
+    /// <summary>Whether only the size of the fragment of the box is used (see <see cref="ConstraintSpace.MeasuresContribution"/>).</summary>
+    public bool MeasuresContribution { get; init; }
+
     /// <summary>Whether the content box is the one of a table cell in its first layout (see <see cref="ConstraintSpace.ScrollContainerPercentageBlockSizeIsZero"/>).</summary>
     public bool IsTableCellMeasure { get; init; }
 
@@ -890,6 +893,7 @@ internal abstract class FormattingContext
             UsesInlineBlockBaseline = box.IsAtomicInline ? box.Display.Inside == DisplayInside.FlowRoot && layout.VerticalAlign.BaselineSource == BaselineSource.Auto : space.UsesInlineBlockBaseline,
             MeasuresIntrinsicBlockSize = space.MeasuresIntrinsicBlockSize && !isOrthogonal,
             MeasuresAutomaticBlockSize = space.MeasuresAutomaticBlockSize && !isOrthogonal,
+            MeasuresContribution = space.MeasuresContribution && !isOrthogonal,
             IsTableCellMeasure = space.MeasuresIntrinsicBlockSize && box.Display.Internal == DisplayInternal.TableCell,
             IsRestrictedTableCell = space.IsRestrictedTableCell,
             ReplacedPercentageBlockSize = GetReplacedPercentageBlockSize(context, box, layout, isOrthogonal, blockIsHorizontal, edges.BlockSum(), in space),

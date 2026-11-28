@@ -131,6 +131,7 @@ internal static class LayoutResultCache
                 container.MeasureLayoutResult = null;
                 container.IntrinsicSizesCache = null;
                 container.IntrinsicBlockSizeCache = null;
+                container.ContributionCache = null;
             }
         }
     }

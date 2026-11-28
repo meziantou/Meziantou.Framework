@@ -296,6 +296,32 @@ internal sealed class LayoutContext
     }
 
     /// <summary>
+    /// Returns the size of the fragment of a box laid out in a constraint space that measures its contribution
+    /// (<see cref="ConstraintSpace.MeasuresContribution"/>) and its intrinsic block size, cached for the layout pass (and the next
+    /// ones, see <see cref="IsCacheOfPreviousPassValid"/>): a nested grid container measured again with the same space (by the
+    /// measure and by the layout of its parent grid) is not laid out again, which keeps the cost of nested grids linear.
+    /// </summary>
+    public (PhysicalSize Size, double IntrinsicBlockSize) MeasureContribution(ContainerBox box, in ConstraintSpace space)
+    {
+        Debug.Assert(space.MeasuresContribution, "The space must measure the contribution");
+        var cache = box.ContributionCache;
+        if (cache is not null && cache.Space == space && cache.StripLayout == StripLayoutCount && (cache.Pass == Pass || IsCacheOfPreviousPassValid(cache.Generation, cache.InitialContainingBlockSize)))
+            return (cache.Size, cache.IntrinsicBlockSize);
+
+        var preventionCount = LayoutCachingPreventionCount;
+        var fragment = LayoutBox(box, space);
+        cache ??= box.ContributionCache = new ContributionCache();
+        cache.Pass = Pass;
+        cache.Space = space;
+        cache.Size = fragment.Size;
+        cache.IntrinsicBlockSize = fragment.IntrinsicBlockSize;
+        cache.Generation = GetCacheGeneration(preventionCount);
+        cache.StripLayout = StripLayoutCount;
+        cache.InitialContainingBlockSize = InitialContainingBlockSize;
+        return (fragment.Size, fragment.IntrinsicBlockSize);
+    }
+
+    /// <summary>
     /// Called by the formatting contexts when the content box of a size container
     /// (https://drafts.csswg.org/css-contain-3/#size-container, <c>container-type: size</c> or <c>inline-size</c>) is sized,
     /// before its contents are laid out: size containment makes its size independent of its contents. The block size of the

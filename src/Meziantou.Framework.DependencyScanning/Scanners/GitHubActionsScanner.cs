@@ -1,4 +1,4 @@
-using Meziantou.Framework.Yaml.Model;
+using Meziantou.Framework.Yaml.Nodes;
 using static Meziantou.Framework.DependencyScanning.Internals.YamlParserUtilities;
 
 namespace Meziantou.Framework.DependencyScanning.Scanners;
@@ -97,7 +97,7 @@ public sealed class GitHubActionsScanner : DependencyScanner
         ExtractSteps(yaml, stepsNode);
     }
 
-    private void ExtractSteps(YamlFile yaml, YamlElement? stepsNode)
+    private void ExtractSteps(YamlFile yaml, YamlNode? stepsNode)
     {
         if (stepsNode is YamlSequence steps)
         {
@@ -111,7 +111,7 @@ public sealed class GitHubActionsScanner : DependencyScanner
         }
     }
 
-    private void ExtractUsesProperty(YamlFile yaml, YamlElement node)
+    private void ExtractUsesProperty(YamlFile yaml, YamlNode node)
     {
         var uses = GetProperty(node, "uses", StringComparison.OrdinalIgnoreCase);
         if (uses is YamlValue usesValue && usesValue.Value is { } value)

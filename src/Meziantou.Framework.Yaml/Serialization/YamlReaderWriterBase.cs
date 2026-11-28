@@ -456,7 +456,7 @@ public abstract class YamlReaderWriterBase
                 return YamlDictionaryObjectConverter.Instance;
             }
 
-            if (typeof(Model.YamlNode).IsAssignableFrom(typeToConvert))
+            if (typeof(Nodes.YamlNode).IsAssignableFrom(typeToConvert))
             {
                 return YamlModelNodeConverter.Instance;
             }
@@ -792,7 +792,7 @@ public abstract class YamlReaderWriterBase
             keyType = null;
             valueType = null;
 
-            if (type.IsInterface || type.IsAbstract || type.IsValueType || typeof(Model.YamlNode).IsAssignableFrom(type) || type.GetConstructor(Type.EmptyTypes) is null)
+            if (type.IsInterface || type.IsAbstract || type.IsValueType || typeof(Nodes.YamlNode).IsAssignableFrom(type) || type.GetConstructor(Type.EmptyTypes) is null)
             {
                 return false;
             }

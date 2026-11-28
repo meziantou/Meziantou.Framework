@@ -167,7 +167,7 @@ public abstract class WasmFunction : WasmExtern
     /// <summary>Gets the type of the function.</summary>
     public abstract WasmFunctionType Type { get; }
 
-    /// <summary>Gets the state given to <see cref="WasmStore.CreateFunction"/> for a host function, or null.</summary>
+    /// <summary>Gets the state given to <see cref="WasmStore.CreateFunction(WasmFunctionType, WasmHostCallback, object?)"/> (or its overload that receives the caller) for a host function, or null.</summary>
     public object? HostState { get; private protected init; }
 
     /// <summary>Invokes the function (func_invoke).</summary>
@@ -471,6 +471,46 @@ public abstract class WasmTag : WasmExtern
 /// <param name="results">Receives the results: one per result of the type of the function.</param>
 public delegate void WasmHostCallback(ReadOnlySpan<WasmValue> arguments, Span<WasmValue> results);
 
+/// <summary>
+/// The steps of a host function that receives its caller (see <see cref="WasmStore.CreateFunction(WasmFunctionType, WasmHostCallerCallback, object?)"/>):
+/// the arguments are converted to the results, or an exception is thrown, as for a <see cref="WasmHostCallback"/>.
+/// </summary>
+/// <param name="caller">The caller of the function: the store, and the instance whose code called the function.</param>
+/// <param name="arguments">The arguments: one per parameter of the type of the function.</param>
+/// <param name="results">Receives the results: one per result of the type of the function.</param>
+public delegate void WasmHostCallerCallback(WasmCaller caller, ReadOnlySpan<WasmValue> arguments, Span<WasmValue> results);
+
+/// <summary>
+/// The caller of a host function (see <see cref="WasmHostCallerCallback"/>): it gives access to the exports of the
+/// instance whose code called the function, such as its memory. It is valid only while the host function runs.
+/// </summary>
+public readonly ref struct WasmCaller
+{
+    internal WasmCaller(WasmStore store, WasmInstance? instance)
+    {
+        Store = store;
+        Instance = instance;
+    }
+
+    /// <summary>Gets the store of the function.</summary>
+    public WasmStore Store { get; }
+
+    /// <summary>
+    /// Gets the instance whose code called the function (directly, through a table or a reference, or with a tail call),
+    /// the instance being instantiated when the function is its start function, or null when the host called the function
+    /// (<see cref="WasmFunction.Invoke"/>).
+    /// </summary>
+    public WasmInstance? Instance { get; }
+
+    /// <summary>Returns the export of the calling instance whose name is <paramref name="name"/>, or null when there is no such export or no calling instance.</summary>
+    /// <param name="name">The name of the export.</param>
+    public WasmExtern? GetExport(string name) => Instance?.GetExport(name);
+
+    /// <summary>Returns the memory exported by the calling instance as <paramref name="name"/>, or null when there is no such memory or no calling instance.</summary>
+    /// <param name="name">The name of the export.</param>
+    public WasmMemory? GetMemory(string name) => Instance?.GetMemory(name);
+}
+
 /// <summary>The imports of an instantiation, by module and name (see <see cref="WasmStore.Instantiate(WasmModule, WasmImports)"/>).</summary>
 public sealed class WasmImports
 {
@@ -559,11 +599,41 @@ public abstract class WasmStore : IDisposable
     /// <exception cref="WasmThrowException">The start function threw an exception.</exception>
     public WasmInstance Instantiate(WasmModule module) => Instantiate(module, Array.Empty<WasmExtern>());
 
+    /// <summary>
+    /// Instantiates a component with the imports of their names: its core modules, its nested components, and its lifted
+    /// and lowered functions. The store runs the asynchronous calls of its components.
+    /// </summary>
+    /// <param name="component">A component of the runtime of the store.</param>
+    /// <param name="imports">The imports, or null when the component has none.</param>
+    /// <returns>The instance: its exports.</returns>
+    /// <exception cref="WasmLinkException">An import is missing, or does not match the type of the import of the component.</exception>
+    /// <exception cref="WasmTrapException">A start function trapped.</exception>
+    public Components.WasmComponentInstance InstantiateComponent(Components.WasmComponent component, Components.ComponentImports? imports = null)
+    {
+        ArgumentNullException.ThrowIfNull(component);
+        if (this is not ManagedStore store || component.Runtime != Runtime)
+            throw new ArgumentException("The component was not compiled by the runtime of the store", nameof(component));
+
+        store.ThrowIfDisposed();
+        return component.Instantiate(store, imports);
+    }
+
     /// <summary>Creates a host function (func_alloc).</summary>
     /// <param name="type">The type of the function.</param>
     /// <param name="callback">The steps of the function.</param>
     /// <param name="state">A value associated with the function (<see cref="WasmFunction.HostState"/>).</param>
     public abstract WasmFunction CreateFunction(WasmFunctionType type, WasmHostCallback callback, object? state = null);
+
+    /// <summary>
+    /// Creates a host function (func_alloc) whose steps receive their caller (<see cref="WasmCaller"/>): the instance whose
+    /// code called the function, whose exports (such as its memory) the function can use.
+    /// </summary>
+    /// <param name="type">The type of the function.</param>
+    /// <param name="callback">The steps of the function.</param>
+    /// <param name="state">A value associated with the function (<see cref="WasmFunction.HostState"/>).</param>
+    public WasmFunction CreateFunction(WasmFunctionType type, WasmHostCallerCallback callback, object? state = null) => CreateCallerFunction(type, callback, state);
+
+    private protected abstract WasmFunction CreateCallerFunction(WasmFunctionType type, WasmHostCallerCallback callback, object? state);
 
     /// <summary>Creates a memory (mem_alloc).</summary>
     /// <exception cref="WasmAllocationException">The memory cannot be allocated.</exception>

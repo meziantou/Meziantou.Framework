@@ -100,6 +100,8 @@ public class UrlSanitizerTests
     // A comma inside a URL that is not followed by a descriptor is part of the URL
     [InlineData("a,b.png")]
     [InlineData("a,b.png 1x, c,d.png 2x")]
+    [InlineData("a 1x(,javascript:alert(1) 2x)")]
+    [InlineData("a 1x(,javascript:alert(1)")]
     public void IsSafeSrcset_Safe(string srcset)
     {
         Assert.True(UrlSanitizer.IsSafeSrcset(srcset));
@@ -123,6 +125,11 @@ public class UrlSanitizerTests
     // "a,javascript:alert(1)" is a single relative URL for a browser, but a colon that appears before the first
     // '/', '?' or '#' makes the URL ambiguous, so it is rejected like any other URL with an unknown scheme
     [InlineData("a,javascript:alert(1)")]
+    // A comma inside the parentheses of a descriptor does not end the candidate, so the next candidate is the URL that
+    // follows the comma after the parentheses
+    [InlineData("a 1x(,q)/,javascript:alert(1) 2x")]
+    [InlineData("a 1x(,),javascript:alert(1)")]
+    [InlineData("a (,(,),javascript:alert(1)")]
     public void IsSafeSrcset_Unsafe(string srcset)
     {
         Assert.False(UrlSanitizer.IsSafeSrcset(srcset));

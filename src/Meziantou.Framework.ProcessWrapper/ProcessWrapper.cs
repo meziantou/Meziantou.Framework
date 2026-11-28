@@ -726,10 +726,12 @@ public sealed class ProcessWrapper
                 }
 
                 onDataRead?.Invoke();
-                var data = buffer.AsSpan(0, bytesRead);
-                foreach (var target in targets)
+                if (!TryWriteToTargets(targets, buffer.AsSpan(0, bytesRead)))
                 {
-                    target.Write(data);
+                    // The process reading this output stopped reading it. Close the stream, so the
+                    // process gets a broken pipe (EPIPE or SIGPIPE) on its next write, as in a shell.
+                    TryCloseProcessOutput(stream);
+                    break;
                 }
             }
         }
@@ -739,6 +741,37 @@ public sealed class ProcessWrapper
             {
                 target.NotifyProcessCompleted();
             }
+        }
+    }
+
+    private static bool TryWriteToTargets(ImmutableArray<OutputTarget> targets, ReadOnlySpan<byte> data)
+    {
+        try
+        {
+            foreach (var target in targets)
+            {
+                target.Write(data);
+            }
+
+            return true;
+        }
+        catch (ProcessPipeBrokenException)
+        {
+            return false;
+        }
+    }
+
+    private static void TryCloseProcessOutput(Stream stream)
+    {
+        try
+        {
+            stream.Dispose();
+        }
+        catch (IOException)
+        {
+        }
+        catch (ObjectDisposedException)
+        {
         }
     }
 

@@ -368,6 +368,56 @@ public sealed class FastEnumSourceGeneratorTests
     }
 
     [Fact]
+    public async Task KeywordNamedNamespaceGeneratesCompilableCode()
+    {
+        var sourceCode = """
+            [assembly: Meziantou.Framework.Annotations.FastEnumAttribute(typeof(@class.@int.@event))]
+            namespace @class.@int
+            {
+                public enum @event
+                {
+                    @class,
+                    B,
+                }
+            }
+
+            namespace Usage
+            {
+                using @class.@int;
+
+                public static class Consumer
+                {
+                    public static string Get() => @event.@class.ToStringFast();
+                }
+            }
+            """;
+
+        // GenerateFiles asserts the resulting compilation emits successfully.
+        var generatedCode = await GenerateCode(sourceCode);
+        Assert.Contains("namespace @class.@int", generatedCode);
+    }
+
+    [Fact]
+    public async Task KeywordNamedExtensionMethodNamespaceGeneratesCompilableCode()
+    {
+        var sourceCode = """
+            [assembly: Meziantou.Framework.Annotations.FastEnumAttribute(typeof(Sample.Color), ExtensionMethodNamespace = "Sample.@class.int")]
+            namespace Sample
+            {
+                public enum Color
+                {
+                    Blue,
+                    Red,
+                }
+            }
+            """;
+
+        // GenerateFiles asserts the resulting compilation emits successfully.
+        var generatedCode = await GenerateCode(sourceCode);
+        Assert.Contains("namespace Sample.@class.@int", generatedCode);
+    }
+
+    [Fact]
     public async Task DoesNotEmitSpanApisOrUnusedArraysBelowCSharp14()
     {
         // A netstandard2.0 consumer has no ReadOnlySpan<char>, and the parse tables are unused there.

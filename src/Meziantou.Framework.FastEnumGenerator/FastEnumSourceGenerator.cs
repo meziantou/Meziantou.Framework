@@ -389,10 +389,19 @@ public sealed class FastEnumSourceGenerator : IIncrementalGenerator
         foreach (var argument in attr.NamedArguments)
         {
             if (argument is { Key: "ExtensionMethodNamespace", Value.Value: string value })
-                return value;
+                return EscapeNamespace(value);
         }
 
         return null;
+    }
+
+    /// <summary>Escapes the segments of a namespace named after C# keywords (<c>Sample.class</c> is written <c>Sample.@class</c>).</summary>
+    private static string EscapeNamespace(string value)
+    {
+        if (string.IsNullOrEmpty(value))
+            return value;
+
+        return string.Join(".", value.Split('.').Select(static segment => EscapeIdentifier(segment.Trim())));
     }
 
     private static string? GetNamespace(ITypeSymbol symbol)
@@ -401,7 +410,8 @@ public sealed class FastEnumSourceGenerator : IIncrementalGenerator
         var ns = symbol.ContainingNamespace;
         while (ns is not null && !ns.IsGlobalNamespace)
         {
-            result = result is null ? ns.Name : ns.Name + "." + result;
+            var name = EscapeIdentifier(ns.Name);
+            result = result is null ? name : name + "." + result;
             ns = ns.ContainingNamespace;
         }
 

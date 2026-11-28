@@ -27,6 +27,11 @@ AOT applications.
 - **Trace the compilations and the instantiations**, and collect metrics. See [Telemetry](08-Telemetry.md).
 - **Call the exports with strongly typed methods**, and write the host functions as .NET methods, with the source
   generator of the package. See [Typed exports and imports](10-SourceGenerator.md).
+- **Run WASI programs**, the programs compiled for `wasm32-wasip1` and the components of WASI 0.2 and 0.3, with their
+  arguments, standard streams and a sandboxed file system, with the `Meziantou.Framework.WasmEngine.Wasi` package. See
+  [WASI](12-Wasi/01-Overview.md).
+- **Run components** of the component model, exchange strings, lists, records, variants, resources and streams with
+  them, and give them synchronous and asynchronous host functions. See [Component model](13-Components/01-Overview.md).
 
 The engine passes the official WebAssembly test suite: see [Conformance](09-Conformance.md).
 
@@ -40,8 +45,10 @@ as Emscripten still emit, are supported too.
 
 ## Limitations
 
-- WASI is not provided: the modules reach your application only through their imports.
-- The component model is not supported.
+- WASI is provided by the `Meziantou.Framework.WasmEngine.Wasi` package (see [WASI](12-Wasi/01-Overview.md)): the
+  sockets and HTTP are those of WASI 0.3 only.
+- The asynchronous functions and threads of the components are not supported on the browser, and their value and start
+  definitions are not supported: see [Component model](13-Components/01-Overview.md).
 - The memories are .NET arrays: a memory cannot be larger than the maximum length of a .NET array (about 2 GiB).
 - The interpreted code is much slower than native code. The compiled functions are faster, but they are compiled only
   where dynamic code is supported (not in Native AOT applications).

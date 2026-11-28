@@ -50,7 +50,7 @@ internal abstract class YamlConstructedSequenceConverter<TCollection, TElement> 
         var elements = new List<TElement>();
         while (reader.TokenType != YamlTokenType.EndSequence)
         {
-            elements.Add((TElement)_elementConverter.Read(reader, typeof(TElement))!);
+            elements.Add(SequenceReadHelpers.ReadElement<TElement>(reader, _elementConverter));
         }
 
         reader.Read();

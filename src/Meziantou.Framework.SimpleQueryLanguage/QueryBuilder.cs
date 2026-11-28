@@ -198,7 +198,7 @@ public sealed class QueryBuilder<T>
         // field>=1
         if (tryParseValue(value, out var parsedValue))
         {
-            var range = new UnaryRangeSyntax<TValue>(op, parsedValue);
+            var range = RangeSyntax.CreateComparison(op, value, parsedValue);
             return obj => predicate(obj, range);
         }
 

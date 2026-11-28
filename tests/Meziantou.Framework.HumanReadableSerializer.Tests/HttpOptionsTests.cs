@@ -362,6 +362,47 @@ public sealed class HttpOptionsTests : SerializerTestsBase
     }
 
     [Fact]
+    public void Redact_CSP_Nonce_MultipleNonces()
+    {
+        using var httpContent = new HttpResponseMessage()
+        {
+            Content = new StringContent("test"),
+        };
+        httpContent.Headers.Add("Content-Security-Policy", "script-src 'nonce-a+b/c=' 'nonce-d_e-f' 'self';style-src 'nonce-xyz;img-src 'self'");
+
+        AssertSerialization(httpContent, new HumanReadableHttpResponseMessageOptions { RedactContentSecurityPolicyNonce = true }, """
+            StatusCode: 200 (OK)
+            Headers:
+              Content-Security-Policy: script-src 'nonce-[redacted]' 'nonce-[redacted]' 'self';style-src 'nonce-xyz;img-src 'self'
+            Content:
+              Headers:
+                Content-Type: text/plain; charset=utf-8
+              Value: test
+            """);
+    }
+
+    [Fact]
+    public void Redact_CSP_Nonce_ManyUnterminatedNonces()
+    {
+        var value = "script-src " + string.Concat(Enumerable.Repeat("nonce-a ", 100_000));
+        using var httpContent = new HttpResponseMessage()
+        {
+            Content = new StringContent("test"),
+        };
+        httpContent.Headers.TryAddWithoutValidation("Content-Security-Policy", value);
+
+        AssertSerialization(httpContent, new HumanReadableHttpResponseMessageOptions { RedactContentSecurityPolicyNonce = true }, $"""
+            StatusCode: 200 (OK)
+            Headers:
+              Content-Security-Policy: {value}
+            Content:
+              Headers:
+                Content-Type: text/plain; charset=utf-8
+              Value: test
+            """);
+    }
+
+    [Fact]
     public void AddHttpConverters_LastCallReplacesThePreviousOnes()
     {
         using var httpContent = new HttpResponseMessage()

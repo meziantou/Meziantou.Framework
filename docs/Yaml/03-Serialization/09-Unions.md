@@ -27,8 +27,8 @@ configuration:
   `string`.
 - Otherwise, the cases that can still read the value are used: a `string` case reads a plain `42` or `true`, a `char`
   or enum case reads a number, and a case whose type has a [custom converter](07-CustomConverters.md) reads any value.
-- [YamlSequence](cref:Meziantou.Framework.Yaml.Model.YamlSequence), [YamlMapping](cref:Meziantou.Framework.Yaml.Model.YamlMapping) and [YamlValue](cref:Meziantou.Framework.Yaml.Model.YamlValue) cases match sequences, mappings and scalars; `object`, [YamlNode](cref:Meziantou.Framework.Yaml.Model.YamlNode) and
-  [YamlElement](cref:Meziantou.Framework.Yaml.Model.YamlElement) cases match any value. A nested union case matches the shapes of its own cases.
+- [YamlSequence](cref:Meziantou.Framework.Yaml.Nodes.YamlSequence), [YamlMapping](cref:Meziantou.Framework.Yaml.Nodes.YamlMapping) and [YamlValue](cref:Meziantou.Framework.Yaml.Nodes.YamlValue) cases match sequences, mappings and scalars; `object`, [YamlNode](cref:Meziantou.Framework.Yaml.Nodes.YamlNode) and
+  [YamlNode](cref:Meziantou.Framework.Yaml.Nodes.YamlNode) cases match any value. A nested union case matches the shapes of its own cases.
 
 A union with a nullable case reads `null` as that case. Otherwise, `null` gives the default value of the union.
 

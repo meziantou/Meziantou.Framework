@@ -126,12 +126,15 @@ also a folder. The library does not compute the merkle trees for you.
 [GetInfoHashSha1](cref:Meziantou.Framework.Bencode.Torrent.TorrentFile.GetInfoHashSha1) returns the BitTorrent v1 info-hash: the SHA-1 of the `info` dictionary. [GetInfoHashSha256](cref:Meziantou.Framework.Bencode.Torrent.TorrentFile.GetInfoHashSha256) returns
 the SHA-256 of the same bytes, which is the BitTorrent v2 info-hash. Format them with `Convert.ToHexString`.
 
-- For a parsed torrent, they hash the exact bytes the `info` dictionary was read from, so keys the model does not
-  represent still count and the hash matches what other clients compute.
-- For a torrent you create, or after you assign a new [TorrentInfo](cref:Meziantou.Framework.Bencode.Torrent.TorrentInfo) to [Info](cref:Meziantou.Framework.Bencode.Torrent.TorrentFile.Info), they hash the canonical encoding of the
-  model.
-- Changing the properties of the [Info](cref:Meziantou.Framework.Bencode.Torrent.TorrentFile.Info) of a parsed torrent does not change the hash, which still uses the parsed
-  bytes. Assign a new [TorrentInfo](cref:Meziantou.Framework.Bencode.Torrent.TorrentInfo) to [Info](cref:Meziantou.Framework.Bencode.Torrent.TorrentFile.Info) to change the content of a torrent.
+- They always hash the `info` dictionary the way [ToUtf8ByteArray](cref:Meziantou.Framework.Bencode.Torrent.TorrentFile.ToUtf8ByteArray) and [WriteToAsync](cref:Meziantou.Framework.Bencode.Torrent.TorrentFile.WriteToAsync) write it, so the hash is the
+  one of the written torrent.
+- For a parsed torrent whose [Info](cref:Meziantou.Framework.Bencode.Torrent.TorrentFile.Info) has the content it was read with, they hash the exact bytes the `info`
+  dictionary was read from, and the writer writes these bytes back. Keys the model does not represent still count, the
+  order of the keys and an explicit `private 0` are kept, and the hash matches what other clients compute. Changing the
+  fields outside `info`, such as the trackers, does not change it.
+- For a torrent you create, or once you change the content of [Info](cref:Meziantou.Framework.Bencode.Torrent.TorrentFile.Info), in place (such as its name, its `source`, a file,
+  or a value of `AdditionalKeys`) or by assigning another [TorrentInfo](cref:Meziantou.Framework.Bencode.Torrent.TorrentInfo), they hash the canonical encoding of the
+  model, which is what the writer writes. Changing [Encoding](cref:Meziantou.Framework.Bencode.Torrent.TorrentFile.Encoding) changes it too.
 
 ## Text encoding
 
@@ -254,7 +257,7 @@ torrent.AdditionalKeys.Add(new BencodeString("x-other"u8.ToArray()), new Bencode
 
 - A key of `AdditionalKeys` that the model represents, such as `private`, throws a `FormatException` when writing: set
   the property instead.
-- The writer encodes the model. Writing a parsed torrent canonically gives the `info` dictionary it was read from, so
-  the same info-hash, when that dictionary was canonical and its values are written the way they were read. Two cases
-  change it: an explicit `private 0`, which is not written, and text that a code page decodes and encodes differently.
-- Writing with `canonical: false` writes the keys in the order of the model, not in the order of the data.
+- The writer encodes the model, except the `info` dictionary of a parsed torrent whose content did not change, which
+  is written as it was read, so the info-hash does not change. Once its content changes, the `info` dictionary is
+  written canonically, even with `canonical: false`, as the info-hash is computed.
+- Writing with `canonical: false` writes the other keys in the order of the model, not in the order of the data.

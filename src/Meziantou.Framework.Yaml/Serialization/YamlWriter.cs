@@ -1,4 +1,6 @@
 using System.Buffers;
+using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 using Meziantou.Framework.Yaml.Serialization.References;
 
 namespace Meziantou.Framework.Yaml.Serialization;
@@ -16,6 +18,7 @@ public sealed class YamlWriter : YamlReaderWriterBase
     private int _depth;
     private string? _pendingAnchor;
     private string? _pendingTag;
+    private KeyStyle[]? _keyStyles;
     private bool _hasWrittenChar;
     private char _lastWrittenChar;
     private YamlSequenceItemStyle _blockSequenceMappingStyle;
@@ -462,7 +465,7 @@ public sealed class YamlWriter : YamlReaderWriterBase
             }
 
             // The style is selected while the tag of the key, if any, is still pending
-            style = GetKeyStyle(name, style);
+            style = GetPropertyNameStyle(name, style);
             if (RequiresExplicitKey(name, style))
             {
                 Write("? ");
@@ -491,7 +494,7 @@ public sealed class YamlWriter : YamlReaderWriterBase
 
         // The style is selected once the line break and the indentation are written, so a key at the first column,
         // where "---" and "..." are document markers, is quoted. The tag of the key, if any, is still pending.
-        style = GetKeyStyle(name, style);
+        style = GetPropertyNameStyle(name, style);
         var explicitKey = RequiresExplicitKey(name, style);
         if (explicitKey)
         {
@@ -634,63 +637,63 @@ public sealed class YamlWriter : YamlReaderWriterBase
     /// <param name="value">The value to write.</param>
     public void WriteScalar(byte value)
     {
-        WriteFormattableScalar(value, format: default, plainSafe: true);
+        WriteNumberScalar(value);
     }
 
     /// <summary>Writes an 8-bit signed integer scalar value.</summary>
     /// <param name="value">The value to write.</param>
     public void WriteScalar(sbyte value)
     {
-        WriteFormattableScalar(value, format: default, plainSafe: true);
+        WriteNumberScalar(value);
     }
 
     /// <summary>Writes a 16-bit signed integer scalar value.</summary>
     /// <param name="value">The value to write.</param>
     public void WriteScalar(short value)
     {
-        WriteFormattableScalar(value, format: default, plainSafe: true);
+        WriteNumberScalar(value);
     }
 
     /// <summary>Writes a 16-bit unsigned integer scalar value.</summary>
     /// <param name="value">The value to write.</param>
     public void WriteScalar(ushort value)
     {
-        WriteFormattableScalar(value, format: default, plainSafe: true);
+        WriteNumberScalar(value);
     }
 
     /// <summary>Writes a 32-bit signed integer scalar value.</summary>
     /// <param name="value">The value to write.</param>
     public void WriteScalar(int value)
     {
-        WriteFormattableScalar(value, format: default, plainSafe: true);
+        WriteNumberScalar(value);
     }
 
     /// <summary>Writes a 32-bit unsigned integer scalar value.</summary>
     /// <param name="value">The value to write.</param>
     public void WriteScalar(uint value)
     {
-        WriteFormattableScalar(value, format: default, plainSafe: true);
+        WriteNumberScalar(value);
     }
 
     /// <summary>Writes a 64-bit signed integer scalar value.</summary>
     /// <param name="value">The value to write.</param>
     public void WriteScalar(long value)
     {
-        WriteFormattableScalar(value, format: default, plainSafe: true);
+        WriteNumberScalar(value);
     }
 
     /// <summary>Writes a 64-bit unsigned integer scalar value.</summary>
     /// <param name="value">The value to write.</param>
     public void WriteScalar(ulong value)
     {
-        WriteFormattableScalar(value, format: default, plainSafe: true);
+        WriteNumberScalar(value);
     }
 
     /// <summary>Writes a decimal scalar value.</summary>
     /// <param name="value">The value to write.</param>
     public void WriteScalar(decimal value)
     {
-        WriteFormattableScalar(value, format: default, plainSafe: true);
+        WriteNumberScalar(value);
     }
 
     /// <summary>Writes a platform-sized signed integer scalar value.</summary>
@@ -821,7 +824,7 @@ public sealed class YamlWriter : YamlReaderWriterBase
     /// <param name="value">The value to write.</param>
     public void WriteScalar(DateTime value)
     {
-        WritePlainScalar(value.ToString("O", CultureInfo.InvariantCulture));
+        WriteFormattedPlainScalar(value, "O");
     }
 
     /// <summary>Writes a date and time with offset scalar value using the round-trip format.</summary>
@@ -830,39 +833,39 @@ public sealed class YamlWriter : YamlReaderWriterBase
     {
         if (value.Offset == TimeSpan.Zero)
         {
-            WritePlainScalar(value.UtcDateTime.ToString("yyyy-MM-ddTHH:mm:ss.fffffff'Z'", CultureInfo.InvariantCulture));
+            WriteFormattedPlainScalar(value.UtcDateTime, "yyyy-MM-ddTHH:mm:ss.fffffff'Z'");
             return;
         }
 
-        WritePlainScalar(value.ToString("O", CultureInfo.InvariantCulture));
+        WriteFormattedPlainScalar(value, "O");
     }
 
     /// <summary>Writes a GUID scalar value.</summary>
     /// <param name="value">The value to write.</param>
     public void WriteScalar(Guid value)
     {
-        WritePlainScalar(value.ToString("D"));
+        WriteFormattedPlainScalar(value, "D");
     }
 
     /// <summary>Writes a time interval scalar value using the constant format.</summary>
     /// <param name="value">The value to write.</param>
     public void WriteScalar(TimeSpan value)
     {
-        WritePlainScalar(value.ToString("c", CultureInfo.InvariantCulture));
+        WriteFormattedPlainScalar(value, "c");
     }
 
     /// <summary>Writes a date-only scalar value using the round-trip format.</summary>
     /// <param name="value">The value to write.</param>
     public void WriteScalar(DateOnly value)
     {
-        WritePlainScalar(value.ToString("O", CultureInfo.InvariantCulture));
+        WriteFormattedPlainScalar(value, "O");
     }
 
     /// <summary>Writes a time-only scalar value using the round-trip format.</summary>
     /// <param name="value">The value to write.</param>
     public void WriteScalar(TimeOnly value)
     {
-        WritePlainScalar(value.ToString("O", CultureInfo.InvariantCulture));
+        WriteFormattedPlainScalar(value, "O");
     }
 
     /// <summary>Writes a half-precision floating-point scalar value.</summary>
@@ -1409,6 +1412,34 @@ public sealed class YamlWriter : YamlReaderWriterBase
     private static YamlSequenceItemStyle ResolveOptionStyle(YamlSequenceItemStyle style, YamlSequenceItemStyle fallback)
         => style == YamlSequenceItemStyle.Default ? fallback : style;
 
+    // A value formatted in a stack buffer with the invariant culture, instead of a string
+    private void WriteFormattedPlainScalar<T>(T value, ReadOnlySpan<char> format)
+        where T : ISpanFormattable
+    {
+        Span<char> buffer = stackalloc char[64];
+        if (value.TryFormat(buffer, out var written, format, CultureInfo.InvariantCulture))
+        {
+            WritePlainScalar(buffer[..written]);
+            return;
+        }
+
+        WritePlainScalar(value.ToString(format.ToString(), CultureInfo.InvariantCulture));
+    }
+
+    // A number of a primitive type: formatted in a stack buffer by a constrained call, which does not box it
+    private void WriteNumberScalar<T>(T value)
+        where T : ISpanFormattable
+    {
+        Span<char> buffer = stackalloc char[64];
+        if (value.TryFormat(buffer, out var written, format: default, CultureInfo.InvariantCulture))
+        {
+            WritePlainScalar(buffer[..written]);
+            return;
+        }
+
+        WritePlainScalar(value.ToString(format: null, CultureInfo.InvariantCulture));
+    }
+
     private void WriteFormattableScalar<T>(T value, ReadOnlySpan<char> format, bool plainSafe)
         where T : IFormattable
     {
@@ -1488,6 +1519,29 @@ public sealed class YamlWriter : YamlReaderWriterBase
         Write('"');
         WriteEscaped(value);
         Write('"');
+    }
+
+    // The style of a key that is written again and again, such as the name of a member: it only depends on the text and
+    // on whether the key is in a flow collection, except for a text that starts with "---" or "...", which is a document
+    // marker at the first column
+    private ScalarStyle GetPropertyNameStyle(string name, ScalarStyle style)
+    {
+        if (style is not ScalarStyle.Any || _pendingTag is not null)
+            return GetKeyStyle(name, style);
+
+        _keyStyles ??= new KeyStyle[KeyStyleCacheSize];
+        ref var entry = ref _keyStyles[RuntimeHelpers.GetHashCode(name) & (KeyStyleCacheSize - 1)];
+        var isFlow = IsFlow;
+        if (ReferenceEquals(entry.Name, name) && entry.IsFlow == isFlow)
+            return entry.Style;
+
+        var resolved = GetKeyStyle(name, style);
+        if (!StartsWithDocumentMarker(name))
+        {
+            entry = new KeyStyle(name, isFlow, resolved);
+        }
+
+        return resolved;
     }
 
     /// <summary>Selects the style a mapping key is written with.</summary>
@@ -1814,9 +1868,26 @@ public sealed class YamlWriter : YamlReaderWriterBase
     /// <summary>Determines whether a plain scalar with this text is read back as a boolean, a number, or another value that is neither a string nor null, such as a timestamp of the extended schema.</summary>
     internal bool ReadsAsBooleanOrNumber(ReadOnlySpan<char> value)
     {
+        // A boolean, a number, a schema value such as a timestamp, and a .NET spelling such as "NaN" or "Infinity" start
+        // with a digit, a sign, '.', '_', which the number parsers ignore ("_2" is 2), or one of these letters, after
+        // optional whitespace: the parsers are not run for the other texts, such as most names and sentences.
+        if (value.Length > 0 && value[0] < 0x80 && !char.IsWhiteSpace(value[0]) && !NonStringScalarStarts.Contains(value[0]))
+        {
+            return false;
+        }
+
         if (YamlScalar.IsNull(value))
         {
             return false;
+        }
+
+        // An integer or a floating-point number starts with a digit, a sign or '.': the number parsers are not run for a
+        // text that starts with a letter, whose other readings are checked below
+        if (char.IsAsciiLetter(value[0]))
+        {
+            return YamlScalar.TryParseBool(value, out _) ||
+                   YamlScalar.ResolvesToNonString(value, Options.Schema) ||
+                   IsNamedFloatingPointLiteral(value);
         }
 
         return YamlScalar.TryParseBool(value, out _) ||
@@ -1865,6 +1936,11 @@ public sealed class YamlWriter : YamlReaderWriterBase
 
         return false;
     }
+
+    private static readonly SearchValues<char> NonStringScalarStarts = SearchValues.Create("0123456789+-._~<tTfFyYnNoOiI");
+
+    // The printable ASCII characters that a double-quoted scalar contains as is: all but the quote and the backslash
+    private static readonly SearchValues<char> EscapeFreeCharacters = SearchValues.Create(" !#$%&'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[]^_`abcdefghijklmnopqrstuvwxyz{|}~");
 
     // Letters, digits, space, and punctuation that is neither an indicator nor a line break: no rule of IsPlainSafe
     // applies to them, wherever they appear in the scalar and whatever the context.
@@ -1946,6 +2022,15 @@ public sealed class YamlWriter : YamlReaderWriterBase
             {
                 return false;
             }
+
+            // The characters of PlainSafeCharacters that follow pass the checks: the loop goes to the next other one
+            var next = value[(i + 1)..].IndexOfAnyExcept(PlainSafeCharacters);
+            if (next < 0)
+            {
+                break;
+            }
+
+            i += next;
         }
 
         // A leading '-' or '?' followed by separation/end is a collection/key indicator, not a plain scalar.
@@ -1996,6 +2081,20 @@ public sealed class YamlWriter : YamlReaderWriterBase
     {
         for (var i = 0; i < value.Length; i++)
         {
+            // The characters that need no escape are written by runs
+            var run = value[i..].IndexOfAnyExcept(EscapeFreeCharacters);
+            if (run != 0)
+            {
+                if (run < 0)
+                {
+                    Write(value[i..]);
+                    return;
+                }
+
+                Write(value.Slice(i, run));
+                i += run;
+            }
+
             var c = value[i];
             if (char.IsSurrogate(c))
             {
@@ -2241,4 +2340,9 @@ public sealed class YamlWriter : YamlReaderWriterBase
         /// <summary>The number of columns each line of this collection's content is indented by.</summary>
         public int Indent;
     }
+
+    private const int KeyStyleCacheSize = 32;
+
+    [StructLayout(LayoutKind.Auto)]
+    private readonly record struct KeyStyle(string? Name, bool IsFlow, ScalarStyle Style);
 }

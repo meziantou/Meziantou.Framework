@@ -1,0 +1,450 @@
+using System.Collections;
+using Meziantou.Framework.Yaml.Events;
+
+namespace Meziantou.Framework.Yaml.Nodes;
+
+/// <summary>Represents the Yaml Mapping.</summary>
+public class YamlMapping : YamlContainer, IDictionary<YamlNode, YamlNode?>, IList<KeyValuePair<YamlNode, YamlNode?>>
+{
+    private MappingStart _mappingStart;
+    private readonly List<YamlNode> _keys;
+    private readonly Dictionary<YamlNode, YamlNode?> _contents;
+
+    private Dictionary<string, YamlValue>? _stringKeys;
+
+    /// <summary>Initializes a new instance of this type.</summary>
+    public YamlMapping()
+    {
+        _mappingStart = new MappingStart();
+        MappingEnd = new MappingEnd();
+        _keys = new List<YamlNode>();
+        _contents = new Dictionary<YamlNode, YamlNode?>();
+    }
+
+    internal YamlMapping(MappingStart mappingStart, MappingEnd mappingEnd, List<YamlNode> keys, Dictionary<YamlNode, YamlNode?> contents)
+    {
+        _keys = keys;
+        _contents = contents;
+        MappingStart = mappingStart;
+        MappingEnd = mappingEnd;
+    }
+
+    /// <summary>Gets mapping Start.</summary>
+    public MappingStart MappingStart
+    {
+        get => _mappingStart;
+        [MemberNotNull(nameof(_mappingStart))]
+        set
+        {
+            OnChanging();
+            _mappingStart = value;
+        }
+    }
+
+    internal MappingEnd MappingEnd { get; }
+
+    /// <summary>Gets anchor.</summary>
+    public override string? Anchor
+    {
+        get { return _mappingStart.Anchor; }
+        set
+        {
+            MappingStart = new MappingStart(value,
+                _mappingStart.Tag,
+                _mappingStart.IsImplicit,
+                _mappingStart.Style,
+                _mappingStart.Start,
+                _mappingStart.End) { IsTagResolved = _mappingStart.IsTagResolved };
+        }
+    }
+
+    /// <summary>Gets tag.</summary>
+    public override string? Tag
+    {
+        get { return _mappingStart.Tag; }
+        set
+        {
+            MappingStart = new MappingStart(_mappingStart.Anchor,
+                value,
+                string.IsNullOrEmpty(value),
+                _mappingStart.Style,
+                _mappingStart.Start,
+                _mappingStart.End);
+        }
+    }
+
+    /// <summary>Gets style.</summary>
+    public override YamlStyle Style
+    {
+        get { return _mappingStart.Style; }
+        set
+        {
+            MappingStart = new MappingStart(_mappingStart.Anchor,
+                _mappingStart.Tag,
+                _mappingStart.IsImplicit,
+                value,
+                _mappingStart.Start,
+                _mappingStart.End) { IsTagResolved = _mappingStart.IsTagResolved };
+        }
+    }
+
+    /// <summary>Gets a value indicating whether is Canonical.</summary>
+    public override bool IsCanonical { get { return _mappingStart.IsCanonical; } }
+
+    /// <summary>Gets is Implicit.</summary>
+    public override bool IsImplicit
+    {
+        get { return _mappingStart.IsImplicit; }
+        set
+        {
+            MappingStart = new MappingStart(_mappingStart.Anchor,
+                _mappingStart.Tag,
+                value,
+                _mappingStart.Style,
+                _mappingStart.Start,
+                _mappingStart.End) { IsTagResolved = _mappingStart.IsTagResolved };
+        }
+    }
+
+    /// <summary>Loads data.</summary>
+    public static YamlMapping Load(EventReader eventReader)
+    {
+        return Load(eventReader, context: null);
+    }
+
+    internal static YamlMapping Load(EventReader eventReader, YamlModelLoadContext? context)
+    {
+        var mappingStart = eventReader.Expect<MappingStart>();
+
+        var keys = new List<YamlNode>();
+        var contents = new Dictionary<YamlNode, YamlNode?>();
+        while (!eventReader.Accept<MappingEnd>())
+        {
+            var key = ReadElement(eventReader, context);
+            var value = ReadElement(eventReader, context);
+
+            if (key is null || value is null)
+            {
+                throw new YamlException("Unexpected end of mapping while loading YAML model.");
+            }
+
+            keys.Add(key);
+            contents[key] = value;
+        }
+
+        var mappingEnd = eventReader.Expect<MappingEnd>();
+
+        return new YamlMapping(mappingStart, mappingEnd, keys, contents);
+    }
+
+    IEnumerator IEnumerable.GetEnumerator()
+    {
+        return GetEnumerator();
+    }
+
+    /// <summary>Gets enumerator.</summary>
+    public IEnumerator<KeyValuePair<YamlNode, YamlNode?>> GetEnumerator()
+    {
+        return _keys.Select(k => new KeyValuePair<YamlNode, YamlNode?>(k, _contents[k])).GetEnumerator();
+    }
+
+    void ICollection<KeyValuePair<YamlNode, YamlNode?>>.Add(KeyValuePair<YamlNode, YamlNode?> item)
+    {
+        Add(item.Key, item.Value);
+    }
+
+    /// <summary>Removes all elements from the collection.</summary>
+    public void Clear()
+    {
+        OnChanging();
+        _contents.Clear();
+        _keys.Clear();
+
+        _stringKeys = null;
+    }
+
+    bool ICollection<KeyValuePair<YamlNode, YamlNode?>>.Contains(KeyValuePair<YamlNode, YamlNode?> item)
+    {
+        return _contents.TryGetValue(item.Key, out var value) && EqualityComparer<YamlNode?>.Default.Equals(value, item.Value);
+    }
+
+    void ICollection<KeyValuePair<YamlNode, YamlNode?>>.CopyTo(KeyValuePair<YamlNode, YamlNode?>[] array, int arrayIndex)
+    {
+        ArgumentNullException.ThrowIfNull(array);
+        ArgumentOutOfRangeException.ThrowIfNegative(arrayIndex);
+        if (array.Length - arrayIndex < _keys.Count)
+        {
+            throw new ArgumentException("The destination array is not long enough.", nameof(array));
+        }
+
+        // Copy in key order, which is the order the mapping is enumerated and written in.
+        for (var i = 0; i < _keys.Count; i++)
+        {
+            array[arrayIndex + i] = new KeyValuePair<YamlNode, YamlNode?>(_keys[i], _contents[_keys[i]]);
+        }
+    }
+
+    bool ICollection<KeyValuePair<YamlNode, YamlNode?>>.Remove(KeyValuePair<YamlNode, YamlNode?> item)
+    {
+        OnChanging();
+        return Remove(item.Key);
+    }
+
+    /// <summary>Gets count.</summary>
+    public int Count { get { return _contents.Count; } }
+    /// <summary>Gets a value indicating whether is Read Only.</summary>
+    public bool IsReadOnly { get { return false; } }
+
+    /// <summary>Adds an item.</summary>
+    public void Add(YamlNode key, YamlNode? value)
+    {
+        OnChanging();
+        _contents.Add(key, value);
+        _keys.Add(key);
+
+        if (_stringKeys != null && key is YamlValue value1)
+        {
+            _stringKeys[value1.Value] = value1;
+        }
+    }
+
+    /// <summary>Determines whether key.</summary>
+    public bool ContainsKey(YamlNode key)
+    {
+        return _contents.ContainsKey(key);
+    }
+
+    /// <summary>Determines whether key.</summary>
+    public bool ContainsKey(string key)
+    {
+        if (_stringKeys == null)
+            _stringKeys = Keys.OfType<YamlValue>().ToDictionary(k => k.Value, k => k, StringComparer.Ordinal);
+
+        return _stringKeys.ContainsKey(key);
+    }
+
+    /// <summary>Removes an item.</summary>
+    public bool Remove(YamlNode key)
+    {
+        OnChanging();
+        var index = _keys.IndexOf(key);
+        if (index >= 0)
+        {
+            RemoveAt(index);
+            return true;
+        }
+
+        return false;
+    }
+
+
+    /// <summary>Removes an item.</summary>
+    public bool Remove(string key)
+    {
+        OnChanging();
+        if (_stringKeys == null)
+            _stringKeys = Keys.OfType<YamlValue>().ToDictionary(k => k.Value, k => k, StringComparer.Ordinal);
+
+        if (!_stringKeys.TryGetValue(key, out var yaml))
+            return false;
+
+        if (Remove(yaml))
+        {
+            _stringKeys.Remove(key);
+            return true;
+        }
+
+        return false;
+    }
+
+    /// <summary>Tries to get Value.</summary>
+    public bool TryGetValue(YamlNode key, [MaybeNullWhen(false)] out YamlNode value)
+    {
+        return _contents.TryGetValue(key, out value);
+    }
+
+    /// <summary>Tries to get Value.</summary>
+    public bool TryGetValue(string key, [MaybeNullWhen(false)] out YamlNode value)
+    {
+        if (_stringKeys == null)
+            _stringKeys = Keys.OfType<YamlValue>().ToDictionary(k => k.Value, k => k, StringComparer.Ordinal);
+
+        if (!_stringKeys.TryGetValue(key, out var yamlKey))
+        {
+            value = null;
+            return false;
+        }
+
+        return TryGetValue(yamlKey, out value);
+    }
+
+    /// <summary>Gets or sets an element at the specified index.</summary>
+    public YamlNode? this[YamlNode key]
+    {
+        get
+        {
+            _contents.TryGetValue(key, out var item);
+            return item;
+        }
+        set
+        {
+            OnChanging();
+            if (!_contents.ContainsKey(key))
+            {
+                _keys.Add(key);
+
+                if (_stringKeys != null && key is YamlValue yamlValue)
+                {
+                    _stringKeys[yamlValue.Value] = yamlValue;
+                }
+            }
+
+            _contents[key] = value;
+        }
+    }
+
+    /// <summary>Gets or sets an element at the specified index.</summary>
+    public YamlNode? this[string key]
+    {
+        get
+        {
+            if (_stringKeys == null)
+                _stringKeys = Keys.OfType<YamlValue>().ToDictionary(k => k.Value, k => k, StringComparer.Ordinal);
+
+            if (!_stringKeys.TryGetValue(key, out var stringKey))
+                return null;
+
+            return this[stringKey];
+        }
+        set
+        {
+            if (_stringKeys == null)
+                _stringKeys = Keys.OfType<YamlValue>().ToDictionary(k => k.Value, k => k, StringComparer.Ordinal);
+
+            if (!_stringKeys.ContainsKey(key))
+                _stringKeys[key] = new YamlValue(key);
+
+            this[_stringKeys[key]] = value;
+        }
+    }
+
+    /// <summary>Gets keys.</summary>
+    /// <remarks>The collection is read-only; use the mapping members to add or remove entries.</remarks>
+    public ICollection<YamlNode> Keys { get { return _keys.AsReadOnly(); } }
+
+    /// <summary>Gets values.</summary>
+    /// <remarks>The values are listed in the same order as <see cref="Keys"/>.</remarks>
+    public ICollection<YamlNode?> Values
+    {
+        get
+        {
+            var values = new YamlNode?[_keys.Count];
+            for (var i = 0; i < _keys.Count; i++)
+            {
+                values[i] = _contents[_keys[i]];
+            }
+
+            return Array.AsReadOnly(values);
+        }
+    }
+
+    /// <summary>Gets the zero-based index of the specified item.</summary>
+    public int IndexOf(KeyValuePair<YamlNode, YamlNode?> item)
+    {
+        return _keys.IndexOf(item.Key);
+    }
+
+    /// <summary>Inserts an item at the specified index.</summary>
+    public void Insert(int index, KeyValuePair<YamlNode, YamlNode?> item)
+    {
+        OnChanging();
+        if (_contents.ContainsKey(item.Key))
+            throw new ArgumentException("Key already present", nameof(item));
+
+        _keys.Insert(index, item.Key);
+        _contents[item.Key] = item.Value;
+
+        if (_stringKeys != null && item.Key is YamlValue yamlValue)
+        {
+            _stringKeys[yamlValue.Value] = yamlValue;
+        }
+    }
+
+    /// <summary>Removes at.</summary>
+    public void RemoveAt(int index)
+    {
+        OnChanging();
+        var key = _keys[index];
+
+        _keys.RemoveAt(index);
+        _contents.Remove(key);
+
+        if (key is YamlValue value1)
+        {
+            RemoveStringKey(value1);
+        }
+    }
+
+    /// <summary>Removes the string lookup entry of <paramref name="key"/>, unless it designates another key with the same text.</summary>
+    private void RemoveStringKey(YamlValue key)
+    {
+        if (_stringKeys is not null && _stringKeys.TryGetValue(key.Value, out var current) && ReferenceEquals(current, key))
+        {
+            _stringKeys.Remove(key.Value);
+        }
+    }
+
+    /// <summary>Gets or sets an element at the specified index.</summary>
+    public KeyValuePair<YamlNode, YamlNode?> this[int index]
+    {
+        get { return new KeyValuePair<YamlNode, YamlNode?>(_keys[index], _contents[_keys[index]]); }
+        set
+        {
+            OnChanging();
+            if (_keys[index] != value.Key && _contents.ContainsKey(value.Key))
+                throw new ArgumentException("Key already present at a different index.", nameof(value));
+
+            var oldKey = _keys[index];
+
+            if (oldKey != value.Key)
+            {
+                _contents.Remove(oldKey);
+
+                // The replaced key is no longer part of the mapping, so it must not be found by its text anymore.
+                if (oldKey is YamlValue yamlValue)
+                {
+                    RemoveStringKey(yamlValue);
+                }
+            }
+
+            if (_stringKeys != null && value.Key is YamlValue key)
+            {
+                _stringKeys[key.Value] = key;
+            }
+
+            _keys[index] = value.Key;
+            _contents[value.Key] = value.Value;
+        }
+    }
+
+    /// <summary>Creates a deep clone of the current value.</summary>
+    public override YamlNode DeepClone()
+    {
+        var keysClone = new List<YamlNode>(_keys.Count);
+        for (var i = 0; i < _keys.Count; i++)
+            keysClone.Add((YamlNode)_keys[i].DeepClone());
+
+        var cloneContents = new Dictionary<YamlNode, YamlNode?>();
+
+        for (var i = 0; i < _keys.Count; i++)
+        {
+            var content = _contents[_keys[i]];
+            cloneContents[keysClone[i]] = content is null ? null : (YamlNode)content.DeepClone();
+        }
+
+        return new YamlMapping(_mappingStart,
+            MappingEnd,
+            keysClone,
+            cloneContents);
+    }
+}

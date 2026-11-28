@@ -1,0 +1,2 @@
+title: Component model
+description: Compile and run WebAssembly components, exchange typed values with them, and give them host functions, resources, and asynchronous functions.

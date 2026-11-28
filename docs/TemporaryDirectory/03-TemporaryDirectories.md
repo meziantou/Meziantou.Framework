@@ -127,7 +127,8 @@ Disposing the instance ([Dispose](cref:Meziantou.Framework.TemporaryDirectory.Di
 
 - Read-only files are deleted: their read-only attribute is removed first.
 - A file that another process holds open is retried a few times, a short time apart, before the error is reported.
-- A symbolic link in the folder is deleted as a link: the file or folder it points to is not deleted.
+- A symbolic link in the folder is deleted as a link: the file or folder it points to is not deleted, and its permissions
+  are not changed.
 - Disposing an instance twice does nothing. A folder created again at the same path, after the first disposal, is not
   deleted.
 - After disposal, the methods that create or compute a path throw an `ObjectDisposedException`.

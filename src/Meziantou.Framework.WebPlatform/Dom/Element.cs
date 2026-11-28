@@ -1309,6 +1309,23 @@ public partial class Element : Node
 
     internal override Node CloneSingleNode(Document document) => CloneElement(document, fallbackRegistry: null);
 
+    /// <summary>
+    /// Creates a copy of the element in its node document, without its attributes and its children, and without its "is" value
+    /// unless <paramref name="keepIsValue"/> is true. Used by the HTML sanitizer, which appends the attributes it keeps with
+    /// <see cref="AppendAttribute"/>: removing the other ones one by one would be quadratic in the number of attributes.
+    /// </summary>
+    internal Element CloneWithoutAttributes(bool keepIsValue)
+    {
+        var document = NodeDocument;
+        var registry = CustomElementRegistry;
+        if (Dom.CustomElementRegistry.IsGlobal(registry))
+        {
+            registry = Dom.CustomElementRegistry.GetEffectiveGlobal(document.CustomElementRegistryStorage);
+        }
+
+        return ElementFactory.CreateElement(document, LocalName, NamespaceUri, Prefix, keepIsValue ? IsValue : null, synchronousCustomElements: false, registry);
+    }
+
     /// <summary>https://dom.spec.whatwg.org/#clone-a-single-node (Element case)</summary>
     internal Element CloneElement(Document document, CustomElementRegistry? fallbackRegistry)
     {

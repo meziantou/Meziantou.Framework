@@ -179,6 +179,11 @@ internal sealed class ArchiveExtractor
             && (path[_root.Length] == Path.DirectorySeparatorChar || path[_root.Length] == Path.AltDirectorySeparatorChar);
     }
 
+    private bool IsRootOrUnderRoot(string path)
+    {
+        return IsUnderRoot(path) || string.Equals(Path.TrimEndingDirectorySeparator(path), _root, PathComparison);
+    }
+
     private void CreateDirectory(ArchiveEntry entry, string path)
     {
         Directory.CreateDirectory(path);
@@ -194,9 +199,7 @@ internal sealed class ArchiveExtractor
         if (Path.IsPathRooted(normalizedTarget))
             throw new IOException($"The symbolic link '{path}' points to an absolute path, '{target}'.");
 
-        var resolved = Path.GetFullPath(Path.Join(Path.GetDirectoryName(path), normalizedTarget));
-        if (!IsUnderRoot(resolved) && !string.Equals(resolved, _root, PathComparison))
-            throw new IOException($"The symbolic link '{path}' points outside of the destination directory, to '{target}'.");
+        EnsureLinkTargetIsUnderRoot(path, normalizedTarget, target);
 
         if (File.Exists(path) || Directory.Exists(path))
         {
@@ -207,6 +210,47 @@ internal sealed class ArchiveExtractor
         }
 
         File.CreateSymbolicLink(path, normalizedTarget);
+    }
+
+    /// <summary>
+    /// Ensures that the target of a symbolic link stays under the root once it is resolved on the file system. A
+    /// <c>..</c> goes up from the directory reached before it, which is the parent as text only when that directory is a
+    /// real directory: after a link (<c>b</c> to <c>.</c>, then <c>c</c> to <c>b/..</c>), it is the parent of the target
+    /// of the link. After a path that does not exist yet, or a file, a later entry could create a link there. So a
+    /// <c>..</c> is accepted only while every component before it is an existing directory that is not a link. The
+    /// directories are never replaced by links during the extraction, so the check stays valid for the later entries.
+    /// The names after a link stay under the root, as every link the archive creates points under the root.
+    /// </summary>
+    private void EnsureLinkTargetIsUnderRoot(string path, string normalizedTarget, string target)
+    {
+        var current = Path.GetDirectoryName(path);
+        var isRealDirectory = true;
+        foreach (var component in normalizedTarget.Split(Path.DirectorySeparatorChar))
+        {
+            if (component is "" or ".")
+                continue;
+
+            if (component is "..")
+            {
+                if (!isRealDirectory)
+                    throw new IOException($"The symbolic link '{path}' goes up from a link or a path that does not exist, in '{target}'.");
+
+                current = Path.GetDirectoryName(current);
+                if (current is null || !IsRootOrUnderRoot(current))
+                    throw new IOException($"The symbolic link '{path}' points outside of the destination directory, to '{target}'.");
+
+                continue;
+            }
+
+            current = Path.GetFullPath(Path.Join(current, component));
+            if (!IsRootOrUnderRoot(current))
+                throw new IOException($"The symbolic link '{path}' points outside of the destination directory, to '{target}'.");
+
+            if (isRealDirectory)
+            {
+                isRealDirectory = Directory.Exists(current) && new DirectoryInfo(current).LinkTarget is null;
+            }
+        }
     }
 
     private void CopyHardLink(ArchiveEntry entry, string path, string target)

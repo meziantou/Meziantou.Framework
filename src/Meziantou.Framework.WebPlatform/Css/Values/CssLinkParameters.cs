@@ -345,7 +345,7 @@ internal static class CssLinkParameters
                 value = computed;
             }
 
-            values[name] = value.Trim();
+            values[name] = CssSerializer.TrimWhitespace(value);
         }
     }
 

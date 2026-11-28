@@ -800,9 +800,12 @@ internal sealed class InlineParser
             // An inline that spans lines, such as a link, can be before the row's line ending: the attributes before it are not in the row
             if (node.Kind == SyntaxKind.GenericAttributes && node.Start >= start && node.End <= end)
             {
-                (attributes ??= []).Insert(0, (node.Start, node.End));
+                (attributes ??= []).Add((node.Start, node.End));
             }
         }
+
+        // The attributes were found from the end of the row
+        attributes?.Reverse();
 
         // The text of the row, where the attributes are whitespace, is copied from the start of the row, which is at textOffset in
         // the copy: the text of a subject can be the whole source
@@ -811,11 +814,12 @@ internal sealed class InlineParser
         if (attributes is not null)
         {
             var characters = _text.ToCharArray(start, end - start);
+            var blanker = new PipeTableScanner.AttributesBlanker();
             foreach (var (attributesStart, attributesEnd) in attributes)
             {
                 if (isDelimiterRow)
                 {
-                    PipeTableScanner.BlankAttributes(characters, 0, attributesStart - start, attributesEnd - start);
+                    blanker.Blank(characters, attributesStart - start, attributesEnd - start);
                 }
                 else
                 {
@@ -831,6 +835,8 @@ internal sealed class InlineParser
             }
         }
 
+        // The cells and the attributes are in the order of the row: the attributes before a cell are not in the next ones
+        var firstCellAttributes = 0;
         var cellStart = start;
         for (var i = 0; i < pipes.Count; i++)
         {
@@ -889,9 +895,16 @@ internal sealed class InlineParser
 
             // The cells of the delimiter row are tokens, which the attributes split
             var position = cell.Start;
-            foreach (var (attributesStart, attributesEnd) in row.Attributes)
+            var rowAttributes = row.Attributes;
+            while (firstCellAttributes < rowAttributes.Count && rowAttributes[firstCellAttributes].End <= position)
             {
-                if (attributesEnd <= position || attributesStart >= cell.End)
+                firstCellAttributes++;
+            }
+
+            for (var index = firstCellAttributes; index < rowAttributes.Count && rowAttributes[index].Start < cell.End; index++)
+            {
+                var (attributesStart, attributesEnd) = rowAttributes[index];
+                if (attributesEnd <= position)
                 {
                     continue;
                 }
@@ -1011,6 +1024,7 @@ internal sealed class InlineParser
         var lineStart = delimiters[lineBreakIndex].End;
         char[]? withoutAttributes = null;
         char[]? columnsText = null;
+        var blanker = new PipeTableScanner.AttributesBlanker();
         for (var node = delimiters[lineBreakIndex].Next; node is not null && node.Kind is not (SyntaxKind.LineEndingToken or SyntaxKind.HardLineBreakToken); node = node.Next)
         {
             if (node.Kind == SyntaxKind.GenericAttributes)
@@ -1019,7 +1033,7 @@ internal sealed class InlineParser
                 withoutAttributes ??= _text.ToCharArray(lineStart, _end - lineStart);
                 withoutAttributes.AsSpan(node.Start - lineStart, node.End - node.Start).Fill(' ');
                 (columnsText ??= _text.ToCharArray(lineStart, _end - lineStart)).AsSpan(node.Start - lineStart, node.End - node.Start).Fill(' ');
-                PipeTableScanner.BlankAttributes(columnsText, 0, node.Start - lineStart, node.End - lineStart);
+                blanker.Blank(columnsText, node.Start - lineStart, node.End - lineStart);
             }
             else if (node.Kind is not (SyntaxKind.PipeToken or SyntaxKind.TextToken or SyntaxKind.EscapedCharacterToken) || (node.Kind == SyntaxKind.TextToken && node.IsDelimiterRun))
             {

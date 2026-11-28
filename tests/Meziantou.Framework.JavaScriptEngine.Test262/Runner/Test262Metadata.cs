@@ -1,4 +1,4 @@
-using Meziantou.Framework.Yaml.Model;
+using Meziantou.Framework.Yaml.Nodes;
 
 namespace Meziantou.Framework.JavaScriptEngine.Test262.Runner;
 
@@ -61,7 +61,7 @@ internal sealed class Test262Metadata
         };
     }
 
-    private static YamlElement? Get(YamlMapping mapping, string key)
+    private static YamlNode? Get(YamlMapping mapping, string key)
     {
         foreach (var entry in mapping)
         {

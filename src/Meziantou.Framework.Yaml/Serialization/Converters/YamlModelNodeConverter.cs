@@ -1,5 +1,5 @@
 using Meziantou.Framework.Yaml.Events;
-using Meziantou.Framework.Yaml.Model;
+using Meziantou.Framework.Yaml.Nodes;
 
 namespace Meziantou.Framework.Yaml.Serialization.Converters;
 
@@ -26,7 +26,7 @@ internal sealed class YamlModelNodeConverter : YamlConverter
         var start = reader.Start;
         var end = reader.End;
 
-        var node = ReadNode(reader, YamlDocument.CreateContext(reader.Options));
+        var node = ReadNode(reader, YamlStreamDocument.CreateContext(reader.Options));
         if (node is null)
         {
             return null;
@@ -58,7 +58,7 @@ internal sealed class YamlModelNodeConverter : YamlConverter
         WriteNode(writer, node);
     }
 
-    private static YamlElement? ReadNode(YamlReader reader, YamlModelLoadContext context)
+    private static YamlNode? ReadNode(YamlReader reader, YamlModelLoadContext context)
     {
         switch (reader.CurrentEvent)
         {
@@ -88,7 +88,7 @@ internal sealed class YamlModelNodeConverter : YamlConverter
                 // is copied. That copy is what makes alias amplification possible, so charge it against a budget first.
                 context.ChargeAliasExpansion(anchored, alias.Value, alias.Start, alias.End);
 
-                var clone = (YamlElement)anchored.DeepClone();
+                var clone = (YamlNode)anchored.DeepClone();
                 clone.Anchor = null;
                 return clone;
 
@@ -101,8 +101,8 @@ internal sealed class YamlModelNodeConverter : YamlConverter
     {
         reader.Read();
 
-        var keys = new List<YamlElement>();
-        var contents = new Dictionary<YamlElement, YamlElement?>();
+        var keys = new List<YamlNode>();
+        var contents = new Dictionary<YamlNode, YamlNode?>();
         while (reader.TokenType != YamlTokenType.EndMapping)
         {
             if (reader.TokenType == YamlTokenType.None)
@@ -135,7 +135,7 @@ internal sealed class YamlModelNodeConverter : YamlConverter
     {
         reader.Read();
 
-        var contents = new List<YamlElement>();
+        var contents = new List<YamlNode>();
         while (reader.TokenType != YamlTokenType.EndSequence)
         {
             if (reader.TokenType == YamlTokenType.None)
@@ -159,7 +159,7 @@ internal sealed class YamlModelNodeConverter : YamlConverter
         return sequence;
     }
 
-    private static void RegisterAnchor(YamlElement element, YamlModelLoadContext context)
+    private static void RegisterAnchor(YamlNode element, YamlModelLoadContext context)
     {
         var anchor = element.Anchor;
         if (!string.IsNullOrEmpty(anchor))
@@ -169,7 +169,7 @@ internal sealed class YamlModelNodeConverter : YamlConverter
         }
     }
 
-    private static void WriteNodeProperties(YamlWriter writer, YamlElement element)
+    private static void WriteNodeProperties(YamlWriter writer, YamlNode element)
     {
         if (element.Anchor is not null)
         {
@@ -191,7 +191,7 @@ internal sealed class YamlModelNodeConverter : YamlConverter
 
     private static void WriteNode(YamlWriter writer, YamlNode node)
     {
-        if (node is YamlElement element)
+        if (node is YamlNode element)
         {
             WriteNodeProperties(writer, element);
         }
@@ -216,7 +216,7 @@ internal sealed class YamlModelNodeConverter : YamlConverter
                 writer.WriteStartMapping();
                 for (var i = 0; i < mapping.Count; i++)
                 {
-                    var pair = ((IList<KeyValuePair<YamlElement, YamlElement?>>)mapping)[i];
+                    var pair = ((IList<KeyValuePair<YamlNode, YamlNode?>>)mapping)[i];
                     if (pair.Key is not YamlValue keyValue)
                     {
                         throw new YamlException(Mark.Empty, Mark.Empty, "Only scalar mapping keys are supported when serializing a YamlMapping.");

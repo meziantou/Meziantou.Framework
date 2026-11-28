@@ -462,7 +462,8 @@ public static partial class BencodeFuzzTargets
     /// <see cref="TorrentFile.ParseAsync(Stream, CancellationToken)"/> or <see cref="TorrentFile.ParseAsync(System.IO.Pipelines.PipeReader, CancellationToken)"/>
     /// (reading in chunks, the high bit of <c>chunks</c> choosing the pipe) agree. A parsed torrent satisfies the rules of its model, its
     /// info-hashes are the hashes of the exact bytes of its 'info' dictionary, and writing it gives a torrent with the same
-    /// model whose encoding is a fixed point and whose info-hash is the one of the model.
+    /// model whose encoding is a fixed point, whose 'info' dictionary is the one it was read from, and whose info-hash is the
+    /// one of the model. After an edit made in place, the info-hash is the hash of the written 'info' dictionary.
     /// </summary>
     [SuppressMessage("Security", "CA5350:Do Not Use Weak Cryptographic Algorithms", Justification = "BitTorrent v1 info-hash is SHA-1.")]
     private static void Torrent(ReadOnlySpan<byte> data)
@@ -543,9 +544,36 @@ public static partial class BencodeFuzzTargets
         FuzzAssert.True(reparsed.ToUtf8ByteArray().AsSpan().SequenceEqual(written), "Writing a torrent is not a fixed point");
         CheckSameTorrent(torrent, TorrentFile.Parse(torrent.ToUtf8ByteArray(canonical: false)), "The torrent written in insertion order");
 
-        // Replacing the info hashes the model, which is what the written torrent holds
+        // The 'info' dictionary of an unmodified torrent is written as it was read, so writing it keeps the info-hash
+        FuzzAssert.True(GetInfoBytes(written).AsSpan().SequenceEqual(infoBytes), "The 'info' dictionary of an unmodified torrent is not written as it was read");
+        FuzzAssert.True(GetInfoBytes(torrent.ToUtf8ByteArray(canonical: false)).AsSpan().SequenceEqual(infoBytes), "The 'info' dictionary of an unmodified torrent is not written as it was read in insertion order");
+
         torrent.Info = torrent.Info;
         FuzzAssert.True(torrent.GetInfoHashSha1().AsSpan().SequenceEqual(reparsed.GetInfoHashSha1()), "The info-hash of the model is not the one of the written torrent");
+
+        // An edit made in place is hashed and written
+        torrent.Info.Name += "x";
+        byte[] edited;
+        try
+        {
+            edited = torrent.ToUtf8ByteArray();
+        }
+        catch (FormatException)
+        {
+            // The model may not be writable: see above
+            return;
+        }
+
+        var editedHash = torrent.GetInfoHashSha1();
+        FuzzAssert.False(editedHash.AsSpan().SequenceEqual(reparsed.GetInfoHashSha1()), "Renaming the torrent in place does not change its info-hash");
+        FuzzAssert.True(SHA1.HashData(GetInfoBytes(edited)).AsSpan().SequenceEqual(editedHash), "The info-hash of a torrent edited in place is not the one of the written torrent");
+        FuzzAssert.True(SHA1.HashData(GetInfoBytes(torrent.ToUtf8ByteArray(canonical: false))).AsSpan().SequenceEqual(editedHash), "The info-hash of a torrent edited in place is not the one of the torrent written in insertion order");
+    }
+
+    /// <summary>The decoder writes back the bytes it read, so the encoding of the 'info' dictionary in insertion order is the slice of the torrent.</summary>
+    private static byte[] GetInfoBytes(byte[] torrent)
+    {
+        return ((BencodeDictionary)BencodeDocument.Parse(torrent).Root)[InfoKey].ToUtf8ByteArray(canonical: false);
     }
 
     private static void CheckValue(BencodeValue value, int depth)

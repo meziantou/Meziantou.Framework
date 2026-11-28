@@ -50,9 +50,10 @@ public sealed class MarkdownTableSyntax : MarkdownBlockSyntax
     {
         // The generic attributes of the delimiter row, and the text before them in their cell, are not part of its cells
         var characters = row.ToString().ToCharArray();
+        var blanker = new PipeTableScanner.AttributesBlanker();
         foreach (var attributes in row.ChildNodes())
         {
-            PipeTableScanner.BlankAttributes(characters, 0, attributes.Span.Start - row.Span.Start, attributes.Span.End - row.Span.Start);
+            blanker.Blank(characters, attributes.Span.Start - row.Span.Start, attributes.Span.End - row.Span.Start);
         }
 
         var text = new string(characters);

@@ -54,16 +54,12 @@ public static class Parser
         return CreateParserCore(reader, effectiveMaxDepth, sourceName);
     }
 
-    private static IParser CreateParserCore(TextReader reader, int maxDepth, string? sourceName)
+    private static Utf8YamlParser CreateParserCore(TextReader reader, int maxDepth, string? sourceName)
     {
         if (reader is StringReader stringReader)
-            return new Parser<StringLookAheadBuffer>(new StringLookAheadBuffer(stringReader.ReadToEnd()), maxDepth, sourceName);
+            return new Utf8YamlParser(stringReader.ReadToEnd(), maxDepth, sourceName);
 
-        if (reader is StreamReader streamReader)
-            return new Parser<StreamReaderLookAheadBuffer>(new StreamReaderLookAheadBuffer(streamReader), maxDepth, sourceName);
-
-        // Other readers can wait for input that is not needed to parse the document when asked for a block of characters, so they are read one character at a time.
-        return new Parser<LookAheadBuffer>(new LookAheadBuffer(reader, Scanner<LookAheadBuffer>.MaxBufferLength), maxDepth, sourceName);
+        return new Utf8YamlParser(reader, maxDepth, sourceName);
     }
 }
 
@@ -523,7 +519,7 @@ public class Parser<TBuffer> : IParser where TBuffer : ILookAheadBuffer
                 YamlStyle.Block,
                 start,
                 GetCurrentToken().End
-            );
+            ) { IsTagResolved = true };
         }
         else
         {
@@ -541,7 +537,7 @@ public class Parser<TBuffer> : IParser where TBuffer : ILookAheadBuffer
                 }
 
                 _state = _states.Pop();
-                Event evt = new Events.Scalar(anchorName, tagName, scalar.Value, scalar.Style, isPlainImplicit, isQuotedImplicit, start, scalar.End);
+                Event evt = new Events.Scalar(anchorName, tagName, scalar.Value, scalar.Style, isPlainImplicit, isQuotedImplicit, start, scalar.End) { IsTagResolved = true };
 
                 Skip();
                 return evt;
@@ -550,13 +546,13 @@ public class Parser<TBuffer> : IParser where TBuffer : ILookAheadBuffer
             if (GetCurrentToken() is FlowSequenceStart flowSequenceStart)
             {
                 _state = ParserState.YAML_PARSE_FLOW_SEQUENCE_FIRST_ENTRY_STATE;
-                return new Events.SequenceStart(anchorName, tagName, isImplicit, YamlStyle.Flow, start, flowSequenceStart.End);
+                return new Events.SequenceStart(anchorName, tagName, isImplicit, YamlStyle.Flow, start, flowSequenceStart.End) { IsTagResolved = true };
             }
 
             if (GetCurrentToken() is FlowMappingStart flowMappingStart)
             {
                 _state = ParserState.YAML_PARSE_FLOW_MAPPING_FIRST_KEY_STATE;
-                return new Events.MappingStart(anchorName, tagName, isImplicit, YamlStyle.Flow, start, flowMappingStart.End);
+                return new Events.MappingStart(anchorName, tagName, isImplicit, YamlStyle.Flow, start, flowMappingStart.End) { IsTagResolved = true };
             }
 
             if (isBlock)
@@ -564,20 +560,20 @@ public class Parser<TBuffer> : IParser where TBuffer : ILookAheadBuffer
                 if (GetCurrentToken() is BlockSequenceStart blockSequenceStart)
                 {
                     _state = ParserState.YAML_PARSE_BLOCK_SEQUENCE_FIRST_ENTRY_STATE;
-                    return new Events.SequenceStart(anchorName, tagName, isImplicit, YamlStyle.Block, start, blockSequenceStart.End);
+                    return new Events.SequenceStart(anchorName, tagName, isImplicit, YamlStyle.Block, start, blockSequenceStart.End) { IsTagResolved = true };
                 }
 
                 if (GetCurrentToken() is BlockMappingStart)
                 {
                     _state = ParserState.YAML_PARSE_BLOCK_MAPPING_FIRST_KEY_STATE;
-                    return new Events.MappingStart(anchorName, tagName, isImplicit, YamlStyle.Block, start, GetCurrentToken().End);
+                    return new Events.MappingStart(anchorName, tagName, isImplicit, YamlStyle.Block, start, GetCurrentToken().End) { IsTagResolved = true };
                 }
             }
 
             if (anchorName != null || tag != null)
             {
                 _state = _states.Pop();
-                return new Events.Scalar(anchorName, tagName, string.Empty, ScalarStyle.Plain, isImplicit, false, start, GetCurrentToken().End);
+                return new Events.Scalar(anchorName, tagName, string.Empty, ScalarStyle.Plain, isImplicit, false, start, GetCurrentToken().End) { IsTagResolved = true };
             }
 
             var current = GetCurrentToken();

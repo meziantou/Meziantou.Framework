@@ -1041,6 +1041,91 @@ public sealed class QueryBuilderTests
         Assert.Equal(expectedResult, queryBuilder.Build(query).Evaluate(new Sample { DateTimeValue = value }));
     }
 
+    // A date without a time is the whole day, in UTC
+    [Theory]
+    [InlineData("date:2026-01-31", "2026-01-31T10:00:00Z", true)]
+    [InlineData("date:2026-01-31", "2026-01-31T00:00:00Z", true)]
+    [InlineData("date:2026-01-31", "2026-01-31T23:59:59.9999999Z", true)]
+    [InlineData("date:2026-01-31", "2026-02-01T00:00:00Z", false)]
+    [InlineData("date:2026-01-31", "2026-01-30T23:59:59Z", false)]
+    [InlineData("date<>2026-01-31", "2026-01-31T10:00:00Z", false)]
+    [InlineData("date<>2026-01-31", "2026-02-01T00:00:00Z", true)]
+    [InlineData("date:2026-01-01..2026-01-31", "2026-01-31T10:00:00Z", true)]
+    [InlineData("date:2026-01-01..2026-01-31", "2026-01-01T00:00:00Z", true)]
+    [InlineData("date:2026-01-01..2026-01-31", "2025-12-31T23:59:59Z", false)]
+    [InlineData("date:2026-01-01..2026-01-31", "2026-02-01T00:00:00Z", false)]
+    [InlineData("date:*..2026-01-31", "2026-01-31T10:00:00Z", true)]
+    [InlineData("date:*..2026-01-31", "2026-02-01T00:00:00Z", false)]
+    [InlineData("date:2026-01-31..*", "2026-01-31T00:00:00Z", true)]
+    [InlineData("date:2026-01-31..*", "2026-01-30T23:59:59Z", false)]
+    [InlineData("date<=2026-01-31", "2026-01-31T10:00:00Z", true)]
+    [InlineData("date<=2026-01-31", "2026-02-01T00:00:00Z", false)]
+    [InlineData("date<2026-01-31", "2026-01-31T00:00:00Z", false)]
+    [InlineData("date<2026-01-31", "2026-01-30T23:59:59Z", true)]
+    [InlineData("date>2026-01-31", "2026-01-31T10:00:00Z", false)]
+    [InlineData("date>2026-01-31", "2026-02-01T00:00:00Z", true)]
+    [InlineData("date>=2026-01-31", "2026-01-31T00:00:00Z", true)]
+    [InlineData("date>=2026-01-31", "2026-01-30T23:59:59Z", false)]
+    [InlineData("date:01/31/2026", "2026-01-31T10:00:00Z", true)]
+    [InlineData("date:9999-12-31", "9999-12-31T23:59:59.9999999Z", true)]
+    [InlineData("date<=9999-12-31", "9999-12-31T23:59:59.9999999Z", true)]
+    [InlineData("date>9999-12-31", "9999-12-31T23:59:59.9999999Z", false)]
+    public void Date_WithoutTime_IsTheWholeDay(string query, string date, bool expectedResult)
+    {
+        var queryBuilder = new QueryBuilder<Sample>();
+        queryBuilder.AddRangeHandler<DateTime>("date", (obj, range) => range.IsInRange(obj.DateTimeValue));
+        var value = DateTime.Parse(date, CultureInfo.InvariantCulture, DateTimeStyles.AdjustToUniversal);
+
+        Assert.Equal(expectedResult, queryBuilder.Build(query).Evaluate(new Sample { DateTimeValue = value }));
+    }
+
+    // A value with a time, or an offset, is an instant
+    [Theory]
+    [InlineData("date:2026-01-31T00:00", "2026-01-31T10:00:00Z", false)]
+    [InlineData("date:2026-01-31T00:00", "2026-01-31T00:00:00Z", true)]
+    [InlineData("date:2026-01-01..2026-01-31T00:00:00Z", "2026-01-31T10:00:00Z", false)]
+    [InlineData("date<=2026-01-31T10:00", "2026-01-31T10:00:00Z", true)]
+    [InlineData("date<=2026-01-31T10:00", "2026-01-31T10:00:01Z", false)]
+    [InlineData("date>2026-01-31T10:00", "2026-01-31T10:00:01Z", true)]
+    [InlineData("date<=@today", "2026-03-15T08:00:00Z", false)]
+    public void Date_WithTime_IsAnInstant(string query, string date, bool expectedResult)
+    {
+        var timeProvider = new FakeTimeProvider();
+        timeProvider.SetUtcNow(new DateTimeOffset(2026, 3, 15, 12, 0, 0, TimeSpan.Zero));
+
+        var queryBuilder = new QueryBuilder<Sample>(timeProvider);
+        queryBuilder.AddRangeHandler<DateTime>("date", (obj, range) => range.IsInRange(obj.DateTimeValue));
+        var value = DateTime.Parse(date, CultureInfo.InvariantCulture, DateTimeStyles.AdjustToUniversal);
+
+        Assert.Equal(expectedResult, queryBuilder.Build(query).Evaluate(new Sample { DateTimeValue = value }));
+    }
+
+    [Fact]
+    public void Date_WithoutTime_IsTheWholeDay_ForEveryDateType()
+    {
+        var queryBuilder = new QueryBuilder<Sample>();
+        queryBuilder.AddRangeHandler<DateTimeOffset>("offset", (obj, range) => range.IsInRange(obj.DateTimeOffsetValue));
+        queryBuilder.AddRangeHandler<DateTime?>("nullable", (obj, range) => range.IsInRange(obj.NullableDateTimeValue));
+        queryBuilder.AddRangeHandler<DateOnly>("dateonly", (obj, range) => range.IsInRange(obj.DateOnlyValue));
+
+        var sample = new Sample
+        {
+            DateTimeOffsetValue = new DateTimeOffset(2026, 1, 31, 12, 0, 0, TimeSpan.FromHours(2)),
+            NullableDateTimeValue = new DateTime(2026, 1, 31, 10, 0, 0, DateTimeKind.Utc),
+            DateOnlyValue = new DateOnly(2026, 1, 31),
+        };
+
+        Assert.True(queryBuilder.Build("offset:2026-01-31").Evaluate(sample));
+        Assert.True(queryBuilder.Build("offset<=2026-01-31").Evaluate(sample));
+        Assert.False(queryBuilder.Build("offset>2026-01-31").Evaluate(sample));
+        Assert.False(queryBuilder.Build("offset:2026-01-31T00:00:00+02:00").Evaluate(sample));
+        Assert.True(queryBuilder.Build("nullable:2026-01-01..2026-01-31").Evaluate(sample));
+        Assert.True(queryBuilder.Build("nullable<=2026-01-31").Evaluate(sample));
+        Assert.True(queryBuilder.Build("dateonly:2026-01-31").Evaluate(sample));
+        Assert.True(queryBuilder.Build("dateonly<=2026-01-31").Evaluate(sample));
+        Assert.False(queryBuilder.Build("dateonly>2026-01-31").Evaluate(sample));
+    }
+
     [Fact]
     public void RelativeDate_SupportsEveryDateType()
     {

@@ -36,8 +36,7 @@ internal sealed class YamlImmutableListConverter<TElement> : YamlConverter<Immut
         var builder = ImmutableList.CreateBuilder<TElement>();
         while (reader.TokenType != YamlTokenType.EndSequence)
         {
-            var value = _elementConverter.Read(reader, typeof(TElement));
-            builder.Add((TElement)value!);
+            builder.Add(SequenceReadHelpers.ReadElement<TElement>(reader, _elementConverter));
         }
 
         reader.Read();

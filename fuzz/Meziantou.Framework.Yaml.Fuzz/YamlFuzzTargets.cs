@@ -1,9 +1,10 @@
+using System.Buffers;
 using System.Globalization;
 using System.Text;
 using System.Text.Unicode;
 using Meziantou.Framework.Fuzzing;
 using Meziantou.Framework.Yaml.Events;
-using Meziantou.Framework.Yaml.Model;
+using Meziantou.Framework.Yaml.Nodes;
 using Meziantou.Framework.Yaml.Syntax;
 using TagDirective = Meziantou.Framework.Yaml.Tokens.TagDirective;
 
@@ -50,19 +51,726 @@ public static class YamlFuzzTargets
         new("yaml-deserialize", Deserialize) { Seeds = GetDeserializeSeeds, Dictionary = Tokens },
         new("yaml-emitter", EmitterRoundTrip) { Seeds = GetEmitterSeeds, Dictionary = Tokens },
         new("yaml-numerics", Numerics) { Seeds = GetNumericsSeeds, Dictionary = [.. Tokens, .. NumericsTokens] },
+        new("yaml-utf8-reader", Utf8Reader) { Seeds = GetSeeds, Dictionary = Tokens },
+        new("yaml-model-preserving-formatting", ModelPreservingFormatting) { Seeds = GetSeeds, Dictionary = Tokens },
+        new("yaml-utf8-writer", Utf8Writer) { Seeds = GetSeeds, Dictionary = Tokens },
     ];
+
+    /// <summary>
+    /// <see cref="Utf8YamlReader"/> reads the same nodes as the scanner-based parser (<see cref="Parser{TBuffer}"/>) from
+    /// every document that parser accepts. Its tokens, indicators and properties cover every byte that is not
+    /// whitespace, a line break or a comment. Reading the input in parts gives the same tokens at the same positions,
+    /// and <see cref="YamlDocument"/> holds the same nodes. A clone of a node holds the same nodes at the same positions.
+    /// </summary>
+    private static void Utf8Reader(ReadOnlySpan<byte> data)
+    {
+        var yaml = FuzzText.Decode(data);
+        var utf8 = Encoding.UTF8.GetBytes(yaml);
+        var actual = ReadUtf8ReaderNodes(utf8);
+        if (actual.Error is null)
+        {
+            var coverageError = CheckUtf8ReaderTokenCoverage(utf8);
+            FuzzAssert.True(coverageError is null, $"The tokens of the reader do not cover the input: {coverageError}");
+
+            var positions = ReadUtf8ReaderPositions(utf8, chunkSize: 0);
+            var chunkSize = 1 + (data.Length % 13);
+            FuzzAssert.Equal(positions, ReadUtf8ReaderPositions(utf8, chunkSize), $"Reading the input in parts of {chunkSize} bytes gives different tokens");
+
+            using var document = YamlDocument.Parse(utf8);
+            var documentNodes = new List<string>();
+            for (var i = 0; i < document.DocumentCount; i++)
+            {
+                AddReadOnlyNodes(document.GetDocumentRoot(i), documentNodes);
+            }
+
+            var readerNodes = actual.Events.Split('\n').Where(line => line.Length > 0 && !line.StartsWith("+DOC", StringComparison.Ordinal) && !line.StartsWith("-DOC", StringComparison.Ordinal));
+            FuzzAssert.Equal(string.Join('\n', readerNodes), string.Join('\n', documentNodes), "The read-only document and the reader read different nodes");
+            CheckClones(document, data.Length);
+        }
+
+        // The parser reads repeated byte order marks differently, see HasRepeatedByteOrderMark
+        var expected = ReadParserNodes(yaml);
+        if (expected.Error is null && !HasRepeatedByteOrderMark(yaml))
+        {
+            FuzzAssert.True(actual.Error is null, $"The reader rejects YAML that the parser accepts: {actual.Error}");
+            FuzzAssert.Equal(expected.Events, actual.Events, "The reader and the parser read different nodes");
+        }
+    }
+
+    /// <summary>
+    /// The writer writes YAML that reads back as the same nodes: the read-only document of the input, written with its
+    /// styles, anchors and tags, gives the same values with the same types, and the scanner-based parser reads the
+    /// output the same way. Every scalar written as a string with the default style reads back as that string.
+    /// </summary>
+    private static void Utf8Writer(ReadOnlySpan<byte> data)
+    {
+        var utf8 = Encoding.UTF8.GetBytes(FuzzText.Decode(data));
+        YamlDocument source;
+        try
+        {
+            source = YamlDocument.Parse(utf8);
+        }
+        catch (YamlException)
+        {
+            return;
+        }
+
+        using (source)
+        {
+            var output = WriteYaml(source.WriteTo);
+            using (var written = ParseWriterOutput(output))
+            {
+                FuzzAssert.Equal(ReadTypedNodes(source), ReadTypedNodes(written), "The written YAML reads as other nodes");
+            }
+
+            // NEL, LS and PS are line breaks for the parser, like in YAML 1.1: the writer only writes them in the names of
+            // anchors, like the input
+            var text = Encoding.UTF8.GetString(output);
+            if (text.AsSpan().IndexOfAny('\u0085', '\u2028', '\u2029') < 0)
+            {
+                var parserNodes = ReadParserNodes(text);
+                FuzzAssert.True(parserNodes.Error is null, $"The parser rejects the written YAML: {parserNodes.Error}\n{text}");
+                FuzzAssert.Equal(parserNodes.Events, ReadUtf8ReaderNodes(output).Events, "The parser and the reader read the written YAML differently");
+            }
+
+            // Every scalar as a string, with the style the writer chooses, and comments wherever they can be written
+            var strings = WriteYaml(writer =>
+            {
+                var position = 0;
+                for (var i = 0; i < source.DocumentCount; i++)
+                {
+                    if (i > 0)
+                    {
+                        writer.WriteStartDocument();
+                    }
+
+                    writer.WriteComment(CommentText);
+                    WriteAsStrings(source.GetDocumentRoot(i), writer, inFlow: false, ref position);
+                    writer.WriteComment(CommentText);
+                }
+            });
+
+            using var stringDocument = ParseWriterOutput(strings);
+            FuzzAssert.Equal(source.DocumentCount, stringDocument.DocumentCount, "The written YAML has another number of documents");
+            for (var i = 0; i < source.DocumentCount; i++)
+            {
+                AssertSameStrings(source.GetDocumentRoot(i), stringDocument.GetDocumentRoot(i));
+            }
+        }
+
+        static byte[] WriteYaml(Action<Utf8YamlWriter> write)
+        {
+            var buffer = new ArrayBufferWriter<byte>();
+            using (var writer = new Utf8YamlWriter(buffer))
+            {
+                write(writer);
+            }
+
+            return buffer.WrittenSpan.ToArray();
+        }
+
+        static YamlDocument ParseWriterOutput(byte[] output)
+        {
+            try
+            {
+                return YamlDocument.Parse(output);
+            }
+            catch (YamlException ex)
+            {
+                throw new FuzzAssertionException($"The written YAML is invalid: {ex.Message}\n{Encoding.UTF8.GetString(output)}", ex);
+            }
+        }
+    }
+
+    // Indicators, a document marker and a line break: a comment must not change what is around it
+    private const string CommentText = "a: [b] {c} 'd' \"e\" #f &g *h !i\n--- ...";
+
+    private static void WriteAsStrings(YamlElement node, Utf8YamlWriter writer, bool inFlow, ref int position)
+    {
+        if (node.Kind is not YamlElementKind.Alias && node.Anchor is { } anchor)
+        {
+            writer.WriteAnchor(anchor);
+        }
+
+        switch (node.Kind)
+        {
+            case YamlElementKind.Alias:
+                writer.WriteAliasValue(node.Anchor);
+                break;
+
+            case YamlElementKind.Scalar:
+                writer.WriteStringValue(node.GetString());
+                break;
+
+            case YamlElementKind.Sequence:
+                var flowSequence = inFlow || node.IsFlow;
+                writer.WriteStartSequence(node.IsFlow ? YamlStyle.Flow : YamlStyle.Block);
+                foreach (var item in node.EnumerateSequence())
+                {
+                    WriteCommentAt(writer, flowSequence, ref position);
+                    WriteAsStrings(item, writer, flowSequence, ref position);
+                }
+
+                WriteCommentAt(writer, flowSequence, ref position);
+                writer.WriteEndSequence();
+                break;
+
+            default:
+                var flowMapping = inFlow || node.IsFlow;
+                writer.WriteStartMapping(node.IsFlow ? YamlStyle.Flow : YamlStyle.Block);
+                foreach (var entry in node.EnumerateMapping())
+                {
+                    WriteCommentAt(writer, flowMapping, ref position);
+                    WriteAsStrings(entry.Key, writer, flowMapping, ref position);
+                    WriteAsStrings(entry.Value, writer, flowMapping, ref position);
+                }
+
+                WriteCommentAt(writer, flowMapping, ref position);
+                writer.WriteEndMapping();
+                break;
+        }
+    }
+
+    // A comment before every other entry of the block collections, and at the end of some of them
+    private static void WriteCommentAt(Utf8YamlWriter writer, bool inFlow, ref int position)
+    {
+        if (!inFlow && position++ % 2 == 0)
+        {
+            writer.WriteComment(CommentText);
+        }
+    }
+
+    private static void AssertSameStrings(YamlElement expected, YamlElement actual)
+    {
+        FuzzAssert.Equal(expected.Kind, actual.Kind, "A node written as a string has another kind");
+        switch (expected.Kind)
+        {
+            case YamlElementKind.Scalar:
+                var value = expected.GetString();
+                FuzzAssert.Equal(EscapeValue(value), EscapeValue(actual.GetString()), "A string reads back as another value");
+                FuzzAssert.True(actual.ScalarStyle is not ScalarStyle.Plain || !ResolvesToNonString(value), $"The string '{EscapeValue(value)}' is written plain, which reads as another type");
+                break;
+
+            case YamlElementKind.Sequence:
+                FuzzAssert.Equal(expected.GetLength(), actual.GetLength(), "A sequence has another number of items");
+                var expectedItems = expected.EnumerateSequence();
+                var actualItems = actual.EnumerateSequence();
+                while (expectedItems.MoveNext() && actualItems.MoveNext())
+                {
+                    AssertSameStrings(expectedItems.Current, actualItems.Current);
+                }
+
+                break;
+
+            case YamlElementKind.Mapping:
+                FuzzAssert.Equal(expected.GetLength(), actual.GetLength(), "A mapping has another number of entries");
+                var expectedEntries = expected.EnumerateMapping();
+                var actualEntries = actual.EnumerateMapping();
+                while (expectedEntries.MoveNext() && actualEntries.MoveNext())
+                {
+                    AssertSameStrings(expectedEntries.Current.Key, actualEntries.Current.Key);
+                    AssertSameStrings(expectedEntries.Current.Value, actualEntries.Current.Value);
+                }
+
+                break;
+        }
+    }
+
+    // A plain scalar that the core schema reads as a null, a boolean or a number, or a YAML 1.1 boolean
+    private static bool ResolvesToNonString(string value)
+        => Yaml.Serialization.YamlScalar.IsSchemaKeyword(value) || Yaml.Serialization.YamlScalar.ResolvesToNonString(value, YamlSchemaKind.Core);
+
+    // The nodes, with only the part of the scalar style that gives the type: an untagged plain scalar may be a null, a
+    // boolean or a number, while any other scalar is a string
+    private static string ReadTypedNodes(YamlDocument document)
+    {
+        var nodes = new List<string>();
+        for (var i = 0; i < document.DocumentCount; i++)
+        {
+            AddTypedNodes(document.GetDocumentRoot(i), nodes);
+        }
+
+        return string.Join('\n', nodes);
+    }
+
+    private static void AddTypedNodes(YamlElement node, List<string> nodes)
+    {
+        var properties = (node.Kind is YamlElementKind.Alias || node.Anchor is null ? "" : " &" + node.Anchor) + (node.Tag is null ? "" : " !" + node.Tag);
+        switch (node.Kind)
+        {
+            case YamlElementKind.Alias:
+                nodes.Add("=ALI *" + node.Anchor);
+                break;
+
+            case YamlElementKind.Scalar:
+                var value = node.GetString();
+                var typed = node.ScalarStyle is ScalarStyle.Plain && node.Tag is null && Yaml.Serialization.YamlScalar.ResolvesToNonString(value, YamlSchemaKind.Core);
+                nodes.Add("=VAL" + properties + (typed ? " typed " : " string ") + EscapeValue(value));
+                break;
+
+            case YamlElementKind.Sequence:
+                nodes.Add("+SEQ" + (node.IsFlow ? " []" : "") + properties);
+                foreach (var item in node.EnumerateSequence())
+                {
+                    AddTypedNodes(item, nodes);
+                }
+
+                nodes.Add("-SEQ");
+                break;
+
+            default:
+                nodes.Add("+MAP" + (node.IsFlow ? " {}" : "") + properties);
+                foreach (var entry in node.EnumerateMapping())
+                {
+                    AddTypedNodes(entry.Key, nodes);
+                    AddTypedNodes(entry.Value, nodes);
+                }
+
+                nodes.Add("-MAP");
+                break;
+        }
+    }
+
+    // The positions of the tokens, read in one buffer (chunkSize 0) or in parts like a stream
+    private static string ReadUtf8ReaderPositions(byte[] utf8, int chunkSize)
+    {
+        var tokens = new StringBuilder();
+        var state = default(Utf8YamlReaderState);
+        var start = 0;
+        var available = chunkSize == 0 ? utf8.Length : Math.Min(chunkSize, utf8.Length);
+        while (true)
+        {
+            var isFinalBlock = start + available == utf8.Length;
+            var reader = new Utf8YamlReader(utf8.AsSpan(start, available), isFinalBlock, state);
+            while (reader.Read())
+            {
+                tokens.Append(CultureInfo.InvariantCulture, $"{reader.TokenKind} {reader.BufferOffset + reader.TokenStart}+{reader.TokenLength} {(reader.TokenKind is Utf8YamlTokenKind.Scalar ? reader.GetString() : "")}\n");
+            }
+
+            if (isFinalBlock)
+                return tokens.ToString();
+
+            var consumed = reader.BytesConsumed;
+            state = reader.CurrentState;
+            start += consumed;
+            available = Math.Min(available - consumed + chunkSize, utf8.Length - start);
+        }
+    }
+
+    // A value on one line, to compare the nodes line by line
+    private static string EscapeValue(string value) => value.Replace("\\", "\\\\", StringComparison.Ordinal).Replace("\n", "\\n", StringComparison.Ordinal).Replace("\r", "\\r", StringComparison.Ordinal);
+
+    // The data of a stream: the nodes, their tags and their values, without the styles the text can change
+    private static string Represent(YamlStream stream)
+    {
+        var builder = new StringBuilder();
+        foreach (var document in stream)
+        {
+            builder.Append("+DOC\n");
+            if (document.Contents is not null)
+            {
+                Represent(document.Contents, builder);
+            }
+        }
+
+        return builder.ToString();
+
+        static void Represent(YamlNode node, StringBuilder builder)
+        {
+            switch (node)
+            {
+                case YamlMapping mapping:
+                    builder.Append("+MAP ").Append(mapping.Tag).Append('\n');
+                    foreach (var entry in mapping)
+                    {
+                        Represent(entry.Key, builder);
+                        if (entry.Value is not null)
+                        {
+                            Represent(entry.Value, builder);
+                        }
+                    }
+
+                    builder.Append("-MAP\n");
+                    break;
+
+                case YamlSequence sequence:
+                    builder.Append("+SEQ ").Append(sequence.Tag).Append('\n');
+                    foreach (var item in sequence)
+                    {
+                        Represent(item, builder);
+                    }
+
+                    builder.Append("-SEQ\n");
+                    break;
+
+                case YamlValue value:
+                    // An untagged scalar has the tag the core schema resolves; "", "~" and "null" are the same null
+                    var tag = Schemas.CoreSchema.Instance.ExpandTag(value.Tag is null or "!" ? Schemas.CoreSchema.Instance.GetDefaultTag(value.Scalar) : value.Tag);
+                    var text = tag == Schemas.CoreSchema.Instance.ExpandTag("!!null") ? "" : value.Value;
+                    builder.Append("=VAL ").Append(tag).Append(' ').Append(EscapeValue(text)).Append('\n');
+                    break;
+            }
+        }
+    }
+
+    // A clone of a node holds the same nodes, with the same text and positions, and its aliases resolve to the same nodes.
+    // Every node is cloned in a small document, and a sample of them in a larger one.
+    private static void CheckClones(YamlDocument document, int seed)
+    {
+        var nodes = new List<YamlElement>();
+        for (var i = 0; i < document.DocumentCount; i++)
+        {
+            CollectReadOnlyNodes(document.GetDocumentRoot(i), nodes);
+        }
+
+        var step = Math.Max(1, nodes.Count / 32);
+        for (var i = seed % step; i < nodes.Count; i += step)
+        {
+            var node = nodes[i];
+            var clone = node.Clone();
+            var expected = new List<string>();
+            var actual = new List<string>();
+            DescribeReadOnlyNodes(node, expected);
+            DescribeReadOnlyNodes(clone, actual);
+            FuzzAssert.Equal(string.Join('\n', expected), string.Join('\n', actual), "The clone of a node holds other nodes");
+            FuzzAssert.True(clone.Clone() == clone, "The clone of a clone is another node");
+        }
+
+        static void CollectReadOnlyNodes(YamlElement node, List<YamlElement> nodes)
+        {
+            nodes.Add(node);
+            if (node.Kind is YamlElementKind.Sequence)
+            {
+                foreach (var item in node.EnumerateSequence())
+                {
+                    CollectReadOnlyNodes(item, nodes);
+                }
+            }
+            else if (node.Kind is YamlElementKind.Mapping)
+            {
+                foreach (var entry in node.EnumerateMapping())
+                {
+                    CollectReadOnlyNodes(entry.Key, nodes);
+                    CollectReadOnlyNodes(entry.Value, nodes);
+                }
+            }
+        }
+
+        static void DescribeReadOnlyNodes(YamlElement node, List<string> lines)
+        {
+            var descendants = new List<YamlElement>();
+            CollectReadOnlyNodes(node, descendants);
+            AddReadOnlyNodes(node, lines);
+            foreach (var descendant in descendants)
+            {
+                var target = "";
+                if (descendant.Kind is YamlElementKind.Alias)
+                {
+                    try
+                    {
+                        target = " -> " + descendant.ResolveAlias().Start;
+                    }
+                    catch (InvalidOperationException)
+                    {
+                        target = " -> undefined";
+                    }
+                }
+
+                lines.Add(FormattableString.Invariant($"{descendant.Start} {descendant.End} {descendant.Utf8Offset}+{descendant.Utf8Length} {EscapeValue(descendant.GetRawText())}{target}"));
+            }
+        }
+    }
+
+    private static void AddReadOnlyNodes(YamlElement node, List<string> nodes)
+    {
+        var properties = (node.Kind is YamlElementKind.Alias || node.Anchor is null ? "" : " &" + node.Anchor) + (node.Tag is null ? "" : " !" + node.Tag);
+        switch (node.Kind)
+        {
+            case YamlElementKind.Alias:
+                nodes.Add("=ALI *" + node.Anchor);
+                break;
+
+            case YamlElementKind.Scalar:
+                nodes.Add("=VAL" + properties + " " + node.ScalarStyle.ToString() + " " + EscapeValue(node.GetString()));
+                break;
+
+            case YamlElementKind.Sequence:
+                nodes.Add("+SEQ" + (node.IsFlow ? " []" : "") + properties);
+                foreach (var item in node.EnumerateSequence())
+                {
+                    AddReadOnlyNodes(item, nodes);
+                }
+
+                nodes.Add("-SEQ");
+                break;
+
+            default:
+                nodes.Add("+MAP" + (node.IsFlow ? " {}" : "") + properties);
+                foreach (var entry in node.EnumerateMapping())
+                {
+                    AddReadOnlyNodes(entry.Key, nodes);
+                    AddReadOnlyNodes(entry.Value, nodes);
+                }
+
+                nodes.Add("-MAP");
+                break;
+        }
+    }
+
+    /// <summary>
+    /// A loaded stream that did not change is written as its text, byte for byte. After values change, the text it
+    /// writes loads to the same nodes as the stream.
+    /// </summary>
+    private static void ModelPreservingFormatting(ReadOnlySpan<byte> data)
+    {
+        var yaml = FuzzText.Decode(data);
+        YamlStream stream;
+        try
+        {
+            stream = YamlStream.Load(new StringReader(yaml), LoadOptions);
+        }
+        catch (YamlException)
+        {
+            return;
+        }
+
+        FuzzAssert.Equal(yaml, stream.ToStringPreservingFormatting(), "An unchanged stream is not written as its text");
+
+        var changed = 0;
+        foreach (var document in stream)
+        {
+            if (document.Contents is not null)
+            {
+                changed += ChangeScalars(document.Contents);
+            }
+        }
+
+        if (changed == 0)
+            return;
+
+        var written = stream.ToStringPreservingFormatting();
+        YamlStream reloaded;
+        try
+        {
+            reloaded = YamlStream.Load(new StringReader(written), LoadOptions);
+        }
+        catch (YamlException ex)
+        {
+            throw new FuzzAssertionException($"The text written after a change cannot be loaded: {FuzzAssert.Format(written)}", ex);
+        }
+
+        FuzzAssert.Equal(Represent(stream), Represent(reloaded), $"The text written after a change loads to different nodes: {FuzzAssert.Format(written)}");
+
+        // Every other untagged scalar value of a mapping becomes a new scalar
+        static int ChangeScalars(YamlNode node)
+        {
+            var count = 0;
+            switch (node)
+            {
+                case YamlMapping mapping:
+                    var index = 0;
+                    foreach (var entry in mapping.ToList())
+                    {
+                        if (entry.Value is YamlValue { Tag: null } && index++ % 2 == 0)
+                        {
+                            mapping[entry.Key] = new YamlValue("new value " + index.ToString(CultureInfo.InvariantCulture));
+                            count++;
+                        }
+                        else if (entry.Value is not null)
+                        {
+                            count += ChangeScalars(entry.Value);
+                        }
+                    }
+
+                    break;
+
+                case YamlSequence sequence:
+                    foreach (var item in sequence)
+                    {
+                        count += ChangeScalars(item);
+                    }
+
+                    break;
+            }
+
+            return count;
+        }
+    }
+
+    // The nodes of the scanner-based parser, in the format of ReadUtf8ReaderNodes
+    private static ParserResult ReadParserNodes(string yaml)
+    {
+        var events = new List<string>();
+        try
+        {
+            var parser = new Parser<StringLookAheadBuffer>(new StringLookAheadBuffer(yaml));
+            while (parser.MoveNext())
+            {
+                var current = parser.Current;
+                var properties = current is NodeEvent node ? (node.Anchor is null ? "" : " &" + node.Anchor) + (node.Tag is null ? "" : " !" + node.Tag) : "";
+                switch (current)
+                {
+                    case DocumentStart start:
+                        events.Add(start.IsImplicit ? "+DOC" : "+DOC ---");
+                        break;
+                    case DocumentEnd end:
+                        events.Add(end.IsImplicit ? "-DOC" : "-DOC ...");
+                        break;
+                    case MappingStart mapping:
+                        events.Add("+MAP" + (mapping.Style is YamlStyle.Flow ? " {}" : "") + properties);
+                        break;
+                    case MappingEnd:
+                        events.Add("-MAP");
+                        break;
+                    case SequenceStart sequence:
+                        events.Add("+SEQ" + (sequence.Style is YamlStyle.Flow ? " []" : "") + properties);
+                        break;
+                    case SequenceEnd:
+                        events.Add("-SEQ");
+                        break;
+                    case AnchorAlias alias:
+                        events.Add("=ALI *" + alias.Value);
+                        break;
+                    case Scalar scalar:
+                        events.Add("=VAL" + properties + " " + scalar.Style.ToString() + " " + EscapeValue(scalar.Value));
+                        break;
+                }
+            }
+        }
+        catch (YamlException ex)
+        {
+            return new ParserResult(string.Join('\n', events), ex.Message);
+        }
+
+        return new ParserResult(string.Join('\n', events), Error: null);
+    }
+
+    private static ParserResult ReadUtf8ReaderNodes(byte[] utf8)
+    {
+        var events = new List<string>();
+        try
+        {
+            var reader = new Utf8YamlReader(utf8);
+            while (reader.Read())
+            {
+                var properties = (reader.AnchorStart < 0 ? "" : " &" + Encoding.UTF8.GetString(reader.AnchorName)) + (reader.TagStart < 0 ? "" : " !" + reader.GetTag());
+                switch (reader.TokenKind)
+                {
+                    case Utf8YamlTokenKind.DocumentStart:
+                        events.Add(reader.TokenLength == 0 ? "+DOC" : "+DOC ---");
+                        break;
+                    case Utf8YamlTokenKind.DocumentEnd:
+                        events.Add(reader.TokenLength == 0 ? "-DOC" : "-DOC ...");
+                        break;
+                    case Utf8YamlTokenKind.MappingStart:
+                        events.Add("+MAP" + (reader.IsFlow ? " {}" : "") + properties);
+                        break;
+                    case Utf8YamlTokenKind.MappingEnd:
+                        events.Add("-MAP");
+                        break;
+                    case Utf8YamlTokenKind.SequenceStart:
+                        events.Add("+SEQ" + (reader.IsFlow ? " []" : "") + properties);
+                        break;
+                    case Utf8YamlTokenKind.SequenceEnd:
+                        events.Add("-SEQ");
+                        break;
+                    case Utf8YamlTokenKind.Alias:
+                        events.Add("=ALI *" + Encoding.UTF8.GetString(reader.AnchorName));
+                        break;
+                    case Utf8YamlTokenKind.Scalar:
+                        var value = reader.GetString();
+                        FuzzAssert.True(reader.ValueEquals(Encoding.UTF8.GetBytes(value)), "ValueEquals does not match GetString");
+                        events.Add("=VAL" + properties + " " + reader.ScalarStyle.ToString() + " " + EscapeValue(value));
+                        break;
+                }
+            }
+        }
+        catch (YamlException ex)
+        {
+            return new ParserResult(string.Join('\n', events), ex.Message);
+        }
+
+        return new ParserResult(string.Join('\n', events), Error: null);
+    }
+
+    // The tokens, the indicators and the properties do not overlap, and the gaps between them hold only whitespace, line
+    // breaks and comments.
+    private static string? CheckUtf8ReaderTokenCoverage(byte[] utf8)
+    {
+        var spans = new List<(int Start, int Length)>();
+        var reader = new Utf8YamlReader(utf8);
+        while (reader.Read())
+        {
+            FuzzAssert.True(reader.TokenStart >= 0 && reader.TokenLength >= 0 && reader.TokenStart + reader.TokenLength <= utf8.Length, $"The token {reader.TokenKind} is outside the input");
+            AddSpan(spans, reader.TokenStart, reader.TokenLength);
+            AddSpan(spans, reader.IndicatorOffset, 1);
+            AddSpan(spans, reader.ExplicitKeyIndicatorOffset, 1);
+            AddSpan(spans, reader.AnchorStart, reader.AnchorLength);
+            AddSpan(spans, reader.TagStart, reader.TagLength);
+        }
+
+        spans.Sort((a, b) => a.Start.CompareTo(b.Start));
+        var position = 0;
+        foreach (var (start, length) in spans)
+        {
+            if (start < position)
+                return string.Create(CultureInfo.InvariantCulture, $"the span at {start} overlaps the previous span, which ends at {position}");
+
+            if (!IsTrivia(utf8.AsSpan(position, start - position)))
+                return string.Create(CultureInfo.InvariantCulture, $"the gap {position}..{start} is not trivia");
+
+            position = start + length;
+        }
+
+        return IsTrivia(utf8.AsSpan(position)) ? null : string.Create(CultureInfo.InvariantCulture, $"the gap {position}..{utf8.Length} is not trivia");
+
+        static void AddSpan(List<(int Start, int Length)> spans, int start, int length)
+        {
+            if (start >= 0 && length > 0)
+            {
+                spans.Add((start, length));
+            }
+        }
+
+        static bool IsTrivia(ReadOnlySpan<byte> gap)
+        {
+            for (var i = 0; i < gap.Length; i++)
+            {
+                switch (gap[i])
+                {
+                    case (byte)' ' or (byte)'\t' or (byte)'\r' or (byte)'\n':
+                        break;
+
+                    case (byte)'#':
+                        while (i + 1 < gap.Length && gap[i + 1] is not ((byte)'\r' or (byte)'\n'))
+                        {
+                            i++;
+                        }
+
+                        break;
+
+                    default:
+                        return false;
+                }
+            }
+
+            return true;
+        }
+    }
 
     private static void Parser(ReadOnlySpan<byte> data)
     {
         var yaml = FuzzText.Decode(data);
-        var expected = ReadEvents(Yaml.Parser.CreateParser(new StringReader(yaml)));
 
-        // A capacity smaller than most tokens exercises the refills of the streaming buffer
+        // The scanner-based parser: a capacity smaller than most tokens exercises the refills of the streaming buffer
+        var scanner = ReadEvents(new Parser<StringLookAheadBuffer>(new StringLookAheadBuffer(yaml)));
         var actual = ReadEvents(new Parser<LookAheadBuffer>(new LookAheadBuffer(new StringReader(yaml), capacity: 12)));
-        FuzzAssert.Equal(expected, actual, "The string and streaming buffers produce different events");
+        FuzzAssert.Equal(scanner, actual, "The string and streaming buffers produce different events");
 
-        // The parser reads a StreamReader by blocks. A stream that returns a few bytes per read makes it refill its
-        // buffer at every position. The byte order mark is kept as a character, like the string parser sees it.
+        // Parser.CreateParser reads a StreamReader by blocks, with Utf8YamlReader. A stream that returns a few bytes per
+        // read makes it continue in a new buffer at every position. The byte order mark is kept as a character, like the
+        // string parser sees it.
+        var expected = ReadEvents(Yaml.Parser.CreateParser(new StringReader(yaml)));
         if (Utf8.IsValid(data))
         {
             var encoding = new UTF8Encoding(encoderShouldEmitUTF8Identifier: false, throwOnInvalidBytes: true);
@@ -83,7 +791,8 @@ public static class YamlFuzzTargets
         }
         catch (YamlException ex)
         {
-            FuzzAssert.True(parserError is not null, $"The syntax tree rejects YAML that the parser accepts: {ex.Message}");
+            // The scanner of the syntax tree reads repeated byte order marks differently, see HasRepeatedByteOrderMark
+            FuzzAssert.True(parserError is not null || HasRepeatedByteOrderMark(yaml), $"The syntax tree rejects YAML that the parser accepts: {ex.Message}");
             return;
         }
 
@@ -104,6 +813,25 @@ public static class YamlFuzzTargets
         FuzzAssert.False(withoutTrivia.Tokens.Any(token => IsTrivia(token.Kind)), "The syntax tree contains trivia although it is excluded");
         FuzzAssert.Equal(FormatTokens(tree.Tokens.Where(token => !IsTrivia(token.Kind))), FormatTokens(withoutTrivia.Tokens), "Excluding the trivia changes the other tokens");
         FuzzAssert.Equal(tree.Root.Span.ToString(), withoutTrivia.Root.Span.ToString(), "Excluding the trivia changes the span of the root node");
+    }
+
+    /// <summary>
+    /// A byte order mark is a document prefix, which can repeat (YAML 1.2 §9.2). Utf8YamlReader reads the byte order marks
+    /// that follow each other at the start of a line as prefixes. The scanner-based parser reads an empty document for the
+    /// second one, or rejects it, which the grammar does not do.
+    /// </summary>
+    private static bool HasRepeatedByteOrderMark(string yaml)
+    {
+        var index = yaml.IndexOf("\uFEFF\uFEFF", StringComparison.Ordinal);
+        while (index >= 0)
+        {
+            if (index == 0 || yaml[index - 1] is '\n' or '\r')
+                return true;
+
+            index = yaml.IndexOf("\uFEFF\uFEFF", index + 1, StringComparison.Ordinal);
+        }
+
+        return false;
     }
 
     private static bool IsTrivia(YamlSyntaxKind kind) => kind is YamlSyntaxKind.WhitespaceTrivia or YamlSyntaxKind.NewLineTrivia or YamlSyntaxKind.CommentTrivia;
@@ -149,16 +877,21 @@ public static class YamlFuzzTargets
         FuzzAssert.Equal(fromString.Error is null, succeeded, $"TryDeserialize returns {succeeded} while Deserialize reports {fromString.Error ?? "no error"}");
         AssertSameResult(fromString, new DeserializeResult(tried, fromString.Error), "TryDeserialize and Deserialize disagree");
 
-        // The UTF-8 overload sees the raw bytes, invalid sequences included
-        using (var utf8Stream = new MemoryStream(data.ToArray()))
+        // The UTF-8 overloads see the raw bytes, invalid sequences included
+        var bytes = data.ToArray();
+        using (var utf8Stream = new MemoryStream(bytes))
         {
             var fromStream = Capture(() => YamlSerializer.Deserialize<object>(utf8Stream, options));
             if (Utf8.IsValid(data))
             {
-                // The stream reader removes the byte order mark, which shifts the character offsets of the errors
+                // A stream does not count its byte order mark as a character, which shifts the character offsets of the errors
                 var expected = yaml is ['\uFEFF', ..] ? Capture(() => YamlSerializer.Deserialize<object>(yaml[1..], options)) : fromString;
                 AssertSameResult(expected, fromStream, "The string and Stream overloads disagree");
+                AssertSameResult(fromString, Capture(() => YamlSerializer.Deserialize<object>(bytes.AsSpan(), options)), "The string and UTF-8 bytes overloads disagree");
             }
+
+            // A stream that returns a few bytes per read makes the reader continue in a new buffer at every position
+            AssertSameResult(fromStream, Capture(() => YamlSerializer.Deserialize<object>(new TrickleStream(bytes), options)), "A stream read by a few bytes gives another result");
         }
 
         _ = YamlSerializer.TryDeserialize<Dictionary<string, object?>>(yaml, out _, options);

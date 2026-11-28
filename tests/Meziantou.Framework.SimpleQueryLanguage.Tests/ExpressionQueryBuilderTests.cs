@@ -547,6 +547,33 @@ public sealed class ExpressionQueryBuilderTests
         Assert.Equal(TimeSpan.FromMinutes(10), result[0].TimeSpanValue);
     }
 
+    // A date without a time is the whole day, in UTC; a value with a time is an instant
+    [Theory]
+    [InlineData("date:2026-01-31", true)]
+    [InlineData("date<>2026-01-31", false)]
+    [InlineData("date:2026-01-01..2026-01-31", true)]
+    [InlineData("date:*..2026-01-31", true)]
+    [InlineData("date<=2026-01-31", true)]
+    [InlineData("date<2026-01-31", false)]
+    [InlineData("date>2026-01-31", false)]
+    [InlineData("date>=2026-01-31", true)]
+    [InlineData("date>2026-01-30", true)]
+    [InlineData("date<=2026-01-30", false)]
+    [InlineData("date:2026-01-31T00:00", false)]
+    [InlineData("date<=2026-01-31T00:00:00Z", false)]
+    [InlineData("date>2026-01-31T00:00:00Z", true)]
+    public void DateTime_WithoutTime_IsTheWholeDay(string query, bool expectedResult)
+    {
+        var queryBuilder = new ExpressionQueryBuilder<Sample>();
+        queryBuilder.AddHandler<DateTime>("date", item => item.DateTimeValue);
+        var items = new[]
+        {
+            new Sample { DateTimeValue = new DateTime(2026, 1, 31, 10, 0, 0, DateTimeKind.Utc) },
+        }.AsQueryable();
+
+        Assert.Equal(expectedResult, queryBuilder.Build(query).Apply(items).Any());
+    }
+
     [Fact]
     public void DateTime_SupportsComparisonOperators()
     {

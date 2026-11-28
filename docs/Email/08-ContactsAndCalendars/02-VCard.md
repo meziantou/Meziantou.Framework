@@ -32,8 +32,9 @@ Assert.Contains("EMAIL;PREF=1;TYPE=internet,work:mary@example.com", text, String
   A file is read in UTF-8, or in Latin-1 when its bytes are not UTF-8.
 - [ToString](cref:Meziantou.Framework.Email.Contacts.VCard.ToString) writes a card in any version: the types as `TEL;WORK;VOICE`
   in 2.1, `TYPE=work,voice` in 3.0 and 4.0 (with `PREF=1` in 4.0), the values that are not ASCII in quoted-printable in
-  2.1, and the lines folded at 75 bytes. A card without a formatted name gets one from its other names, since vCard 3.0
-  and 4.0 require it.
+  2.1, and the lines folded at 75 bytes. A line break (CRLF, LF or a lone CR) cannot end a line early: it is written as
+  `\n` in a value (or in quoted-printable in 2.1), and as `^n` in a parameter ([RFC 6868]). A card without a formatted
+  name gets one from its other names, since vCard 3.0 and 4.0 require it.
 
 ## Contacts of Outlook
 

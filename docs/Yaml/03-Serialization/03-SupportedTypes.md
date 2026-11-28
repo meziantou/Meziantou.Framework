@@ -18,7 +18,7 @@ description: The scalar types, collections and dictionaries the serializer handl
 | Pairs | `KeyValuePair<,>`, written as a mapping with a `Key` and a `Value` entry |
 | Complex numbers | `Complex`; on .NET 11, `Complex<T>` whose parts are a `float`, `double`, `Half`, `BFloat16`, `Decimal32`, `Decimal64` or `Decimal128`; written as a mapping with a `Real` and an `Imaginary` entry |
 | Untyped | `object`, `object[]`, `List<object>`, `Dictionary<string, object>` |
-| Documents | any node of the [document object model](../05-DocumentObjectModel.md) ([YamlMapping](cref:Meziantou.Framework.Yaml.Model.YamlMapping), [YamlSequence](cref:Meziantou.Framework.Yaml.Model.YamlSequence), [YamlValue](cref:Meziantou.Framework.Yaml.Model.YamlValue), …) |
+| Documents | any node of the [document object model](../05-DocumentObjectModel.md) ([YamlMapping](cref:Meziantou.Framework.Yaml.Nodes.YamlMapping), [YamlSequence](cref:Meziantou.Framework.Yaml.Nodes.YamlSequence), [YamlValue](cref:Meziantou.Framework.Yaml.Nodes.YamlValue), …) |
 | Unions | [C# unions](09-Unions.md) |
 
 Every value type of the table also works as `Nullable<T>`. Any other type is written as a mapping of its members, as

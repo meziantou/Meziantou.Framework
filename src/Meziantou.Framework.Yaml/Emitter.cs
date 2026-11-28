@@ -293,7 +293,7 @@ public partial class Emitter : IEmitter
             // dropping it would change how the scalar resolves.
             if (!string.IsNullOrEmpty(nodeEvent.Tag) && (_isCanonical || nodeEvent.IsCanonical || nodeEvent.Tag == "!"))
             {
-                AnalyzeTag(nodeEvent.Tag);
+                AnalyzeTag(nodeEvent.Tag, nodeEvent.IsTagResolved);
             }
             return;
         }
@@ -529,7 +529,7 @@ public partial class Emitter : IEmitter
     }
 
     /// <summary>Check if a tag is valid.</summary>
-    private void AnalyzeTag(string tag)
+    private void AnalyzeTag(string tag, bool isResolved)
     {
         // The non-specific tag is always written as "!", even when a %TAG directive redefines the primary handle. Its
         // verbatim form "!<!>" is invalid.
@@ -545,8 +545,9 @@ public partial class Emitter : IEmitter
         // tag is not expanded: the parser resolves "!m!b" with "%TAG !m! !m!!a-" to "!m!!a-b", which still starts with
         // the handle, and expanding it again would not load back. Nor is a tag that a local prefix resolves to: with
         // "%TAG ! !!a-", the parser resolves "!b" to "!!a-b", which is not the shorthand "!!a-b". A shorthand needs a
-        // non-empty suffix: "!!" alone is invalid.
-        if (tag is ['!', ..] && !IsResolvedFromLocalPrefix(tag))
+        // non-empty suffix: "!!" alone is invalid. A tag that a parser resolved is not a shorthand: the verbatim tag
+        // "!<!!a>" is the local tag "!!a", which expanding would turn into "tag:yaml.org,2002:a".
+        if (!isResolved && tag is ['!', ..] && !IsResolvedFromLocalPrefix(tag))
         {
             foreach (var directive in _tagDirectives)
             {
@@ -570,9 +571,38 @@ public partial class Emitter : IEmitter
             {
                 _tagData.Handle = tagDirective.Handle;
                 _tagData.Suffix = tag.Substring(tagDirective.Prefix.Length);
-                break;
+                return;
             }
         }
+
+        // The verbatim form of a tag that is neither a local tag nor a URI cannot be read back
+        if (!HasVerbatimForm(tag))
+            throw new YamlException($"The tag '{tag}' cannot be written: it is neither a local tag nor a URI, and no %TAG directive of the document has a prefix that starts it.");
+    }
+
+    /// <summary>
+    /// Gets a value indicating whether a tag can be written in the verbatim form <c>!&lt;...&gt;</c>: a local tag, or a
+    /// URI, which starts with a scheme: a letter, then letters, digits, '+', '-' or '.', then ':'.
+    /// </summary>
+    internal static bool HasVerbatimForm(string tag)
+    {
+        if (tag is ['!', ..])
+            return true;
+
+        if (!char.IsAsciiLetter(tag[0]))
+            return false;
+
+        for (var i = 1; i < tag.Length; i++)
+        {
+            var c = tag[i];
+            if (c == ':')
+                return true;
+
+            if (!char.IsAsciiLetterOrDigit(c) && c is not ('+' or '-' or '.'))
+                return false;
+        }
+
+        return false;
     }
 
     /// <summary>Gets a value indicating whether a %TAG directive whose prefix is a local tag, other than the default "!", produces the tag.</summary>
@@ -694,7 +724,7 @@ public partial class Emitter : IEmitter
 
 
             // The default directives are always in effect, so only the other ones need to be written.
-            var explicitTags = documentStart.Tags?.Where(tag => !Constants.DefaultTagDirectives.Contains(tag)).ToList();
+            var explicitTags = !documentStart.WritesTagDirectives ? null : documentStart.Tags?.Where(tag => !Constants.DefaultTagDirectives.Contains(tag)).ToList();
             var hasDirectives = documentStart.Version != null || explicitTags is { Count: > 0 };
 
             // A directive is only recognized after a document is explicitly ended.

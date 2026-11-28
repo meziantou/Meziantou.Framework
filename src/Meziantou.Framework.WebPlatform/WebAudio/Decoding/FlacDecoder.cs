@@ -25,7 +25,7 @@ internal static class FlacDecoder
         return offset + 4 <= data.Length && data.Slice(offset, 4).SequenceEqual("fLaC"u8);
     }
 
-    /// <summary>Decodes a FLAC stream starting with its <c>fLaC</c> marker; <paramref name="checkLength"/> is called with the sample rate and the number of frames of the STREAMINFO block, when known, before the samples are decoded.</summary>
+    /// <summary>Decodes a FLAC stream starting with its <c>fLaC</c> marker; <paramref name="checkLength"/> is called with the sample rate and the number of frames of the STREAMINFO block, when known, before the samples are decoded, then with those of the decoded audio.</summary>
     public static DecodedAudio Decode(ReadOnlySpan<byte> data, Action<double, long> checkLength)
     {
         var offset = 4;
@@ -100,12 +100,9 @@ internal static class FlacDecoder
         if (output.Frames == 0)
             throw new InvalidDataException("The FLAC stream has no audio frame");
 
-        // The headers of the frames can give another sample rate than the STREAMINFO block, which the length was checked with:
-        // a lower one gives more frames once resampled (or is not supported)
-        if (streamInfo.TotalSamples == 0 || sampleRate != streamInfo.SampleRate)
-        {
-            checkLength(sampleRate, output.Frames);
-        }
+        // The audio is resampled from the sample rate of the last frame, which can differ from the one of the STREAMINFO block
+        // checked before the decoding (e.g. 1 Hz, whose resampled length is out of bounds)
+        checkLength(sampleRate, output.Frames);
 
         return new DecodedAudio(output.ToArrays(), sampleRate);
     }

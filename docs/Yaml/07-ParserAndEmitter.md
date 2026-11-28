@@ -9,6 +9,10 @@ library: it builds no tree, so it suits large documents and code that only needs
 [EventReader](cref:Meziantou.Framework.Yaml.EventReader) and [Emitter](cref:Meziantou.Framework.Yaml.Emitter) are in the [Meziantou.Framework.Yaml](cref:Meziantou.Framework.Yaml) namespace, and the events in
 [Meziantou.Framework.Yaml.Events](cref:Meziantou.Framework.Yaml.Events).
 
+The parser creates an object for each event. To read UTF-8 bytes without allocating, or to get the exact position of
+every token, use the [UTF-8 reader](10-Utf8Reader.md) the parser is built on. To write UTF-8 YAML without creating
+events, use the [UTF-8 writer](12-Utf8Writer.md).
+
 ## Read events
 
 [Parser.CreateParser](cref:Meziantou.Framework.Yaml.Parser.CreateParser) reads a `TextReader`. Wrap the parser in an [EventReader](cref:Meziantou.Framework.Yaml.EventReader) to consume the events with
@@ -55,8 +59,8 @@ Assert.Equal(["name", "items", "name"], keys);
 
 [CurrentDepth](cref:Meziantou.Framework.Yaml.EventReader.CurrentDepth) gives the nesting depth of the current event, and `Skip(untilDepth)` skips events until that depth.
 
-To load a part of the stream as a [node](05-DocumentObjectModel.md), call [YamlDocument.Load](cref:Meziantou.Framework.Yaml.Model.YamlDocument.Load), [YamlMapping.Load](cref:Meziantou.Framework.Yaml.Model.YamlMapping.Load),
-[YamlSequence.Load](cref:Meziantou.Framework.Yaml.Model.YamlSequence.Load) or [YamlValue.Load](cref:Meziantou.Framework.Yaml.Model.YamlValue.Load) with the [EventReader](cref:Meziantou.Framework.Yaml.EventReader) positioned on it.
+To load a part of the stream as a [node](05-DocumentObjectModel.md), call [YamlStreamDocument.Load](cref:Meziantou.Framework.Yaml.Nodes.YamlStreamDocument.Load), [YamlMapping.Load](cref:Meziantou.Framework.Yaml.Nodes.YamlMapping.Load),
+[YamlSequence.Load](cref:Meziantou.Framework.Yaml.Nodes.YamlSequence.Load) or [YamlValue.Load](cref:Meziantou.Framework.Yaml.Nodes.YamlValue.Load) with the [EventReader](cref:Meziantou.Framework.Yaml.EventReader) positioned on it.
 
 ## Write events
 
@@ -94,5 +98,9 @@ Assert.Equal("name: api\nports: [80, 443]\n", writer.ToString());
   value, it uses another one: a multi-line plain scalar is written quoted, and a literal or folded scalar that a block
   scalar cannot represent is written double-quoted. An empty plain scalar, which is a null, stays plain: as a mapping
   key, it is written as an explicit key (`? `), because `''` would read back as an empty string.
-- A [node](05-DocumentObjectModel.md) writes its events to an emitter with [WriteTo](cref:Meziantou.Framework.Yaml.Model.YamlNode.WriteTo), and lists them with
-  [EnumerateEvents](cref:Meziantou.Framework.Yaml.Model.YamlNode.EnumerateEvents).
+- A tag is written with the handle of a `%TAG` directive of the document whose prefix starts it, such as `!!str` for
+  `tag:yaml.org,2002:str`, else in the verbatim form `!<...>`. Only a local tag (`!point`) and a URI
+  (`tag:example.com,2000:point`) have a verbatim form: the emitter throws a
+  [YamlException](cref:Meziantou.Framework.Yaml.YamlException) for another tag, such as `y-light`, that no directive starts.
+- A [node](05-DocumentObjectModel.md) writes its events to an emitter with [WriteTo](cref:Meziantou.Framework.Yaml.Nodes.YamlNode.WriteTo), and lists them with
+  [EnumerateEvents](cref:Meziantou.Framework.Yaml.Nodes.YamlNode.EnumerateEvents).

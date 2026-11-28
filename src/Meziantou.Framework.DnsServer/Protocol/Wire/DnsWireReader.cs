@@ -9,6 +9,9 @@ internal ref struct DnsWireReader
     /// <summary>The maximum encoded length of a domain name, including the root label (RFC 1035 2.3.4).</summary>
     public const int MaxDomainNameLength = 255;
 
+    /// <summary>The maximum number of compression pointers followed while reading a name: the number of labels a name of <see cref="MaxDomainNameLength"/> bytes can hold.</summary>
+    public const int MaxCompressionPointers = MaxDomainNameLength / 2;
+
     private readonly ReadOnlySpan<byte> _message;
     private int _position;
     private int _limit;
@@ -116,6 +119,11 @@ internal ref struct DnsWireReader
         // keeps a maliciously compressed name from expanding without limit.
         var encodedLength = 1;
 
+        // Pointers go backwards and add nothing to the encoded length, so a long chain of them is only bounded by
+        // the size of the message. Without a bound on the hops, many names pointing at the end of such a chain
+        // would cost millions of hops to decode.
+        var pointerCount = 0;
+
         while (true)
         {
             // Before the first pointer the name has to stay inside the current record; a pointer may
@@ -136,6 +144,9 @@ internal ref struct DnsWireReader
             // Check for compression pointer (top 2 bits set)
             if ((length & 0xC0) is 0xC0)
             {
+                if (++pointerCount > MaxCompressionPointers)
+                    throw new DnsProtocolException($"Domain name has more than {MaxCompressionPointers} compression pointers.");
+
                 if (position + 2 > bound)
                     throw new DnsProtocolException("Unexpected end of DNS message while reading compression pointer.");
 

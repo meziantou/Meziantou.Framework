@@ -67,9 +67,56 @@ Assert.Equal(6765, fib.Fib(20));
 ```
 <!-- endref -->
 
+## Components
+
+The engine runs the components of the component model: the canonical ABI converts their strings, lists, records,
+variants, resources and streams to and from .NET values.
+
+<!-- ref:../../tests/Meziantou.Framework.WasmEngine.Tests/WasmComponentTests.cs;region=Component_GettingStarted;format=md-fenced-code-block;dedent=true -->
+```csharp
+using var runtime = new WasmRuntime();
+
+// A component that exports greet(name: string) -> string: the canonical ABI copies the strings between the
+// memory of the component and .NET, the component allocates its memory with its realloc function
+var component = runtime.CompileComponent(WasmRuntime.WatToWasm("""
+    (component
+      (core module $M
+        (memory (export "memory") 1)
+        (global $heap (mut i32) (i32.const 1024))
+        (func $realloc (export "realloc") (param i32 i32 i32 i32) (result i32)
+          (local $pointer i32)
+          (local.set $pointer (global.get $heap))
+          (global.set $heap (i32.add (global.get $heap) (local.get 3)))
+          (local.get $pointer))
+        (data (i32.const 16) "Hello, ")
+        (func (export "greet") (param $name i32) (param $length i32) (result i32)
+          (local $result i32)
+          (local.set $result (call $realloc (i32.const 0) (i32.const 0) (i32.const 1) (i32.add (local.get $length) (i32.const 7))))
+          (memory.copy (local.get $result) (i32.const 16) (i32.const 7))
+          (memory.copy (i32.add (local.get $result) (i32.const 7)) (local.get $name) (local.get $length))
+          ;; The result is the address and the length of the string, at the address 0
+          (i32.store (i32.const 0) (local.get $result))
+          (i32.store (i32.const 4) (i32.add (local.get $length) (i32.const 7)))
+          (i32.const 0)))
+      (core instance $m (instantiate $M))
+      (func (export "greet") (param "name" string) (result string)
+        (canon lift (core func $m "greet") (memory (core memory $m "memory")) (realloc (core func $m "realloc")))))
+    """));
+
+using var store = runtime.CreateStore();
+var instance = store.InstantiateComponent(component);
+var greet = instance.GetFunction("greet")!;
+var result = greet.Call(ComponentValue.FromString("World"));
+
+Assert.Equal("Hello, World", result?.AsString());
+```
+<!-- endref -->
+
 ## Documentation
 
 See [the documentation](../../docs/WasmEngine/01-Introduction.md): memories, tables and globals, exceptions and traps,
-limits and interruption, shared memories, telemetry, conformance, and the typed exports and imports. To run the WebAssembly
+limits and interruption, shared memories, telemetry, conformance, the typed exports and imports, and the component
+model. To run the programs compiled for WASI (`wasm32-wasip1`, and the components of WASI 0.2 and 0.3), use
+[Meziantou.Framework.WasmEngine.Wasi](../Meziantou.Framework.WasmEngine.Wasi/readme.md). To run the WebAssembly
 modules of the scripts of Meziantou.Framework.WebPlatform, use
 [Meziantou.Framework.WebPlatform.Wasm](../Meziantou.Framework.WebPlatform.Wasm/readme.md).

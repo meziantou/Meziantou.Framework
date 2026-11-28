@@ -119,7 +119,7 @@ public sealed class YamlLifecycleCallbackTests
     {
         var exception = Assert.Throws<YamlException>(() => Deserialize<LifecycleThrowingDeserializedModel>("Value: 1\n", useSourceGeneration));
 
-        Assert.Equal("(Lin: 1, Col: 0, Chr: 9) - (Lin: 1, Col: 0, Chr: 9): An error occurred while invoking 'IYamlOnDeserialized.OnDeserialized' on 'Meziantou.Framework.Yaml.Tests.Serialization.LifecycleThrowingDeserializedModel'.", exception.Message);
+        Assert.Equal("(Lin: 0, Col: 8, Chr: 8) - (Lin: 0, Col: 8, Chr: 8): An error occurred while invoking 'IYamlOnDeserialized.OnDeserialized' on 'Meziantou.Framework.Yaml.Tests.Serialization.LifecycleThrowingDeserializedModel'.", exception.Message);
         Assert.Equal("boom", exception.InnerException!.Message);
     }
 

@@ -1876,6 +1876,8 @@ public sealed class ComputedStyleTests : IDisposable
     [InlineData("link-parameters: param(--a: ), param(--b:)", "link-parameters", "param(--a: ), param(--b: )", "param(--a: ), param(--b: )")]
     [InlineData("link-parameters: param(COLOR), param(--b), param(--c <length>)", "link-parameters", "param(color), param(--b), param(--c <length>)", "param(color), param(--b), param(--c <length>)")]
     [InlineData("--x: blue; link-parameters: param(--a: var(--x))", "link-parameters", "param(--a: var(--x))", "param(--a: blue)")]
+    [InlineData("link-parameters: param(--a: a\\ )", "link-parameters", "param(--a: a\\ )", "param(--a: a\\ )")]
+    [InlineData("link-parameters: param(--a: var(--m, a\\ ))", "link-parameters", "param(--a: var(--m, a\\ ))", "param(--a: a\\ )")]
     [InlineData("link-parameters: param(--a <notatype>: red)", "link-parameters", "", "none")]
     [InlineData("link-parameters: param(color <color>: red)", "link-parameters", "", "none")]
     [InlineData("link-parameters: param(--a, red)", "link-parameters", "", "none")]

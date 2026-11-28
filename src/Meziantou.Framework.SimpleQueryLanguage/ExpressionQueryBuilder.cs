@@ -386,6 +386,16 @@ public sealed class ExpressionQueryBuilder<T>
         if (!parser(value, out var parsedValue))
             return CreateFalseExpression();
 
+        // A date without a time is the whole day: <=2026-01-31 is <2026-02-01 and >2026-01-31 is >=2026-02-01
+        if (comparison is ExpressionType.LessThanOrEqual or ExpressionType.GreaterThan && RangeSyntax.TryGetEndOfDay(value, parsedValue, out var endOfDay, out var endOfDayIncluded))
+        {
+            parsedValue = endOfDay;
+            if (!endOfDayIncluded)
+            {
+                comparison = comparison is ExpressionType.LessThanOrEqual ? ExpressionType.LessThan : ExpressionType.GreaterThanOrEqual;
+            }
+        }
+
         return CreateComparisonExpressionCore(parsedValue, selector, comparison);
     }
 

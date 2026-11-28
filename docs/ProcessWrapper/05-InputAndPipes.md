@@ -69,6 +69,11 @@ pipe as an output target of the first process, and as the input source of the se
 first, or at the same time: the pipe buffers the data written in advance, up to `maxBufferSize` bytes (64 KB by
 default), then waits for the reader to consume it.
 
+When the reading process exits, or stops reading its standard input, the pipe is broken: the standard output of the
+writing process is closed, as in a shell pipeline. The next write of the writing process fails with a broken pipe
+error (`EPIPE`, or `SIGPIPE` when the process does not ignore it), so a command that writes forever, such as `yes`,
+stops instead of running indefinitely. Most commands then exit with a non-zero exit code.
+
 ## The pipe operator
 
 For a chain of commands, the `|` operator does the wiring:
@@ -94,3 +99,18 @@ foreach (var line in result.Output.StandardOutput)
   With [ExecuteBufferedAsync](cref:Meziantou.Framework.ProcessWrapper.ExecuteBufferedAsync), the output is the output of the last command.
 - The validation of every command applies: the pipeline fails when any command fails. See
   [Exit codes and errors](06-ExitCodesAndErrors.md).
+- A command whose output is no longer read, because a later command exited first, usually exits with a non-zero exit
+  code, so the pipeline fails. Disable the validation of the commands that can be cut short, as in
+  `yes | head -n 1`:
+
+<!-- ref:../../tests/Meziantou.Framework.ProcessWrapper.Tests/ProcessWrapperTests.cs;region=ProcessWrapper_PipeOperatorBrokenPipe;format=md-fenced-code-block;dedent=true -->
+```csharp
+// yes never ends by itself: it stops when head exits and closes the pipe.
+// It then exits with a non-zero exit code, so its validation is disabled.
+var result = await (ProcessWrapper.Create("yes").WithValidation(ProcessValidationMode.None)
+    | ProcessWrapper.Create("head").WithArguments("-n", "1"))
+    .ExecuteBufferedAsync();
+
+Assert.Equal("y", result.Output.StandardOutput.Single().Text);
+```
+<!-- endref -->

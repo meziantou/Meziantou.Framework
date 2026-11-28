@@ -367,9 +367,13 @@ internal sealed class CodeFunction : ManagedFunction
     public CompiledCode Code { get; }
 }
 
-internal sealed class HostFunction(ManagedStore store, DefinedType type, WasmHostCallback callback, object? state) : ManagedFunction(store, type, state)
+internal sealed class HostFunction(ManagedStore store, DefinedType type, WasmHostCallback? callback, WasmHostCallerCallback? callerCallback, object? state) : ManagedFunction(store, type, state)
 {
-    public WasmHostCallback Callback { get; } = callback;
+    /// <summary>The steps of the function, or null when they receive their caller (<see cref="CallerCallback"/>).</summary>
+    public WasmHostCallback? Callback { get; } = callback;
+
+    /// <summary>The steps of the function that receive their caller, or null (<see cref="Callback"/>).</summary>
+    public WasmHostCallerCallback? CallerCallback { get; } = callerCallback;
 
     /// <summary>The kinds of the parameters, or null when the type has a vector or a reference (see <see cref="Machine"/>, which converts the numbers without their types).</summary>
     public WasmValueKind[]? ParameterKinds { get; } = GetNumericKinds(type.Parameters);

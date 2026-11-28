@@ -1,6 +1,6 @@
 using Meziantou.Framework.DependencyScanning.Locations;
 using Meziantou.Framework.Yaml;
-using Meziantou.Framework.Yaml.Model;
+using Meziantou.Framework.Yaml.Nodes;
 
 namespace Meziantou.Framework.DependencyScanning.Internals;
 
@@ -25,7 +25,7 @@ internal static class YamlParserUtilities
         }
     }
 
-    public static YamlElement? GetProperty(YamlElement? node, string propertyName, StringComparison stringComparison)
+    public static YamlNode? GetProperty(YamlNode? node, string propertyName, StringComparison stringComparison)
     {
         if (node is YamlMapping mapping)
         {
@@ -39,7 +39,7 @@ internal static class YamlParserUtilities
         return null;
     }
 
-    public static string? GetScalarValue(YamlElement? node)
+    public static string? GetScalarValue(YamlNode? node)
     {
         if (node is YamlValue scalar)
             return scalar.Value;
@@ -68,7 +68,7 @@ internal static class YamlParserUtilities
         /// Aliases (<c>*name</c>) are expanded as copies of the anchored node that keep its source marks.
         /// Returns <see langword="false"/> when a scalar at the same source position was already reported, so the anchored node is reported once.
         /// </summary>
-        public bool TryMarkAsReported(YamlElement? node)
+        public bool TryMarkAsReported(YamlNode? node)
         {
             if (node is not YamlValue scalar)
                 return true;
@@ -76,7 +76,7 @@ internal static class YamlParserUtilities
             return _reportedScalars.Add(scalar.Scalar.Start.Index);
         }
 
-        public void ReportDependencyWithSeparator(DependencyScanner scanner, YamlElement? node, DependencyType dependencyType, char versionSeparator)
+        public void ReportDependencyWithSeparator(DependencyScanner scanner, YamlNode? node, DependencyType dependencyType, char versionSeparator)
         {
             // An empty value, such as "uses:" without a value, references nothing
             var value = GetScalarValue(node);
@@ -101,7 +101,7 @@ internal static class YamlParserUtilities
         }
 
         /// <summary>Reports a Docker image. When <paramref name="requireQualifiedReference"/> is <see langword="true"/>, a value that could be another kind of name (an alias or an expression) is skipped.</summary>
-        public void ReportDockerImage(DependencyScanner scanner, YamlElement? node, int prefixLength = 0, bool requireQualifiedReference = false)
+        public void ReportDockerImage(DependencyScanner scanner, YamlNode? node, int prefixLength = 0, bool requireQualifiedReference = false)
         {
             var value = GetScalarValue(node);
             if (value is null || value.Length <= prefixLength)
@@ -121,7 +121,7 @@ internal static class YamlParserUtilities
         /// that is non-empty plain scalars and quoted scalars without escape sequences that fit on one line. Block scalars, escaped or multi-line scalars
         /// get a <see cref="NonUpdatableLocation"/>, as offsets in the value do not map to offsets in the file.
         /// </summary>
-        public Location? GetLocation(YamlElement? node, int start = 0, int? length = null)
+        public Location? GetLocation(YamlNode? node, int start = 0, int? length = null)
         {
             if (node is not YamlValue scalar)
                 return null;

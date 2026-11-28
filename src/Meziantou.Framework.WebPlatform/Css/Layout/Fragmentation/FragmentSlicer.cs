@@ -464,14 +464,11 @@ internal sealed class FragmentSlicer
                 if (item.Box is not null && !item.IsMonolithic)
                 {
                     // (a box displaced from the flow of its container ends where the breaker placed its block-end edge)
-                    (int Index, double Offset) containerEnd = item.PushShift > 0 && item.IsBoxDone ? (item.EndIndex, item.EndOffset) : map.MapEnd(childBottom, childTop, growsWithTrack: item.Stretches);
-
-                    // (an item without block size of a container without block size at a break ends with the container, before the
-                    // break when the container is before it in the content, see FragmentationFlow.GetEmptyOrdinal)
-                    if (childBottom - childTop <= 0.01 && item.PushShift <= 0 && _flow.GetEmptyOrdinal(box) is { } containerOrdinal)
-                    {
-                        containerEnd = map.MapEmpty(childBottom, containerOrdinal);
-                    }
+                    // (an item without block size at a break that follows it in the content ends before the break, see
+                    // ColumnBreaker.IsBeforeBreakAt)
+                    (int Index, double Offset) containerEnd = item.PushShift > 0 && item.IsBoxDone ? (item.EndIndex, item.EndOffset)
+                        : childBottom - childTop <= 0.01 && _flow.GetEmptyOrdinal(child) is { } emptyOrdinal ? map.MapEmpty(childTop, emptyOrdinal)
+                        : map.MapEnd(childBottom, childTop, growsWithTrack: item.Stretches);
                     childEnd = containerEnd;
                     if (item.CanGrow)
                     {

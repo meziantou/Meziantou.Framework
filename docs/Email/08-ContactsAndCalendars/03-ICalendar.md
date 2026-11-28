@@ -38,9 +38,11 @@ properties, in their order, and its components. [VEvent](cref:Meziantou.Framewor
 their properties through it (summary, description, location, start, end, duration, attendees, categories, status,
 progress...), so that a calendar written back keeps the properties and the components they do not know, such as the
 alarms (`VALARM`). A calendar read and written without changes keeps its properties as they were; the writer folds the
-lines longer than 75 bytes. The reader decodes the values in quoted-printable (vCard 2.1 and vCalendar 1.0) as the vCard
-reader does: a `=` at the end of a line continues the value on the next line only in these values, and stays in the
-other values.
+lines longer than 75 bytes. A line break (CRLF, LF or a lone CR) cannot end a line early: the writer writes it as `\n`
+in all the values, the ones set with [SetValue](cref:Meziantou.Framework.Email.Calendar.CalendarComponent.SetValue)
+included, and as `^n` in the parameters ([RFC 6868]). The reader decodes the values in quoted-printable (vCard 2.1 and
+vCalendar 1.0) as the vCard reader does: a `=` at the end of a line continues the value on the next line only in these
+values, and stays in the other values.
 
 ## Dates and time zones
 
@@ -158,5 +160,6 @@ with its method (`text/calendar; method=REQUEST`).
 [RFC 5545]: https://www.rfc-editor.org/rfc/rfc5545
 [RFC 5546]: https://www.rfc-editor.org/rfc/rfc5546
 [RFC 6047]: https://www.rfc-editor.org/rfc/rfc6047
+[RFC 6868]: https://www.rfc-editor.org/rfc/rfc6868
 [MS-OXOCAL]: https://learn.microsoft.com/openspecs/exchange_server_protocols/ms-oxocal
 [MS-OXCICAL]: https://learn.microsoft.com/openspecs/exchange_server_protocols/ms-oxcical

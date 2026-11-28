@@ -1,4 +1,5 @@
 using System.Globalization;
+using System.Runtime.InteropServices;
 
 namespace Meziantou.Framework.Markdown.Parsing;
 
@@ -139,12 +140,29 @@ internal static class PipeTableScanner
 
     /// <summary>
     /// Makes generic attributes of a delimiter row whitespace, with the text before them in their cell: Markdig reads the text
-    /// before a pipe, which the attributes start, as an escaped character does.
+    /// before a pipe, which the attributes start, as an escaped character does. The attributes are given in the order of the
+    /// row, and the characters before the previous ones are not searched again, so blanking the attributes of a row is linear.
     /// </summary>
-    public static void BlankAttributes(Span<char> text, int lineStart, int start, int end)
+    [StructLayout(LayoutKind.Auto)]
+    public struct AttributesBlanker
     {
-        var cellStart = text[lineStart..start].LastIndexOf('|') + 1 + lineStart;
-        text[cellStart..end].Fill(' ');
+        // The characters before it were searched for a pipe or blanked, and the cell of the previous attributes starts at _cellStart
+        private int _searchedEnd;
+        private int _cellStart;
+
+        public void Blank(Span<char> text, int start, int end)
+        {
+            // The cell starts after the last pipe before the attributes. Without a pipe since the previous attributes, it is the
+            // cell of the previous attributes, which is blank up to them.
+            var pipe = text[_searchedEnd..start].LastIndexOf('|');
+            if (pipe >= 0)
+            {
+                _cellStart = _searchedEnd + pipe + 1;
+            }
+
+            text[Math.Max(_cellStart, _searchedEnd)..end].Fill(' ');
+            _searchedEnd = end;
+        }
     }
 
     /// <summary>Whether the characters of the line are the ones of a delimiter row: pipes, dashes, colons, whitespace, and the dashes and colons that a backslash escapes.</summary>

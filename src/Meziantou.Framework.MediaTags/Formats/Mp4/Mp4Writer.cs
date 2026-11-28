@@ -6,6 +6,9 @@ namespace Meziantou.Framework.MediaTags.Formats.Mp4;
 internal sealed class Mp4Writer : IMediaTagWriter
 {
     private const string ItunesMean = "com.apple.iTunes";
+    private const string MovieFragment = "moof";
+    private const string MovieFragmentRandomAccess = "mfra";
+    private const string SegmentIndex = "sidx";
 
     public MediaTagResult WriteTags(Stream inputStream, Stream outputStream, MediaTagInfo tags, MediaTagWriteOptions options)
     {
@@ -44,11 +47,31 @@ internal sealed class Mp4Writer : IMediaTagWriter
             if (delta != 0 && !TryAdjustChunkOffsets(newMoov, moovAtom.Position + moovAtom.Size, delta, out var offsetError))
                 return MediaTagResult.Failure(MediaTagError.CorruptFile, offsetError);
 
+            var movedFrom = moovAtom.Position + moovAtom.Size;
+            if (delta != 0 && !CanShiftFragments(atoms, moovAtom, out var fragmentError))
+                return MediaTagResult.Failure(MediaTagError.UnsupportedFormat, fragmentError);
+
             foreach (var atom in atoms)
             {
                 if (ReferenceEquals(atom, moovAtom))
                 {
                     outputStream.Write(newMoov);
+                }
+                else if (delta != 0 && atom.Type is MovieFragment or MovieFragmentRandomAccess)
+                {
+                    // A fragmented file stores absolute file offsets outside moov too: the base data offset of a
+                    // track fragment, and the position of each fragment in the random access index.
+                    inputStream.Position = atom.Position;
+                    if (!StreamHelpers.TryReadExact(inputStream, atom.Size, Mp4Atom.MaxMoovSize, out var atomData))
+                        return MediaTagResult.Failure(MediaTagError.UnsupportedFormat, "A movie fragment atom is too large to rewrite.");
+
+                    var adjusted = atom.Type == MovieFragment
+                        ? TryAdjustMovieFragment(atomData, (int)atom.HeaderSize, movedFrom, delta, out var adjustError)
+                        : TryAdjustFragmentRandomAccess(atomData, (int)atom.HeaderSize, movedFrom, delta, out adjustError);
+                    if (!adjusted)
+                        return MediaTagResult.Failure(MediaTagError.CorruptFile, adjustError);
+
+                    outputStream.Write(atomData);
                 }
                 else if (!StreamHelpers.CopyExactlyFrom(inputStream, outputStream, atom.Position, atom.Size))
                 {
@@ -61,6 +84,221 @@ internal sealed class Mp4Writer : IMediaTagWriter
         catch (Exception ex) when (MediaTagErrors.TryMap(ex, out var error))
         {
             return MediaTagResult.Failure(error, ex.Message);
+        }
+    }
+
+    /// <summary>
+    /// Gets whether the offsets of a fragmented file still describe it once moov is resized.
+    /// </summary>
+    /// <remarks>
+    /// The references of a segment index are relative to the end of the index. An index after moov moves with the
+    /// fragments it references, but one before moov would span the resized moov.
+    /// </remarks>
+    private static bool CanShiftFragments(List<Mp4Atom> atoms, Mp4Atom moovAtom, out string? error)
+    {
+        foreach (var atom in atoms)
+        {
+            if (ReferenceEquals(atom, moovAtom))
+                break;
+
+            if (atom.Type == SegmentIndex)
+            {
+                error = "A segment index precedes the moov atom, so resizing moov would invalidate its references.";
+                return false;
+            }
+        }
+
+        error = null;
+        return true;
+    }
+
+    /// <summary>
+    /// Shifts the base data offsets of the track fragments of a moof atom that point at data which moved.
+    /// </summary>
+    /// <remarks>
+    /// The data offsets of the track runs are relative to the base data offset, or to the moof atom when no base data
+    /// offset is present, so they stay valid.
+    /// </remarks>
+    private static bool TryAdjustMovieFragment(byte[] moofData, int headerSize, long movedFrom, long delta, out string? error)
+    {
+        foreach (var (trafStart, trafHeaderSize, trafSize, trafType) in EnumerateBoxes(moofData, headerSize, moofData.Length))
+        {
+            if (trafSize < 0)
+            {
+                error = "A box of a movie fragment is truncated.";
+                return false;
+            }
+
+            if (trafType != "traf")
+                continue;
+
+            foreach (var (start, boxHeaderSize, size, type) in EnumerateBoxes(moofData, trafStart + trafHeaderSize, trafStart + trafSize))
+            {
+                if (size < 0)
+                {
+                    error = "A box of a track fragment is truncated.";
+                    return false;
+                }
+
+                if (type != "tfhd")
+                    continue;
+
+                // version/flags(4) + track_ID(4) + base_data_offset(8) when flags & 0x000001
+                var payload = moofData.AsSpan(start + boxHeaderSize, size - boxHeaderSize);
+                if (payload.Length < 8)
+                {
+                    error = "A track fragment header is truncated.";
+                    return false;
+                }
+
+                if ((BinaryPrimitives.ReadUInt32BigEndian(payload) & 0x000001) == 0)
+                    continue;
+
+                if (payload.Length < 16)
+                {
+                    error = "A track fragment header is truncated.";
+                    return false;
+                }
+
+                if (!TryAdjustOffset(payload.Slice(8, 8), movedFrom, delta, out error))
+                    return false;
+            }
+        }
+
+        error = null;
+        return true;
+    }
+
+    /// <summary>
+    /// Shifts the moof offsets of the track fragment random access boxes of a mfra atom that point at data which moved.
+    /// </summary>
+    private static bool TryAdjustFragmentRandomAccess(byte[] mfraData, int headerSize, long movedFrom, long delta, out string? error)
+    {
+        foreach (var (start, boxHeaderSize, size, type) in EnumerateBoxes(mfraData, headerSize, mfraData.Length))
+        {
+            if (size < 0)
+            {
+                error = "A box of a movie fragment random access atom is truncated.";
+                return false;
+            }
+
+            if (type != "tfra")
+                continue;
+
+            // version/flags(4) + track_ID(4) + reserved and field lengths(4) + number_of_entry(4)
+            var payload = mfraData.AsSpan(start + boxHeaderSize, size - boxHeaderSize);
+            if (payload.Length < 16)
+            {
+                error = "A track fragment random access box is truncated.";
+                return false;
+            }
+
+            var lengths = BinaryPrimitives.ReadUInt32BigEndian(payload[8..]);
+            var entryCount = BinaryPrimitives.ReadUInt32BigEndian(payload[12..]);
+            var offsetSize = payload[0] == 1 ? 8 : 4;
+            var entrySize = (2 * offsetSize) + (int)((lengths >> 4) & 3) + (int)((lengths >> 2) & 3) + (int)(lengths & 3) + 3;
+            var entries = payload[16..];
+            if ((long)entryCount * entrySize > entries.Length)
+            {
+                error = "A track fragment random access box declares more entries than it contains.";
+                return false;
+            }
+
+            for (var i = 0; i < entryCount; i++)
+            {
+                var moofOffset = entries.Slice((i * entrySize) + offsetSize, offsetSize);
+                if (!TryAdjustOffset(moofOffset, movedFrom, delta, out error))
+                    return false;
+            }
+        }
+
+        error = null;
+        return true;
+    }
+
+    /// <summary>Shifts a 32-bit or 64-bit big-endian absolute file offset when it points at data which moved.</summary>
+    private static bool TryAdjustOffset(Span<byte> slot, long movedFrom, long delta, out string? error)
+    {
+        error = null;
+
+        var value = slot.Length == 4 ? BinaryPrimitives.ReadUInt32BigEndian(slot) : BinaryPrimitives.ReadUInt64BigEndian(slot);
+        if (value > long.MaxValue)
+        {
+            error = "A file offset is out of range.";
+            return false;
+        }
+
+        // Data before the old end of moov did not move.
+        if ((long)value < movedFrom)
+            return true;
+
+        var adjusted = (long)value + delta;
+        if (adjusted < 0)
+        {
+            error = "A file offset would become negative.";
+            return false;
+        }
+
+        if (slot.Length == 4)
+        {
+            if (adjusted > uint.MaxValue)
+            {
+                error = "A file offset no longer fits in 32 bits.";
+                return false;
+            }
+
+            BinaryPrimitives.WriteUInt32BigEndian(slot, (uint)adjusted);
+        }
+        else
+        {
+            BinaryPrimitives.WriteUInt64BigEndian(slot, (ulong)adjusted);
+        }
+
+        return true;
+    }
+
+    /// <summary>
+    /// Enumerates the boxes of a byte range: their start, header size, size and type. A box that does not fit in the
+    /// range is returned with a negative size, and ends the enumeration.
+    /// </summary>
+    private static IEnumerable<(int Start, int HeaderSize, int Size, string Type)> EnumerateBoxes(byte[] data, int start, int end)
+    {
+        var position = start;
+        while (position < end)
+        {
+            if (end - position < 8)
+            {
+                yield return (position, 0, -1, "");
+                yield break;
+            }
+
+            var size = (long)BinaryPrimitives.ReadUInt32BigEndian(data.AsSpan(position));
+            var type = Encoding.Latin1.GetString(data, position + 4, 4);
+            var headerSize = 8;
+            if (size == 1)
+            {
+                if (end - position < 16)
+                {
+                    yield return (position, 0, -1, type);
+                    yield break;
+                }
+
+                size = BinaryPrimitives.ReadInt64BigEndian(data.AsSpan(position + 8));
+                headerSize = 16;
+            }
+            else if (size == 0)
+            {
+                size = end - position;
+            }
+
+            if (size < headerSize || size > end - position)
+            {
+                yield return (position, headerSize, -1, type);
+                yield break;
+            }
+
+            yield return (position, headerSize, (int)size, type);
+            position += (int)size;
         }
     }
 

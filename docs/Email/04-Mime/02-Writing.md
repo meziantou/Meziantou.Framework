@@ -39,6 +39,11 @@ var bytes = message.ToByteArray();
 
 - The headers that are not ASCII are encoded ([RFC 2047]), and so are the display names of the addresses and the
   parameters ([RFC 2231]). The long headers are folded at 78 characters.
+- The name of a header must contain only printable ASCII characters other than the colon ([RFC 5322] 2.2):
+  [MimeHeader.Create](cref:Meziantou.Framework.Email.MimeHeader.Create),
+  [MimeHeader.CreateRaw](cref:Meziantou.Framework.Email.MimeHeader.CreateRaw) and the
+  methods of [Headers](cref:Meziantou.Framework.Email.MimeMessage.Headers) that take a name throw an
+  `ArgumentException` for another name. The line breaks of a value are replaced by spaces.
 - The writer removes the whitespace at the ends of an address, and the characters a header cannot contain in it (`<`,
   `>` and the line breaks). An address without a display name is written in angle brackets when it still contains
   whitespace (Unicode whitespace such as U+00A0 included) or a special character: the reader removes the whitespace of
@@ -61,3 +66,4 @@ before the delimiters of the multiparts are written as CRLF. A part whose conten
 
 [RFC 2047]: https://www.rfc-editor.org/rfc/rfc2047
 [RFC 2231]: https://www.rfc-editor.org/rfc/rfc2231
+[RFC 5322]: https://www.rfc-editor.org/rfc/rfc5322

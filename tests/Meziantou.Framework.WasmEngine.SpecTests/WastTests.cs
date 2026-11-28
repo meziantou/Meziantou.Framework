@@ -35,11 +35,11 @@ public sealed class WastTests
         if (mode != WastMode.Interpreted && SpecExpectations.UpdateMode)
         {
             // The expectations are the failures of the interpreter
-            SpecExpectations.Check(script, runner.Failures, update: false);
+            SpecExpectations.Core.Check(script, runner.Failures, update: false);
             return;
         }
 
-        SpecExpectations.Check(script, runner.Failures);
+        SpecExpectations.Core.Check(script, runner.Failures);
     }
 
     [Fact]

@@ -10,7 +10,9 @@ namespace Meziantou.Framework.WasmEngine;
 /// <see cref="ulong"/> (<c>i64</c>), <see cref="float"/> (<c>f32</c>), <see cref="double"/> (<c>f64</c>),
 /// <see cref="object"/> (<c>externref</c>: the host value of a <see cref="WasmHostReference"/>) and
 /// <see cref="WasmFunction"/> (<c>funcref</c>). A reference type annotated as not nullable is a non-nullable reference
-/// (<c>(ref extern)</c>, <c>(ref func)</c>). A method with several results returns a tuple.
+/// (<c>(ref extern)</c>, <c>(ref func)</c>). A method with several results returns a tuple. A first parameter of type
+/// <see cref="WasmCaller"/> is not a parameter of the WebAssembly function: it receives the caller of the function, such
+/// as the instance whose memory the function reads.
 /// </remarks>
 /// <example>
 /// <code xmlns:ref="urn:meziantou:file-referencer" ref:source="../../tests/Meziantou.Framework.WasmEngine.Tests/WasmSourceGeneratorTests.cs" ref:region="WasmEngine_TypedImportsHost" ref:dedent="true">

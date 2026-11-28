@@ -159,6 +159,14 @@ internal sealed class DnsQuicListener : BackgroundService, IAsyncDisposable
                     // The host disposed the service while the accept was pending
                     break;
                 }
+                catch (Exception exception)
+                {
+                    // AcceptConnectionAsync reports the handshake failures of the incoming connections
+                    // (AuthenticationException, QuicException, handshake timeout, ...). They concern one
+                    // client only, so log and keep serving instead of taking the host down.
+                    _logger.LogWarning(exception, "Error accepting a QUIC DNS connection on {Endpoint}", endpoint);
+                    continue;
+                }
 
                 _ = HandleConnectionAsync(connection, stoppingToken);
             }

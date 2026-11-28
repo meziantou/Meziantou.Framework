@@ -352,6 +352,125 @@ public sealed class TorrentFileTests
         Assert.Equal(SHA1.HashData(SingleFileInfo), torrent.GetInfoHashSha1());
     }
 
+    [SuppressMessage("Security", "CA5350:Do Not Use Weak Cryptographic Algorithms", Justification = "BitTorrent v1 info-hash is SHA-1.")]
+    [Theory]
+    [InlineData("d6:lengthi123e4:name8:file.txt12:piece lengthi16384e6:pieces20:01234567890123456789e")]
+    [InlineData("d4:name8:file.txt6:lengthi123e12:piece lengthi16384e6:pieces20:01234567890123456789e")]
+    [InlineData("d6:lengthi123e4:name8:file.txt12:piece lengthi16384e6:pieces20:012345678901234567897:privatei0ee")]
+    public void GetInfoHash_UnmodifiedParsedTorrent_IsTheHashOfTheWrittenTorrent(string info)
+    {
+        var infoBytes = Encoding.ASCII.GetBytes(info);
+        var torrent = TorrentFile.Parse(Encoding.ASCII.GetBytes("d8:announce14:https://t.test4:info" + info + "e"));
+
+        Assert.Equal(SHA1.HashData(infoBytes), torrent.GetInfoHashSha1());
+        foreach (var canonical in new[] { true, false })
+        {
+            var written = torrent.ToUtf8ByteArray(canonical);
+            Assert.Equal(infoBytes, GetInfoBytes(written));
+            Assert.Equal(torrent.GetInfoHashSha1(), TorrentFile.Parse(written).GetInfoHashSha1());
+        }
+
+        // Assigning an equal model, or changing the fields outside the 'info' dictionary, keeps the torrent identity
+        torrent.Info = TorrentFile.Parse(Encoding.ASCII.GetBytes("d4:info" + info + "e")).Info;
+        torrent.Comment = "comment";
+        Assert.Equal(SHA1.HashData(infoBytes), torrent.GetInfoHashSha1());
+        Assert.Equal(infoBytes, GetInfoBytes(torrent.ToUtf8ByteArray()));
+    }
+
+    [SuppressMessage("Security", "CA5350:Do Not Use Weak Cryptographic Algorithms", Justification = "BitTorrent v1 info-hash is SHA-1.")]
+    [Theory]
+    [InlineData("name")]
+    [InlineData("source")]
+    [InlineData("private")]
+    [InlineData("pieces")]
+    [InlineData("file length")]
+    [InlineData("file path")]
+    [InlineData("file attr")]
+    [InlineData("files")]
+    [InlineData("additional key")]
+    [InlineData("additional value")]
+    [InlineData("encoding")]
+    public void GetInfoHash_InfoEditedInPlace_IsTheHashOfTheWrittenTorrent(string change)
+    {
+        var info = "d5:filesld4:attr1:x6:lengthi1e4:pathl1:aeed6:lengthi2e4:pathl1:beee5:x-tagd1:ki1ee4:name3:dir12:piece lengthi16384e6:pieces20:01234567890123456789e";
+        var torrent = TorrentFile.Parse(Encoding.ASCII.GetBytes("d8:announce14:https://t.test4:info" + info + "e"));
+        var originalHash = torrent.GetInfoHashSha1();
+        Assert.Equal(SHA1.HashData(Encoding.ASCII.GetBytes(info)), originalHash);
+
+        var files = Assert.IsType<List<TorrentInfoFile>>(torrent.Info.Files);
+        var attrKey = new BencodeString("attr"u8.ToArray());
+        var tagKey = new BencodeString("x-tag"u8.ToArray());
+        switch (change)
+        {
+            case "name":
+                torrent.Info.Name = "renamed";
+                break;
+            case "source":
+                torrent.Info.Source = "tracker";
+                break;
+            case "private":
+                torrent.Info.IsPrivate = true;
+                break;
+            case "pieces":
+                torrent.Info.Pieces = "98765432109876543210"u8.ToArray();
+                break;
+            case "file length":
+                files[0].Length = 3;
+                break;
+            case "file path":
+                files[1].Path = ["c"];
+                break;
+            case "file attr":
+                files[0].AdditionalKeys[attrKey] = new BencodeString("p"u8.ToArray());
+                break;
+            case "files":
+                files.RemoveAt(1);
+                break;
+            case "additional key":
+                torrent.Info.AdditionalKeys.Remove(tagKey);
+                break;
+            case "additional value":
+                ((BencodeDictionary)torrent.Info.AdditionalKeys[tagKey]).Add(new BencodeString("l"u8.ToArray()), new BencodeInteger(2));
+                break;
+            case "encoding":
+                torrent.Encoding = "UTF-16";
+                break;
+        }
+
+        var hash = torrent.GetInfoHashSha1();
+        Assert.NotEqual(originalHash, hash);
+        foreach (var canonical in new[] { true, false })
+        {
+            var written = torrent.ToUtf8ByteArray(canonical);
+            Assert.Equal(hash, SHA1.HashData(GetInfoBytes(written)));
+            Assert.Equal(hash, TorrentFile.Parse(written).GetInfoHashSha1());
+        }
+
+        Assert.Equal(SHA256.HashData(GetInfoBytes(torrent.ToUtf8ByteArray())), torrent.GetInfoHashSha256());
+    }
+
+    [Fact]
+    public async Task GetInfoHash_V2FileTreeEditedInPlace_IsTheHashOfTheWrittenTorrent()
+    {
+        var torrent = TorrentFile.Parse(await ReadResourceAsync("v2.torrent"));
+        var originalHash = torrent.GetInfoHashSha256();
+
+        var entry = torrent.Info.FileTree!.First(entry => entry.Length > 0);
+        var piecesRoot = entry.PiecesRoot.ToArray();
+        piecesRoot[0] ^= 1;
+        entry.PiecesRoot = piecesRoot;
+
+        var hash = torrent.GetInfoHashSha256();
+        Assert.NotEqual(originalHash, hash);
+        Assert.Equal(hash, SHA256.HashData(GetInfoBytes(torrent.ToUtf8ByteArray())));
+    }
+
+    /// <summary>The decoder keeps the bytes it read, so writing the value in insertion order gives them back.</summary>
+    private static byte[] GetInfoBytes(byte[] torrent)
+    {
+        return ((BencodeDictionary)BencodeDocument.Parse(torrent).Root)[new BencodeString("info"u8.ToArray())].ToUtf8ByteArray(canonical: false);
+    }
+
     [Fact]
     public void Parse_ExtensionFields()
     {
@@ -518,7 +637,7 @@ public sealed class TorrentFileTests
         var reparsed = TorrentFile.Parse(written);
         Assert.Equal(expectedInfoHash, Convert.ToHexString(reparsed.GetInfoHashSha256()));
 
-        // Replacing the info hashes the model instead of the parsed bytes: it is the same torrent
+        // Replacing the info with the same content keeps the info-hash
         torrent.Info = torrent.Info;
         Assert.Equal(expectedInfoHash, Convert.ToHexString(torrent.GetInfoHashSha256()));
     }

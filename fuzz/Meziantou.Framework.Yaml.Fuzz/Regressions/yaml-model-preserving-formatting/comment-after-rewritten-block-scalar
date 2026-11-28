@@ -1,0 +1,19 @@
+ # Strip
+  # Comments:
+strip: |-
+  # text
+  
+ # Clip
+  #
+? |
+  block key comm block key coments:
+
+clip: |
+  # text
+ 
+ # Keep
+  # comments:
+
+keep: |+
+   # Trail
+  # comments.

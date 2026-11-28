@@ -39,8 +39,7 @@ internal sealed class YamlEnumerableConverter<TElement> : YamlConverter<IEnumera
 
         while (reader.TokenType != YamlTokenType.EndSequence)
         {
-            var value = _elementConverter.Read(reader, typeof(TElement));
-            list.Add((TElement)value!);
+            list.Add(SequenceReadHelpers.ReadElement<TElement>(reader, _elementConverter));
         }
 
         reader.Read();

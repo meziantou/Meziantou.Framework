@@ -71,6 +71,12 @@ The declarations of a style rule that are no longer separated by a rule once the
 property replaces the previous ones, unless they are `!important` and it is not (`a{color:blue}`). Minifying the output
 again does not change it.
 
+The serialization of the browsers depends on the order of the declarations: a shorthand is written at the position of its
+first longhand, so the text is not always parsed in the same order. `a { corner-block-start: bevel 1px; corner-inline-end: bevel 1px }`
+is serialized `border-block-start-radius: 1px; corner-block-start-shape: bevel; border-end-end-radius: 1px; corner-end-end-shape: bevel`,
+whose longhands are combined into `corner-block-start` and `corner-end-end` once parsed again. The minifier combines the
+declarations in the order in which its output is parsed: it writes `a{corner-block-start:bevel 1px;corner-end-end:bevel 1px}`.
+
 The values of the custom properties are written as they are. The values that contain a substitution function, such as
 `var()`, are kept as specified: their whitespace is removed, but their numbers and colors are not shortened
 (`calc(0.5px + var(--x))` stays `calc(0.5px + var(--x))`).

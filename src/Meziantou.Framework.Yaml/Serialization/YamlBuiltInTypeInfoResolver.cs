@@ -1,4 +1,4 @@
-using Meziantou.Framework.Yaml.Model;
+using Meziantou.Framework.Yaml.Nodes;
 using Meziantou.Framework.Yaml.Serialization.Converters;
 
 namespace Meziantou.Framework.Yaml.Serialization;

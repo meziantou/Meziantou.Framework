@@ -37,6 +37,8 @@
     <InternalsVisibleTo Include="Meziantou.Framework.WebPlatform.PdfRendering.Tests" />
     <!-- The DevTools protocol server reads the session history and sets the files of the file inputs -->
     <InternalsVisibleTo Include="Meziantou.Framework.WebPlatform.DevTools" />
+    <!-- The HTML sanitizer copies the attributes it keeps in one pass -->
+    <InternalsVisibleTo Include="Meziantou.Framework.HtmlSanitizer" />
   </ItemGroup>
   <ItemGroup>
     <!-- The scripts of the WebIDL bindings; the build compresses them (WebIdlRealm.LoadEmbeddedScript reads them) -->

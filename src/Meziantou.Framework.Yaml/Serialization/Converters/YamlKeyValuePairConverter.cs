@@ -54,7 +54,7 @@ internal sealed class YamlKeyValuePairConverter<TKey, TValue> : YamlConverter<Ke
             }
             else if (string.Equals(name, valueName, comparison))
             {
-                value = (TValue)_valueConverter.Read(reader, typeof(TValue))!;
+                value = SequenceReadHelpers.ReadElement<TValue>(reader, _valueConverter);
             }
             else
             {

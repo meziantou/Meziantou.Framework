@@ -226,7 +226,7 @@ internal static class YamlTestSuite
         return values;
     }
 
-    private static char ScalarIndicator(ScalarStyle style) => style switch
+    internal static char ScalarIndicator(ScalarStyle style) => style switch
     {
         ScalarStyle.Plain => ':',
         ScalarStyle.SingleQuoted => '\'',
@@ -236,7 +236,7 @@ internal static class YamlTestSuite
         _ => throw new InvalidOperationException($"Unexpected scalar style: {style}"),
     };
 
-    private static string EscapeEventValue(string value)
+    internal static string EscapeEventValue(string value)
     {
         return value.Replace("\\", "\\\\", StringComparison.Ordinal)
             .Replace("\0", "\\0", StringComparison.Ordinal)

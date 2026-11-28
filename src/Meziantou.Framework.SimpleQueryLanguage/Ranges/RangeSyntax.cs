@@ -10,7 +10,13 @@ internal static class RangeSyntax
         ArgumentNullException.ThrowIfNull(scalarParser);
 
         if (scalarParser(text, out var simpleOperand))
+        {
+            // A date without a time is the whole day: 2026-01-31 is from the start of that day to the start of the next one
+            if (TryGetEndOfDay(text, simpleOperand, out var endOfDay, out var endOfDayIncluded))
+                return new BinaryRangeSyntax<T>(simpleOperand, lowerBoundIncluded: true, endOfDay, endOfDayIncluded);
+
             return new UnaryRangeSyntax<T>(KeyValueOperator.EqualTo, simpleOperand);
+        }
 
         var indexOfDotDot = text.IndexOf("..", StringComparison.Ordinal);
         if (indexOfDotDot > 0)
@@ -22,13 +28,75 @@ internal static class RangeSyntax
             return (leftText, rightText) switch
             {
                 (UnboundedValue, UnboundedValue) => null,
-                (UnboundedValue, _) => scalarParser(rightText, out var right) ? new UnaryRangeSyntax<T>(KeyValueOperator.LessThanOrEqual, right) : null,
+                (UnboundedValue, _) => scalarParser(rightText, out var right) ? CreateComparison(KeyValueOperator.LessThanOrEqual, rightText, right) : null,
                 (_, UnboundedValue) => scalarParser(leftText, out var left) ? new UnaryRangeSyntax<T>(KeyValueOperator.GreaterThanOrEqual, left) : null,
-                _ => scalarParser(leftText, out var left) && scalarParser(rightText, out var right) ? new BinaryRangeSyntax<T>(left, lowerBoundIncluded: true, right, upperBoundIncluded: true) : null,
+                _ => scalarParser(leftText, out var left) && scalarParser(rightText, out var right) ? CreateBinaryRange(left, rightText, right) : null,
             };
         }
 
         return null;
+
+        static BinaryRangeSyntax<T> CreateBinaryRange(T left, string rightText, T right)
+        {
+            // The upper bound is included: when it is a day, the range includes the whole day
+            if (TryGetEndOfDay(rightText, right, out var endOfDay, out var endOfDayIncluded))
+                return new BinaryRangeSyntax<T>(left, lowerBoundIncluded: true, endOfDay, endOfDayIncluded);
+
+            return new BinaryRangeSyntax<T>(left, lowerBoundIncluded: true, right, upperBoundIncluded: true);
+        }
+    }
+
+    /// <summary>
+    /// Creates the comparison <c>key op value</c>. A date without a time is the whole day: <c>&lt;=2026-01-31</c> includes the
+    /// whole day, and <c>&gt;2026-01-31</c> starts after it. <c>&lt;</c> and <c>&gt;=</c> already compare with the start of the day.
+    /// </summary>
+    public static UnaryRangeSyntax<T> CreateComparison<T>(KeyValueOperator op, string text, T value)
+    {
+        if (op is KeyValueOperator.LessThanOrEqual or KeyValueOperator.GreaterThan && TryGetEndOfDay(text, value, out var endOfDay, out var endOfDayIncluded))
+        {
+            return op is KeyValueOperator.LessThanOrEqual
+                ? new UnaryRangeSyntax<T>(endOfDayIncluded ? KeyValueOperator.LessThanOrEqual : KeyValueOperator.LessThan, endOfDay)
+                : new UnaryRangeSyntax<T>(endOfDayIncluded ? KeyValueOperator.GreaterThan : KeyValueOperator.GreaterThanOrEqual, endOfDay);
+        }
+
+        return new UnaryRangeSyntax<T>(op, value);
+    }
+
+    /// <summary>
+    /// Gets the end of the day <paramref name="value"/> starts, when <typeparamref name="T"/> is a <see cref="DateTime"/> or a
+    /// <see cref="DateTimeOffset"/> and <paramref name="text"/> is a date without a time, such as <c>2026-01-31</c>. The end is
+    /// the start of the next day, excluded, or the last instant that can be represented, included, for the last day.
+    /// </summary>
+    public static bool TryGetEndOfDay<T>(string text, T value, [MaybeNullWhen(false)] out T endOfDay, out bool endOfDayIncluded)
+    {
+        endOfDay = default;
+        endOfDayIncluded = false;
+
+        var type = Nullable.GetUnderlyingType(typeof(T)) ?? typeof(T);
+        if (type != typeof(DateTime) && type != typeof(DateTimeOffset))
+            return false;
+
+        // DateOnly accepts the same dates as DateTime, and rejects the values that have an offset or a time, except the
+        // ISO 8601 ones such as 2026-01-31T10:00, whose time has a colon
+        if (text.Contains(':', StringComparison.Ordinal) || !DateOnly.TryParse(text, CultureInfo.InvariantCulture, DateTimeStyles.AllowWhiteSpaces, out _))
+            return false;
+
+        var maxStartOfDayTicks = DateTime.MaxValue.Ticks - TimeSpan.TicksPerDay;
+        switch ((object?)value)
+        {
+            case DateTime dateTime:
+                endOfDayIncluded = dateTime.Ticks > maxStartOfDayTicks;
+                endOfDay = (T)(object)(endOfDayIncluded ? DateTime.SpecifyKind(DateTime.MaxValue, dateTime.Kind) : dateTime.AddDays(1));
+                return true;
+
+            case DateTimeOffset dateTimeOffset:
+                endOfDayIncluded = dateTimeOffset.Ticks > maxStartOfDayTicks || dateTimeOffset.UtcTicks > maxStartOfDayTicks;
+                endOfDay = (T)(object)(endOfDayIncluded ? DateTimeOffset.MaxValue : dateTimeOffset.AddDays(1));
+                return true;
+
+            default:
+                return false;
+        }
     }
 
     private const string UnboundedValue = "*";

@@ -2785,8 +2785,9 @@ documents (see [Paged media](#paged-media-csslayoutpaged-layoutenginepagedcs)).
     (`BreakCandidate.AvoidDepth`; as in the browsers, a break outside of the innermost avoided box).
   - Several breaks may be at the same position (before and after a box without block size): the candidates and such boxes are
     ordered as in the content (`BreakCandidate.Sequence`, `FragmentationFlow.GetEmptyOrdinal`), the latest break that fits is
-    taken, and a box without block size at the end of a fragmentainer stays in it (`FlowMap.MapEmpty`), with the items
-    of its parallel flows at its position when it is a flex or grid container (`Commit`, `FragmentSlicer`). The break after
+    taken, and a box without block size at the end of a fragmentainer stays in it (`FlowMap.MapEmpty`), also the items
+    without block size of a container of parallel flows that start at a break after the container in the content (a grid
+    without block size, the last row of a grid: `ParallelGroup.Sequence`, `ColumnBreaker.IsBeforeBreakAt`). The break after
     the content of a flow whose parallel flows continue is after the boxes without block size at its position: the contents
     that overflow them (a box with `height: 0`) start in that fragmentainer and are broken there.
   - A forced break at the start of a fragmentainer is taken when it is at a class A break point (after a box without block
@@ -2827,7 +2828,8 @@ documents (see [Paged media](#paged-media-csslayoutpaged-layoutenginepagedcs)).
     when its block size is definite (a specified block size, an item stretched in a single-line flex container or a grid
     with a definite block size, a column flex item with a definite flex basis and block size, a stretched item of a grid
     whose rows have a fixed track sizing function, `GridItemRows.HasFixedRows`: as in Blink, a row that is neither
-    intrinsic nor flexible does not grow with its items): its contents then overflow it
+    intrinsic nor flexible does not grow with its items; the rows of a subgrid, sized by its parent grid, are fixed when
+    the rows of the parent are, `SubgridAxisInput.FixedTracks`): its contents then overflow it
     in the next fragmentainers. As in Blink, an item of a single-line column flex container that is shorter than its
     contents in the container is as tall as them once the container is in a fragmentation context, when it cannot shrink and
     its flex basis is content-based, or when its block size is automatic and it cannot shrink or its minimum block size is

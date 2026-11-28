@@ -21,5 +21,5 @@ internal sealed class YamlUInt16Converter : YamlConverter<ushort>
     }
 
     public override void Write(YamlWriter writer, ushort value)
-        => writer.WriteScalar(value.ToString(CultureInfo.InvariantCulture));
+        => writer.WriteScalar(value);
 }

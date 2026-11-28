@@ -38,7 +38,7 @@ public partial class StronglyTypedIdSourceGenerator
                     writer.WriteLine($"return {context.TypeName}.Parse(stringValue);");
                 }
 
-                writer.WriteLine($"throw new global::System.ArgumentException($\"Cannot convert '{{value}}' to {context.TypeName}\", nameof(value));");
+                writer.WriteLine($"throw new global::System.ArgumentException($\"Cannot convert '{{value}}' to {context.Name}\", nameof(value));");
             }
 
             // public override bool CanConvertTo(ITypeDescriptorContext context, Type destinationType)

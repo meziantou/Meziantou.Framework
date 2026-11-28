@@ -1986,6 +1986,40 @@ public sealed class MarkdownSyntaxTreeTests
         Assert.True(stopwatch.Elapsed < TimeSpan.FromSeconds(10), $"Rendering took {stopwatch.Elapsed}");
     }
 
+    // Collecting and blanking the attributes of a pipe table row was quadratic in their number: 2.4 MB of attributes in a row
+    // took 2 minutes, and 1.6 MB in a cell of the delimiter row took 8 minutes
+    [Theory]
+    [InlineData("| a | b |\n|---|---|\n| ", "a{.c} ", "")]
+    [InlineData("| a |\n|-", "{.c}", "-|\n")]
+    public void ManyAttributesInAPipeTableRowAreLinear(string prefix, string repeated, string suffix)
+    {
+        // Compare two sizes instead of using a fixed time limit, which depends on the speed of the machine.
+        // Four times the input is about four times slower when linear, and sixteen times when quadratic.
+        // The fastest of two runs of each size reduces the noise of a busy machine, and a large size that runs fast enough
+        // passes anyway.
+        Measure(10_000);
+        var small = Min(Measure(50_000), Measure(50_000));
+        var large = Min(Measure(200_000), Measure(200_000));
+        Assert.True(large < small * 8 || large < TimeSpan.FromSeconds(2), $"50,000 repetitions took {small}, 200,000 repetitions took {large}");
+
+        static TimeSpan Min(TimeSpan a, TimeSpan b) => a < b ? a : b;
+
+        TimeSpan Measure(int count)
+        {
+            var options = new MarkdownParseOptions { Extensions = MarkdownExtensions.Advanced };
+            var text = prefix + string.Concat(Enumerable.Repeat(repeated, count)) + suffix;
+
+            var stopwatch = Stopwatch.StartNew();
+            var tree = MarkdownSyntaxTree.ParseText(text, options);
+            var html = MarkdownHtmlRenderer.ToHtml(tree);
+            var elapsed = stopwatch.Elapsed;
+
+            Assert.StartsWith("<table", html, StringComparison.Ordinal);
+            Assert.Equal(text, tree.GetRoot().ToFullString());
+            return elapsed;
+        }
+    }
+
     [Fact]
     public void TheAdvancedExtensionsAreTheOnesOfMarkdig()
     {

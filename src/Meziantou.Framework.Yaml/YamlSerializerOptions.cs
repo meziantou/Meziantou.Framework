@@ -296,7 +296,7 @@ public sealed record YamlSerializerOptions
 
     /// <summary>
     /// Gets or sets the maximum number of nodes that aliases are allowed to materialize while building a
-    /// <see cref="Meziantou.Framework.Yaml.Model.YamlNode"/> document object model.
+    /// <see cref="Meziantou.Framework.Yaml.Nodes.YamlNode"/> document object model.
     /// </summary>
     /// <remarks>
     /// <para>A value of <c>0</c> uses the default limit of 100000.</para>

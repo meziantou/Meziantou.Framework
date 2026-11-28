@@ -283,8 +283,10 @@ internal static class YamlDictionaryConverterHelper
         var options = reader.Options;
         dictionary ??= createDictionary(options);
         var mergeEnabled = YamlMergeKey.IsEnabled(options);
-        HashSet<string>? explicitKeys = mergeEnabled ? reader.RentKeySet() : null;
-        HashSet<string>? seenKeys = options.DuplicateKeyHandling == YamlDuplicateKeyHandling.LastWins ? null : reader.RentKeySet();
+        // The keys of the mapping, for its duplicates and its merge keys. The keys that a merge key must not replace only get
+        // a set of their own when the mapping has a merge key.
+        HashSet<string>? seenKeys = mergeEnabled || options.DuplicateKeyHandling != YamlDuplicateKeyHandling.LastWins ? reader.RentPropertyNameKeySet() : null;
+        HashSet<string>? explicitKeys = null;
         if (reader.ReferenceReader is not null && reader.Anchor is not null)
         {
             reader.ReferenceReader.Register(reader.Anchor, dictionary);
@@ -304,6 +306,7 @@ internal static class YamlDictionaryConverterHelper
 
             if (isMergeKey)
             {
+                explicitKeys ??= reader.CopyPropertyNameKeySet(seenKeys!);
                 ReadAndApplyMerge<TDictionary, TValue>(reader, ref valueConverter, dictionary, explicitKeys, createDictionary, containerKind);
                 continue;
             }
@@ -323,12 +326,11 @@ internal static class YamlDictionaryConverterHelper
             }
 
             Debug.Assert(valueConverter is not null);
-            var value = valueConverter.Read(reader, typeof(TValue));
-            dictionary[key] = (TValue)value!;
+            dictionary[key] = SequenceReadHelpers.ReadElement<TValue>(reader, valueConverter);
         }
 
-        reader.ReturnKeySet(seenKeys);
-        reader.ReturnKeySet(explicitKeys);
+        reader.ReturnPropertyNameKeySet(seenKeys);
+        reader.ReturnPropertyNameKeySet(explicitKeys);
 
         reader.Read();
         return dictionary;
@@ -393,8 +395,7 @@ internal static class YamlDictionaryConverterHelper
                 throw YamlThrowHelper.ThrowExpectedScalarKey(reader);
             }
 
-            var keyStart = reader.Start;
-            var keyEnd = reader.End;
+            var keyLocation = reader.CurrentLocation;
             object? rawKey;
             try
             {
@@ -406,12 +407,12 @@ internal static class YamlDictionaryConverterHelper
             }
             catch (Exception exception)
             {
-                throw new YamlException(reader.SourceName, keyStart, keyEnd, exception.Message, exception);
+                throw new YamlException(reader.SourceName, keyLocation.Start, keyLocation.End, exception.Message, exception);
             }
 
             if (rawKey is null)
             {
-                throw new YamlException(reader.SourceName, keyStart, keyEnd, "Dictionary key cannot be null.");
+                throw new YamlException(reader.SourceName, keyLocation.Start, keyLocation.End, "Dictionary key cannot be null.");
             }
 
             object? rawValue;
@@ -425,7 +426,7 @@ internal static class YamlDictionaryConverterHelper
             }
             catch (Exception exception)
             {
-                throw new YamlException(reader.SourceName, keyStart, keyEnd, exception.Message, exception);
+                throw new YamlException(reader.SourceName, keyLocation.Start, keyLocation.End, exception.Message, exception);
             }
 
             var key = (TKey)rawKey;

@@ -1,7 +1,8 @@
 # Labels the pull requests that need a closer review, and removes the label when the check no longer finds anything:
 # - review:dependencies: the pull request adds a dependency (package, action, image...) that no file of the target branch
 #   references. Updating the version of a dependency does not count.
-# - review:tests: the pull request modifies, deletes or renames a file of tests/. Adding files does not count.
+# - review:tests: the pull request deletes, renames, or removes or changes lines of a file of tests/. Adding files or
+#   lines does not count.
 # eng/detect-pr-review-labels.cs compares the merge commit of the pull request with the target branch.
 #
 # pull_request_target gives a token that can write labels on the pull requests from forks too. It runs the workflow and

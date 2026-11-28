@@ -384,6 +384,16 @@ public class EmitterTests : YamlTest
         Assert.Equal(yaml, Save(reloaded));
     }
 
+    [Fact]
+    public void WriteTo_TagWithEscapesLongerThan256Bytes_RoundTrips()
+    {
+        var tag = "!" + new string(',', 100);
+        var yaml = SaveAndReload("--- !<" + tag + "> x\n", out var reloaded);
+
+        Assert.Equal("--- !" + string.Concat(Enumerable.Repeat("%2C", 100)) + " x\n...\n", yaml);
+        Assert.Equal(tag, ((YamlNode)reloaded[^1].Contents!).Tag);
+    }
+
     [Theory]
     [InlineData("a")]
     [InlineData("y-light")]

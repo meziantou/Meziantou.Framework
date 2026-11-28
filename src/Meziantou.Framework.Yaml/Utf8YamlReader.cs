@@ -2033,7 +2033,8 @@ public ref struct Utf8YamlReader
         if (!value.Contains((byte)'%'))
             return;
 
-        Span<byte> decoded = stackalloc byte[256];
+        // The decoded tag is never longer than its escaped form
+        Span<byte> decoded = value.Length <= 256 ? stackalloc byte[256] : new byte[value.Length];
         if (!TryDecodeTag(value, decoded, out var written) || !System.Text.Unicode.Utf8.IsValid(decoded[..written]))
             throw CreateError(tagStart, "Invalid URI escape in the tag");
     }

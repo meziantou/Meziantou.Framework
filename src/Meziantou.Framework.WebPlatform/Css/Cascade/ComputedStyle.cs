@@ -908,25 +908,50 @@ internal sealed partial class ComputedStyle
     /// <summary>Returns the computed value of a longhand (https://drafts.csswg.org/css-cascade-5/#computed).</summary>
     public string GetComputedValue(string property)
     {
-        if (_computed.TryGetValue(property, out var result))
-            return result;
+        // The name is looked up once: the entry gives the index of the property and its definition
+        CssPropertyEntry? entry;
+        if (_computed.IsPacked)
+        {
+            entry = CssPropertyRegistry.GetEntry(property);
+            if (entry is null)
+                return "";
 
-        var physical = LogicalProperties.GetPhysicalProperty(property, this);
+            if (_computed.TryGetValue(entry, out var packedResult))
+                return packedResult;
+        }
+        else
+        {
+            if (_computed.TryGetValue(property, out var result))
+                return result;
+
+            entry = CssPropertyRegistry.GetEntry(property);
+            if (entry is null)
+                return "";
+        }
+
+        return ComputeValue(entry);
+    }
+
+    private string ComputeValue(CssPropertyEntry entry)
+    {
+        var property = entry.Name;
+        var physical = LogicalProperties.GetPhysicalProperty(entry, this);
+        string result;
         if (physical is not null)
         {
             result = GetComputedValue(physical);
-            return _computed.Set(property, result, Engine.ComputedValueTable);
+            return _computed.Set(entry, result, Engine.ComputedValueTable);
         }
 
-        var definition = CssPropertyRegistry.Get(property);
-        if (definition is null || definition.IsShorthand)
+        var definition = entry.Definition;
+        if (definition.IsShorthand)
             return "";
 
         // The value often depends on the same property of the parent (inheritance, display, font-size...): it is computed
         // for the ancestors first, from the topmost one, so the recursion does not go as deep as the tree.
-        if (MayDependOnAncestors(definition) && GetInheritanceSource(property) is { } parent && !parent._computed.ContainsKey(property))
+        if (MayDependOnAncestors(definition) && GetInheritanceSource(entry) is { } parent && !parent._computed.ContainsKey(entry))
         {
-            ComputeAncestors(property);
+            ComputeAncestors(entry);
         }
 
         var computing = Engine.ComputingProperties;
@@ -950,7 +975,7 @@ internal sealed partial class ComputedStyle
             computing.Remove(this, property);
         }
 
-        return _computed.Set(property, result, Engine.ComputedValueTable);
+        return _computed.Set(entry, result, Engine.ComputedValueTable);
     }
 
     /// <summary>Returns whether the computed value of the property is being computed (a dependency cycle when it is needed again).</summary>
@@ -972,7 +997,7 @@ internal sealed partial class ComputedStyle
         return TryGetCascadedValue(definition.Name, out _);
     }
 
-    private void ComputeAncestors(string property)
+    private void ComputeAncestors(CssPropertyEntry property)
     {
         // The ancestors are pushed on a list shared by the styles of the engine: a nested computation pushes its ancestors
         // after them, and removes them before it returns
@@ -987,7 +1012,7 @@ internal sealed partial class ComputedStyle
         {
             for (var i = ancestors.Count - 1; i >= start; i--)
             {
-                ancestors[i].GetComputedValue(property);
+                ancestors[i].GetComputedValue(property.Name);
             }
         }
         finally
@@ -1012,14 +1037,38 @@ internal sealed partial class ComputedStyle
         var parent = Parent;
         if (parent is { PseudoElement: "first-line" } && CssPropertyRegistry.Get(property) is { Inherited: false })
         {
-            do
-            {
-                parent = parent.Parent;
-            }
-            while (parent is { PseudoElement: "first-line" });
+            parent = GetNonFirstLineParent(parent);
         }
 
         return parent;
+    }
+
+    /// <inheritdoc cref="GetInheritanceSource(string)"/>
+    private ComputedStyle? GetInheritanceSource(CssPropertyEntry property)
+    {
+        if (IsHighlight && HighlightProperties.Contains(property.Name))
+            return HighlightParent;
+
+        var parent = Parent;
+        if (parent is { PseudoElement: "first-line" } && !property.Definition.Inherited)
+        {
+            parent = GetNonFirstLineParent(parent);
+        }
+
+        return parent;
+    }
+
+    /// <summary>Returns the first ancestor that is not a style of a box of the first formatted line, from a style of such a box.</summary>
+    private static ComputedStyle? GetNonFirstLineParent(ComputedStyle parent)
+    {
+        ComputedStyle? result = parent;
+        do
+        {
+            result = result.Parent;
+        }
+        while (result is { PseudoElement: "first-line" });
+
+        return result;
     }
 
     private string ComputeProperty(CssPropertyDefinition property)
@@ -2113,7 +2162,7 @@ internal sealed partial class ComputedStyle
     {
         private const int MaxArrayLength = 8;
 
-        private (string Property, string Value)[]? _array;
+        private (CssPropertyEntry Property, string Value)[]? _array;
 
         /// <summary>The number of values in <see cref="_array"/>.</summary>
         private int _count;
@@ -2121,16 +2170,19 @@ internal sealed partial class ComputedStyle
         /// <summary>The values, once there are more than <see cref="MaxArrayLength"/> values.</summary>
         private PackedValues? _packed;
 
+        /// <summary>Whether the values are stored by property index (<see cref="TryGetValue(CssPropertyEntry, out string)"/> is faster than a search by name).</summary>
+        public readonly bool IsPacked => _packed is not null;
+
+        /// <summary>Returns the value of a property, searched by name (the values must not be packed, see <see cref="IsPacked"/>).</summary>
         public readonly bool TryGetValue(string property, [System.Diagnostics.CodeAnalysis.MaybeNullWhen(false)] out string value)
         {
-            if (_packed is { } packed)
-                return packed.TryGetValue(property, out value);
-
+            System.Diagnostics.Debug.Assert(_packed is null);
             var array = _array;
             for (var i = 0; i < _count; i++)
             {
                 ref var entry = ref array![i];
-                if (ReferenceEquals(entry.Property, property) || string.Equals(entry.Property, property, StringComparison.Ordinal))
+                var name = entry.Property.Name;
+                if (ReferenceEquals(name, property) || string.Equals(name, property, StringComparison.Ordinal))
                 {
                     value = entry.Value;
                     return true;
@@ -2141,19 +2193,39 @@ internal sealed partial class ComputedStyle
             return false;
         }
 
-        public readonly bool ContainsKey(string property) => TryGetValue(property, out _);
+        public readonly bool TryGetValue(CssPropertyEntry property, [System.Diagnostics.CodeAnalysis.MaybeNullWhen(false)] out string value)
+        {
+            if (_packed is { } packed)
+                return packed.TryGetValue(property.Index, out value);
+
+            var array = _array;
+            for (var i = 0; i < _count; i++)
+            {
+                ref var entry = ref array![i];
+                if (ReferenceEquals(entry.Property, property))
+                {
+                    value = entry.Value;
+                    return true;
+                }
+            }
+
+            value = null;
+            return false;
+        }
+
+        public readonly bool ContainsKey(CssPropertyEntry property) => TryGetValue(property, out _);
 
         /// <summary>Sets the value of a property, and returns the value that is stored: an equal string shared by the styles when there is one.</summary>
         /// <param name="table">The values shared by the styles of the engine (see <see cref="StyleEngine.ComputedValueTable"/>).</param>
-        public string Set(string property, string value, ComputedValueTable table)
+        public string Set(CssPropertyEntry property, string value, ComputedValueTable table)
         {
             if (_packed is { } packed)
-                return packed.Set(property, value);
+                return packed.Set(property.Index, value);
 
             value = table.Share(value);
             for (var i = 0; i < _count; i++)
             {
-                if (string.Equals(_array![i].Property, property, StringComparison.Ordinal))
+                if (ReferenceEquals(_array![i].Property, property))
                 {
                     _array[i].Value = value;
                     return value;
@@ -2165,13 +2237,13 @@ internal sealed partial class ComputedStyle
                 packed = new PackedValues(table);
                 foreach (var (existingProperty, existingValue) in _array!)
                 {
-                    packed.Set(existingProperty, existingValue);
+                    packed.Set(existingProperty.Index, existingValue);
                 }
 
                 _packed = packed;
                 _array = null;
                 _count = 0;
-                return packed.Set(property, value);
+                return packed.Set(property.Index, value);
             }
 
             if (_array is null || _count == _array.Length)
@@ -2216,10 +2288,9 @@ internal sealed partial class ComputedStyle
         private string[]? _ownValues;
         private int _ownValueCount;
 
-        public bool TryGetValue(string property, [System.Diagnostics.CodeAnalysis.MaybeNullWhen(false)] out string value)
+        public bool TryGetValue(int index, [System.Diagnostics.CodeAnalysis.MaybeNullWhen(false)] out string value)
         {
-            var index = CssPropertyRegistry.GetIndex(property);
-            if (index < 0 || !IsPresent(index))
+            if (!IsPresent(index))
             {
                 value = null;
                 return false;
@@ -2231,13 +2302,8 @@ internal sealed partial class ComputedStyle
         }
 
         /// <summary>Sets the value of a property, and returns the value that is stored (the string of the table when the value is in the table).</summary>
-        public string Set(string property, string value)
+        public string Set(int index, string value)
         {
-            // The values are only stored by property index: the names that are not supported properties are never computed
-            var index = CssPropertyRegistry.GetIndex(property);
-            if (index < 0)
-                return value;
-
             var position = GetPosition(index);
             if (IsPresent(index))
             {

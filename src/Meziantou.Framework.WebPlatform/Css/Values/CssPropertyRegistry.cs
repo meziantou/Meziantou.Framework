@@ -19,6 +19,19 @@ internal sealed record CssPropertyDefinition(string Name, string Grammar, string
     public bool IsEnumerated { get; init; } = true;
 }
 
+/// <summary>
+/// A supported property name (a legacy alias has its own entry): its index in [0, <see cref="CssPropertyRegistry.PropertyNameCount"/>)
+/// and its definition (the one of the property it is an alias of), which one lookup of the name gives (see <see cref="CssPropertyRegistry.GetEntry"/>).
+/// </summary>
+internal sealed class CssPropertyEntry(string name, int index, CssPropertyDefinition definition)
+{
+    public string Name { get; } = name;
+
+    public int Index { get; } = index;
+
+    public CssPropertyDefinition Definition { get; } = definition;
+}
+
 /// <summary>A descriptor of an at-rule (https://drafts.csswg.org/css-syntax-3/#descriptor), e.g. font-family in @font-face or a media feature.</summary>
 internal sealed record CssDescriptorDefinition(string AtRule, string Name, string Grammar, string? Initial);
 
@@ -406,35 +419,44 @@ internal static partial class CssPropertyRegistry
         return map.ToFrozenDictionary(StringComparer.Ordinal);
     }
 
-    /// <summary>The index of each property name (including the aliases), to store values by property in arrays (see <see cref="GetIndex"/>).</summary>
-    private static readonly Lazy<FrozenDictionary<string, int>> IndexByName = new(() =>
+    /// <summary>
+    /// The entry of each property name (including the aliases): its index, to store values by property in arrays, and its definition
+    /// (see <see cref="GetEntry"/>). Declared after <see cref="ByName"/>, which it uses.
+    /// </summary>
+    private static readonly FrozenDictionary<string, CssPropertyEntry> EntriesByName = CreateEntries();
+
+    private static FrozenDictionary<string, CssPropertyEntry> CreateEntries()
     {
-        var indexes = new Dictionary<string, int>(ByName.Count, StringComparer.Ordinal);
-        foreach (var name in ByName.Keys)
+        var entries = new Dictionary<string, CssPropertyEntry>(ByName.Count, StringComparer.Ordinal);
+        foreach (var (name, property) in ByName)
         {
-            indexes.Add(name, indexes.Count);
+            var definition = property.AliasOf is { } alias && ByName.TryGetValue(alias, out var target) ? target : property;
+            entries.Add(name, new CssPropertyEntry(name, entries.Count, definition));
         }
 
-        return indexes.ToFrozenDictionary(StringComparer.Ordinal);
-    });
+        return entries.ToFrozenDictionary(StringComparer.Ordinal);
+    }
 
     /// <summary>The number of property names (the indexes returned by <see cref="GetIndex"/> are lower).</summary>
     public static int PropertyNameCount => ByName.Count;
 
+    /// <summary>All the property names (including the aliases), in no particular order.</summary>
+    public static IEnumerable<CssPropertyEntry> Entries => EntriesByName.Values;
+
+    /// <summary>
+    /// Returns the entry of a property name (ASCII lowercase), or null when it is not a supported property: its index and its
+    /// definition, the legacy aliases being resolved, in one lookup of the name.
+    /// </summary>
+    public static CssPropertyEntry? GetEntry(string name) => EntriesByName.GetValueOrDefault(name);
+
     /// <summary>Returns the index of a property name (in [0, <see cref="PropertyNameCount"/>)), or -1 when it is not a supported property.</summary>
-    public static int GetIndex(string name) => IndexByName.Value.TryGetValue(name, out var index) ? index : -1;
+    public static int GetIndex(string name) => EntriesByName.TryGetValue(name, out var entry) ? entry.Index : -1;
 
     /// <summary>All the supported properties (https://drafts.csswg.org/cssom/#supported-css-property).</summary>
     public static IEnumerable<CssPropertyDefinition> Properties => ByName.Values;
 
     /// <summary>Returns the property with the name (ASCII lowercase), resolving the legacy aliases.</summary>
-    public static CssPropertyDefinition? Get(string name)
-    {
-        if (!ByName.TryGetValue(name, out var property))
-            return null;
-
-        return property.AliasOf is { } alias && ByName.TryGetValue(alias, out var target) ? target : property;
-    }
+    public static CssPropertyDefinition? Get(string name) => EntriesByName.TryGetValue(name, out var entry) ? entry.Definition : null;
 
     /// <summary>Returns whether the name is a custom property (https://drafts.csswg.org/css-variables/#custom-property).</summary>
     public static bool IsCustomProperty(string name) => name.Length > 2 && name.StartsWith("--", StringComparison.Ordinal);

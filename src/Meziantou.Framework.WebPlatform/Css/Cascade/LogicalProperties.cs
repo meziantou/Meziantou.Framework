@@ -1,4 +1,3 @@
-using System.Collections.Concurrent;
 using Meziantou.Framework.WebPlatform.Css.Values;
 
 namespace Meziantou.Framework.WebPlatform.Css.Cascade;
@@ -62,10 +61,24 @@ internal static class LogicalProperties
         EndEnd,
     }
 
-    private static readonly ConcurrentDictionary<string, Mapping?> Mappings = new(StringComparer.Ordinal);
+    /// <summary>The mapping of each flow-relative property, by property index (see <see cref="CssPropertyRegistry.GetIndex"/>), null for the other properties.</summary>
+    private static readonly Mapping?[] Mappings = CreateMappings();
+
+    private static Mapping?[] CreateMappings()
+    {
+        var mappings = new Mapping?[CssPropertyRegistry.PropertyNameCount];
+        foreach (var entry in CssPropertyRegistry.Entries)
+        {
+            mappings[entry.Index] = GetMapping(entry.Name);
+        }
+
+        return mappings;
+    }
+
+    private static Mapping? GetMapping(CssPropertyEntry? entry) => entry is null ? null : Mappings[entry.Index];
 
     /// <summary>Returns whether the property is a flow-relative property of a logical property group (its mapping logic is not physical).</summary>
-    public static bool IsFlowRelative(string property) => Mappings.GetOrAdd(property, GetMapping) is not null;
+    public static bool IsFlowRelative(string property) => GetMapping(CssPropertyRegistry.GetEntry(property)) is not null;
 
     /// <summary>
     /// Returns whether the used direction of an element is right-to-left: its computed <c>direction</c>, except for the upright
@@ -77,9 +90,12 @@ internal static class LogicalProperties
             && !(style.GetComputedValue("writing-mode") is "vertical-rl" or "vertical-lr" && style.GetComputedValue("text-orientation") == "upright");
 
     /// <summary>Returns the physical property a logical property maps to for the element, or null when the property is not a logical property.</summary>
-    public static string? GetPhysicalProperty(string property, ComputedStyle style)
+    public static string? GetPhysicalProperty(string property, ComputedStyle style) => GetPhysicalProperty(CssPropertyRegistry.GetEntry(property), style);
+
+    /// <inheritdoc cref="GetPhysicalProperty(string, ComputedStyle)"/>
+    public static string? GetPhysicalProperty(CssPropertyEntry? property, ComputedStyle style)
     {
-        var mapping = Mappings.GetOrAdd(property, GetMapping);
+        var mapping = GetMapping(property);
         if (mapping is null)
             return null;
 

@@ -290,6 +290,20 @@ public sealed class CssomTests
     }
 
     [Fact]
+    public void Serialization_DimensionWhoseUnitLooksLikeAnExponent_EscapesTheUnit()
+    {
+        // 1e0e4 is the number 1 with the unit "e4": written 1e4, it would be read back as the number 10000
+        var sheet = new CssStyleSheet();
+        sheet.ReplaceSync("a { background: url(\"a.svg\" param(--x: 1e0e4)) }");
+        var text = sheet.CssRules[0].CssText;
+
+        Assert.Contains("param(--x: 1\\65 4)", text, StringComparison.Ordinal);
+        var reparsed = new CssStyleSheet();
+        reparsed.ReplaceSync(text);
+        Assert.Equal(text, reparsed.CssRules[0].CssText);
+    }
+
+    [Fact]
     public void PageRule_RejectsCss21PropertiesThatDoNotApplyToPages()
     {
         var sheet = new CssStyleSheet();

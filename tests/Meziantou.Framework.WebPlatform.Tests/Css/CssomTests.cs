@@ -301,6 +301,10 @@ public sealed class CssomTests
         var reparsed = new CssStyleSheet();
         reparsed.ReplaceSync(text);
         Assert.Equal(text, reparsed.CssRules[0].CssText);
+
+        // In a media query, 0e0 is not an <integer>: it is written 0.0
+        sheet.ReplaceSync("@media (0e0e1) { a { color: red } }");
+        Assert.Equal("(0.0\\65 1)", ((CssMediaRule)sheet.CssRules[0]).Media.MediaText);
     }
 
     [Fact]

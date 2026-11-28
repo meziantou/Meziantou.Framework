@@ -375,7 +375,7 @@ internal static class MediaQueries
                         CssTokenType.Url => CssSerializer.SerializeUrl(token.Value),
                         CssTokenType.Number => SerializeNumber(token),
                         CssTokenType.Percentage => (token.Sign == '+' ? "+" : "") + CssSerializer.SerializeNumber(token.NumericValue) + "%",
-                        CssTokenType.Dimension => SerializeNumber(token) + CssSerializer.SerializeIdentifier(token.Value),
+                        CssTokenType.Dimension => SerializeNumber(token) + CssSerializer.SerializeUnit(token.Value),
                         CssTokenType.Whitespace => builder.Length > 0 && builder[^1] == ' ' ? "" : " ",
                         CssTokenType.Colon => ":",
                         CssTokenType.Semicolon => ";",

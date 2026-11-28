@@ -912,10 +912,17 @@ public static class YamlFuzzTargets
             return stream.ToArray();
         }, "The Stream overload");
 
+        // Without PreferQuotedForAmbiguousScalars, two keys that differ by their type, such as "23" and 23, are written alike
+        var reloadOptions = options with { AllowAnchors = true, AllowAliases = true };
+        if (!options.ScalarStylePreferences.PreferQuotedForAmbiguousScalars)
+        {
+            reloadOptions = reloadOptions with { DuplicateKeyHandling = YamlDuplicateKeyHandling.LastWins };
+        }
+
         object? reloaded;
         try
         {
-            reloaded = YamlSerializer.Deserialize<object>(serialized, options with { AllowAnchors = true, AllowAliases = true });
+            reloaded = YamlSerializer.Deserialize<object>(serialized, reloadOptions);
         }
         catch (YamlException ex)
         {

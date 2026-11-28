@@ -8,7 +8,7 @@
   <ItemGroup>
     <ProjectReference Include="../../src/Meziantou.Framework.FixedStringBuilder.Generator/Meziantou.Framework.FixedStringBuilder.Generator.csproj" />
     <Compile Include="../../common/NuGetHelpers.cs" Link="NuGetHelpers.cs" />
-    <PackageReference Include="Microsoft.CodeAnalysis" Version="5.9.0" />
+    <PackageReference Include="Microsoft.CodeAnalysis" Version="5.12.0" />
   </ItemGroup>
 
 </Project>

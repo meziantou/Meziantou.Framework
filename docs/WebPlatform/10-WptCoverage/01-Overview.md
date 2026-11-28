@@ -49,11 +49,11 @@ The features of `REQUIRES`:
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 28,134 | 30,158 | 80 | 94% |
+| [Stable](#stable-tests) | 28,135 | 30,158 | 80 | 94% |
 | [Tentative](#tentative-tests) | 1,751 | 3,073 | 174 | 60% |
 | [Reftests](#reftests) | 28,838 | 29,687 | 70 | 97% |
 | [Crash tests](#crash-tests) | 2,132 | 2,144 | 2 | 99.5% |
-| **All** | **60,855** | **65,062** | **326** | **94%** |
+| **All** | **60,856** | **65,062** | **326** | **94%** |
 
 ## Failure reasons
 
@@ -62,9 +62,9 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 - **BUG**: 150
 - **TEST BUG**: 1,134
 - **NOT IMPLEMENTED**: 2,679
-- **REQUIRES**: 186
+- **REQUIRES**: 185
   - `hardware`: 4
-  - `layout`: 22
+  - `layout`: 21
   - `media`: 16
   - `user-input`: 144
 - **TEST RUNNER**: 131
@@ -178,7 +178,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`css/css-transitions`](css/css-transitions.md) | 99 | 108 | 0 | 92% |
 | [`css/css-typed-om`](css/css-typed-om.md) | 290 | 319 | 0 | 91% |
 | [`css/css-ui`](css/css-ui.md) | 99 | 106 | 0 | 93% |
-| [`css/css-values`](css/css-values.md) | 254 | 270 | 0 | 94% |
+| [`css/css-values`](css/css-values.md) | 255 | 270 | 0 | 94% |
 | [`css/css-variables`](css/css-variables.md) | 63 | 65 | 0 | 97% |
 | [`css/css-view-transitions`](css/css-view-transitions.md) | 160 | 167 | 0 | 96% |
 | [`css/css-viewport`](css/css-viewport.md) | 32 | 33 | 0 | 97% |
@@ -417,7 +417,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`x-frame-options`](x-frame-options.md) | 6 | 6 | 0 | 100% |
 | [`xhr`](xhr.md) | 327 | 330 | 0 | 99% |
 | [`xml`](xml.md) | 12 | 12 | 0 | 100% |
-| **Total (341 sections)** | **28,134** | **30,158** | **80** | **94%** |
+| **Total (341 sections)** | **28,135** | **30,158** | **80** | **94%** |
 
 ## Tentative tests
 

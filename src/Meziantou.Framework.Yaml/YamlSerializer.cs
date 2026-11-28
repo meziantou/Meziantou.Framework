@@ -120,11 +120,11 @@ public static class YamlSerializer
         try
         {
             Serialize(writer, value, options);
-            writer.Flush();
         }
         finally
         {
-            Utf8TextWriter.Return(writer);
+            // The text written before an error reaches the stream too, as the text of a StreamWriter does when it is disposed
+            Utf8TextWriter.FlushAndReturn(writer);
         }
     }
 
@@ -144,11 +144,11 @@ public static class YamlSerializer
         try
         {
             Serialize(writer, value, context);
-            writer.Flush();
         }
         finally
         {
-            Utf8TextWriter.Return(writer);
+            // The text written before an error reaches the stream too, as the text of a StreamWriter does when it is disposed
+            Utf8TextWriter.FlushAndReturn(writer);
         }
     }
 
@@ -199,11 +199,11 @@ public static class YamlSerializer
         try
         {
             Serialize(writer, value, inputType, options);
-            writer.Flush();
         }
         finally
         {
-            Utf8TextWriter.Return(writer);
+            // The text written before an error reaches the stream too, as the text of a StreamWriter does when it is disposed
+            Utf8TextWriter.FlushAndReturn(writer);
         }
     }
 
@@ -222,11 +222,11 @@ public static class YamlSerializer
         try
         {
             Serialize(writer, value, inputType, context);
-            writer.Flush();
         }
         finally
         {
-            Utf8TextWriter.Return(writer);
+            // The text written before an error reaches the stream too, as the text of a StreamWriter does when it is disposed
+            Utf8TextWriter.FlushAndReturn(writer);
         }
     }
 
@@ -952,11 +952,11 @@ public static class YamlSerializer
         try
         {
             Serialize(writer, value, typeInfo);
-            writer.Flush();
         }
         finally
         {
-            Utf8TextWriter.Return(writer);
+            // The text written before an error reaches the stream too, as the text of a StreamWriter does when it is disposed
+            Utf8TextWriter.FlushAndReturn(writer);
         }
     }
 
@@ -975,11 +975,11 @@ public static class YamlSerializer
         try
         {
             Serialize(writer, value, typeInfo);
-            writer.Flush();
         }
         finally
         {
-            Utf8TextWriter.Return(writer);
+            // The text written before an error reaches the stream too, as the text of a StreamWriter does when it is disposed
+            Utf8TextWriter.FlushAndReturn(writer);
         }
     }
 

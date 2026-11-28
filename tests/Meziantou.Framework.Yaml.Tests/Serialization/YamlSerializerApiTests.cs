@@ -826,7 +826,7 @@ public class YamlSerializerApiTests
         Assert.Equal(values, YamlSerializer.Deserialize<List<string>>(expectedFlow));
     }
 
-    // The text is buffered while it is written: what was written before an error still reaches the writer
+    // The text is buffered while it is written: what was written before an error still reaches the writer or the stream
     [Fact]
     public void Serialize_WritesTheTextBeforeAnErrorToTheWriter()
     {
@@ -838,6 +838,13 @@ public class YamlSerializerApiTests
 
         Assert.Equal("Cannot write 'fail'", exception.Message);
         Assert.Equal("- a\n- b", writer.ToString());
+
+        using var stream = new FlushCountingStream();
+        exception = Assert.Throws<InvalidOperationException>(() => YamlSerializer.Serialize(stream, values, options));
+
+        Assert.Equal("Cannot write 'fail'", exception.Message);
+        Assert.Equal("- a\n- b"u8.ToArray(), stream.ToArray());
+        Assert.Equal(1, stream.FlushCount);
     }
 
     private sealed record FailingValue(string Name);

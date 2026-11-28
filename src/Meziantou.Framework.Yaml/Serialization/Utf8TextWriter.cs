@@ -61,6 +61,19 @@ internal sealed class Utf8TextWriter : TextWriter
         return writer;
     }
 
+    /// <summary>Writes the buffered text to the stream, flushes it, and gives back the buffers of the writer, which must not be used afterward.</summary>
+    public static void FlushAndReturn(Utf8TextWriter writer)
+    {
+        try
+        {
+            writer.Flush();
+        }
+        finally
+        {
+            Return(writer);
+        }
+    }
+
     /// <summary>Gives back the buffers of the writer, which must not be used afterward.</summary>
     public static void Return(Utf8TextWriter writer)
     {

@@ -7,8 +7,6 @@
 
    <ItemGroup>
      <PackageReference Include="BenchmarkDotNet" Version="0.15.8" />
-     <!-- Compared with the prototype Utf8YamlReader by ReaderBenchmarks -->
-     <PackageReference Include="Styml" Version="0.1.1" />
    </ItemGroup>
 
    <ItemGroup>

@@ -61,7 +61,7 @@ private static Product? LoadProduct(string path)
 | Read from | Write to |
 | --- | --- |
 | `string` | `string` (the return value) |
-| `ReadOnlySpan<byte>` holding UTF-8 text, read as is | |
+| `ReadOnlySpan<byte>` holding UTF-8 text, read as is | `byte[]` holding UTF-8 text (the return value of [SerializeToUtf8Bytes](cref:Meziantou.Framework.Yaml.YamlSerializer.SerializeToUtf8Bytes)) |
 | `TextReader`, read as the parser needs it (a `StreamReader` by blocks of characters) | `TextWriter` |
 | `Stream`: UTF-8 as is, in one read for a seekable stream up to 1 MB and by blocks otherwise; UTF-16 or UTF-32 when it starts with their byte order mark | `Stream`, written as UTF-8 |
 | | `IBufferWriter<char>` |
@@ -74,6 +74,32 @@ stream are read without a conversion, so they are the fastest input:
 // The bytes are parsed as is, without being decoded to a string first
 var ports = YamlSerializer.Deserialize<Dictionary<string, int>>("http: 80\nhttps: 443\n"u8);
 Assert.Equal(443, ports!["https"]);
+```
+<!-- endref -->
+
+[SerializeToUtf8Bytes](cref:Meziantou.Framework.Yaml.YamlSerializer.SerializeToUtf8Bytes) returns the UTF-8 bytes of the YAML text, without byte order mark. They are the
+bytes that the `Stream` overloads write. The text is encoded as it is written, so there is no intermediate string to
+encode afterward:
+
+<!-- ref:../../../tests/Meziantou.Framework.Yaml.Tests/Serialization/YamlSerializerApiTests.cs;region=YamlSerializer_SerializeToUtf8Bytes;format=md-fenced-code-block;dedent=true -->
+```csharp
+var utf8Yaml = YamlSerializer.SerializeToUtf8Bytes(new Product
+{
+    Id = 1,
+    DisplayName = "Café",
+    Tags = ["new"],
+});
+
+Assert.Equal("""
+    Id: 1
+    name: Café
+    Tags:
+      - new
+
+    """u8.ToArray(), utf8Yaml);
+
+var product = YamlSerializer.Deserialize<Product>(utf8Yaml);
+Assert.Equal("Café", product!.DisplayName);
 ```
 <!-- endref -->
 

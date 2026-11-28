@@ -50,9 +50,10 @@ internal sealed class YamlListConverter<TElement> : YamlConverter<List<TElement>
             reader.ReferenceReader.Register(anchor, list);
         }
 
+        var typedElementConverter = _elementConverter as YamlConverter<TElement>;
         while (reader.TokenType != YamlTokenType.EndSequence)
         {
-            list.Add(SequenceReadHelpers.ReadElement<TElement>(reader, _elementConverter));
+            list.Add(SequenceReadHelpers.ReadElement(reader, typedElementConverter, _elementConverter));
         }
 
         reader.Read();

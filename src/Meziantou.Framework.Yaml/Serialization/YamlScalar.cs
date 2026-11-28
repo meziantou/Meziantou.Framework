@@ -420,6 +420,77 @@ public static class YamlScalar
         return reader.ScalarValue.AsSpan();
     }
 
+    // The fast paths below read the bytes of the scalar when they are its value, and only accept the forms that the
+    // serializer writes. They return false for any other form, which the parsers of the characters then read: an input
+    // that a fast path accepts has the value that the parser of the characters gives it.
+
+    // An integer of decimal digits, with an optional sign, that fits in a long: no underscore, no base prefix. An unsigned
+    // integer has no minus sign, not even for zero.
+    private static bool TryParseInt64Fast(YamlReader reader, out long result, bool unsigned = false)
+    {
+        result = 0;
+        if (!reader.TryGetRawUtf8Scalar(out var utf8) || utf8.Length is 0 or > 18)
+            return false;
+
+        var negative = false;
+        var i = 0;
+        if (utf8[0] is (byte)'-' or (byte)'+')
+        {
+            negative = utf8[0] == '-';
+            if (negative && unsigned)
+                return false;
+
+            i = 1;
+            if (utf8.Length == 1)
+                return false;
+        }
+
+        long value = 0;
+        for (; i < utf8.Length; i++)
+        {
+            var digit = (uint)(utf8[i] - '0');
+            if (digit > 9)
+                return false;
+
+            value = (value * 10) + digit;
+        }
+
+        result = negative ? -value : value;
+        return true;
+    }
+
+    // A number that starts with a digit or a dot, optionally after a sign, without underscore or surrounding spaces
+    private static bool TryGetSimpleNumber(YamlReader reader, out ReadOnlySpan<byte> utf8)
+    {
+        if (!reader.TryGetRawUtf8Scalar(out utf8) || utf8.IsEmpty || utf8.Length > ScalarCharsLength)
+            return false;
+
+        var first = utf8[0] is (byte)'+' or (byte)'-' ? 1 : 0;
+        return first < utf8.Length && (char.IsAsciiDigit((char)utf8[first]) || utf8[first] == '.') && char.IsAsciiDigit((char)utf8[^1]) && !utf8.Contains((byte)'_');
+    }
+
+    private static bool TryParseDecimalFast(YamlReader reader, out decimal result)
+    {
+        result = default;
+        return TryGetSimpleNumber(reader, out var utf8) && decimal.TryParse(utf8, NumberStyles.Float, CultureInfo.InvariantCulture, out result);
+    }
+
+    private static bool TryParseDoubleFast(YamlReader reader, out double result)
+    {
+        result = default;
+        return TryGetSimpleNumber(reader, out var utf8) && double.TryParse(utf8, NumberStyles.Float, CultureInfo.InvariantCulture, out result);
+    }
+
+    // The round-trip format in UTC or without offset, such as 2024-01-01T00:00:00.0000000Z, which the serializer writes
+    private static bool TryParseDateTimeFast(YamlReader reader, out DateTime result)
+    {
+        result = default;
+        return reader.TryGetRawUtf8Scalar(out var utf8) &&
+            (utf8.Length == 27 || (utf8.Length == 28 && utf8[^1] == 'Z')) &&
+            System.Buffers.Text.Utf8Parser.TryParse(utf8, out result, out var consumed, 'O') &&
+            consumed == utf8.Length;
+    }
+
     /// <summary>
     /// Parses the current scalar token as a date and time in the round-trip format, with the invariant culture.
     /// </summary>
@@ -429,6 +500,9 @@ public static class YamlScalar
     public static bool TryParseDateTime(YamlReader reader, out DateTime result)
     {
         ArgumentNullException.ThrowIfNull(reader);
+        if (TryParseDateTimeFast(reader, out result))
+            return true;
+
         return DateTime.TryParse(GetScalarChars(reader, stackalloc char[ScalarCharsLength]), CultureInfo.InvariantCulture, DateTimeStyles.RoundtripKind, out result);
     }
 
@@ -462,6 +536,23 @@ public static class YamlScalar
                    value is null;
         }
 
+        // Without tag, only a plain scalar can be null: the bytes of most scalars are then their value
+        if (reader.Tag is null)
+        {
+            if (!IsPlainStyle(reader.ScalarStyle))
+                return false;
+
+            if (reader.TryGetRawUtf8Scalar(out var utf8))
+            {
+                // A longer scalar is null only when it is "null" between spaces
+                if (utf8.Length > 4 && utf8[0] is not ((byte)' ' or (byte)'\t') && utf8[^1] is not ((byte)' ' or (byte)'\t'))
+                    return false;
+
+                utf8 = utf8.Trim(" \t"u8);
+                return utf8.IsEmpty || utf8.SequenceEqual("~"u8) || utf8.SequenceEqual("null"u8) || utf8.SequenceEqual("Null"u8) || utf8.SequenceEqual("NULL"u8);
+            }
+        }
+
         // An explicit tag other than !!null, such as "!!int" on an empty scalar, is not null even if the text is.
         if (HasStringTag(reader) || (HasCoreScalarTag(reader) && !IsNullTag(reader)))
         {
@@ -492,6 +583,21 @@ public static class YamlScalar
             return false;
         }
 
+        if (reader.TryGetRawUtf8Scalar(out var utf8))
+        {
+            if (utf8.SequenceEqual("true"u8))
+            {
+                result = true;
+                return true;
+            }
+
+            if (utf8.SequenceEqual("false"u8))
+            {
+                result = false;
+                return true;
+            }
+        }
+
         return TryParseBool(GetScalarChars(reader, stackalloc char[ScalarCharsLength]), out result);
     }
 
@@ -515,6 +621,12 @@ public static class YamlScalar
 
             result = default;
             return false;
+        }
+
+        if (TryParseInt64Fast(reader, out var fast) && fast is >= int.MinValue and <= int.MaxValue)
+        {
+            result = (int)fast;
+            return true;
         }
 
         return TryParseInt32(GetScalarChars(reader, stackalloc char[ScalarCharsLength]), out result);
@@ -542,6 +654,12 @@ public static class YamlScalar
             return false;
         }
 
+        if (TryParseInt64Fast(reader, out var fast, unsigned: true) && fast <= uint.MaxValue)
+        {
+            result = (uint)fast;
+            return true;
+        }
+
         return TryParseUInt32(GetScalarChars(reader, stackalloc char[ScalarCharsLength]), out result);
     }
 
@@ -563,6 +681,12 @@ public static class YamlScalar
 
             result = default;
             return false;
+        }
+
+        if (TryParseInt64Fast(reader, out var fast, unsigned: true))
+        {
+            result = (ulong)fast;
+            return true;
         }
 
         return TryParseUInt64(GetScalarChars(reader, stackalloc char[ScalarCharsLength]), out result);
@@ -588,6 +712,9 @@ public static class YamlScalar
             return false;
         }
 
+        if (TryParseInt64Fast(reader, out result))
+            return true;
+
         return TryParseInt64(GetScalarChars(reader, stackalloc char[ScalarCharsLength]), out result);
     }
 
@@ -611,6 +738,9 @@ public static class YamlScalar
             result = default;
             return false;
         }
+
+        if (TryParseDoubleFast(reader, out result))
+            return true;
 
         return TryParseDouble(GetScalarChars(reader, stackalloc char[ScalarCharsLength]), out result);
     }
@@ -647,6 +777,9 @@ public static class YamlScalar
             result = default;
             return false;
         }
+
+        if (TryParseDecimalFast(reader, out result))
+            return true;
 
         return TryParseDecimal(GetScalarChars(reader, stackalloc char[ScalarCharsLength]), out result);
     }

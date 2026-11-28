@@ -618,6 +618,140 @@ public sealed class YamlScalarTests
         Assert.Equal("\"" + value + "\"\n", YamlSerializer.Serialize(value));
     }
 
+    // The typed converters read the bytes of most scalars without decoding them: they read the values that the parsers of
+    // the text give, whatever the spelling
+    [Theory]
+    [InlineData("0")]
+    [InlineData("-0")]
+    [InlineData("+5")]
+    [InlineData("007")]
+    [InlineData("2147483647")]
+    [InlineData("2147483648")]
+    [InlineData("-2147483648")]
+    [InlineData("-2147483649")]
+    [InlineData("4294967295")]
+    [InlineData("4294967296")]
+    [InlineData("123456789012345678")]
+    [InlineData("9223372036854775807")]
+    [InlineData("-9223372036854775808")]
+    [InlineData("9223372036854775808")]
+    [InlineData("18446744073709551615")]
+    [InlineData("1_000")]
+    [InlineData("0x1F")]
+    [InlineData("0o17")]
+    [InlineData("\"42\"")]
+    [InlineData("' 42 '")]
+    [InlineData("-")]
+    [InlineData("+")]
+    [InlineData("1.5")]
+    [InlineData("1e3")]
+    [InlineData("abc")]
+    public void Deserialize_IntegersReadTheValuesOfTheTextParser(string scalar)
+    {
+        var text = GetScalarText(scalar);
+
+        Assert.Equal(YamlScalar.TryParseInt32(text, out var int32) ? int32 : null, TryDeserialize<int>(scalar));
+        Assert.Equal(YamlScalar.TryParseUInt32(text, out var uint32) ? uint32 : null, TryDeserialize<uint>(scalar));
+        Assert.Equal(YamlScalar.TryParseInt64(text, out var int64) ? int64 : null, TryDeserialize<long>(scalar));
+        Assert.Equal(YamlScalar.TryParseUInt64(text, out var uint64) ? uint64 : null, TryDeserialize<ulong>(scalar));
+    }
+
+    [Theory]
+    [InlineData("1.50")]
+    [InlineData("-0.0")]
+    [InlineData(".5")]
+    [InlineData("+.5")]
+    [InlineData("-.5")]
+    [InlineData("5.")]
+    [InlineData("1e3")]
+    [InlineData("1E+3")]
+    [InlineData("1.5e-3")]
+    [InlineData("1_000.5")]
+    [InlineData(".inf")]
+    [InlineData("-.inf")]
+    [InlineData(".nan")]
+    [InlineData("1,5")]
+    [InlineData("0x10")]
+    [InlineData("1e400")]
+    [InlineData("79228162514264337593543950336")]
+    [InlineData("1.0000000000000000000000000001")]
+    [InlineData("\"2.5\"")]
+    [InlineData("' 2.5 '")]
+    [InlineData("1.5e")]
+    [InlineData("NaN")]
+    public void Deserialize_FloatingPointNumbersReadTheValuesOfTheTextParser(string scalar)
+    {
+        var text = GetScalarText(scalar);
+
+        Assert.Equal(YamlScalar.TryParseDecimal(text, out var number) ? number : null, TryDeserialize<decimal>(scalar));
+        Assert.Equal(YamlScalar.TryParseDouble(text, out var real) ? real : null, TryDeserialize<double>(scalar));
+    }
+
+    [Theory]
+    [InlineData("2024-01-01T00:00:00.0000000Z")]
+    [InlineData("2024-01-01T12:34:56.1234567Z")]
+    [InlineData("2024-01-01T12:34:56.1234567")]
+    [InlineData("2024-01-01T12:34:56.1234567+02:00")]
+    [InlineData("2024-01-01T12:34:56Z")]
+    [InlineData("2024-01-01")]
+    [InlineData("2024-13-01T00:00:00.0000000Z")]
+    [InlineData("2024-02-30T00:00:00.0000000Z")]
+    [InlineData("2024-01-01T24:00:00.0000000Z")]
+    [InlineData("2024-01-01X00:00:00.0000000Z")]
+    [InlineData("\"2024-01-01T00:00:00.0000000Z\"")]
+    public void Deserialize_DatesReadTheValuesOfTheTextParser(string scalar)
+    {
+        var text = GetScalarText(scalar);
+        var parsed = DateTime.TryParse(text, CultureInfo.InvariantCulture, DateTimeStyles.RoundtripKind, out var expected);
+
+        var actual = TryDeserialize<DateTime>(scalar);
+
+        Assert.Equal(parsed ? expected : null, actual);
+        Assert.Equal(parsed ? expected.Kind : null, actual?.Kind);
+    }
+
+    [Theory]
+    [InlineData("true")]
+    [InlineData("True")]
+    [InlineData("TRUE")]
+    [InlineData("false")]
+    [InlineData("tRUE")]
+    [InlineData("yes")]
+    [InlineData("\"true\"")]
+    [InlineData("' false '")]
+    public void Deserialize_BooleansReadTheValuesOfTheTextParser(string scalar)
+    {
+        var text = GetScalarText(scalar);
+
+        Assert.Equal(YamlScalar.TryParseBool(text, out var expected) ? expected : null, TryDeserialize<bool>(scalar));
+    }
+
+    [Theory]
+    [InlineData("Text: null\n", null)]
+    [InlineData("Text: Null\n", null)]
+    [InlineData("Text: NULL\n", null)]
+    [InlineData("Text: ~\n", null)]
+    [InlineData("Text:\n", null)]
+    [InlineData("Text: nULL\n", "nULL")]
+    [InlineData("Text: nulls\n", "nulls")]
+    [InlineData("Text: 'null'\n", "null")]
+    [InlineData("Text: \"~\"\n", "~")]
+    [InlineData("Text: !!str null\n", "null")]
+    [InlineData("Text: !!null null\n", null)]
+    [InlineData("Text: a null\n", "a null")]
+    public void Deserialize_NullStringMembers(string yaml, string? expected)
+    {
+        Assert.Equal(expected, YamlSerializer.Deserialize<ScalarHolder>(yaml)!.Text);
+        Assert.Equal(expected, YamlSerializer.Deserialize<ScalarHolder>(yaml, ScalarYamlContext.Default)!.Text);
+    }
+
+    // The value of a plain scalar is its text; a quoted scalar here has no escape
+    private static string GetScalarText(string scalar) => scalar is ['"' or '\'', .., '"' or '\''] ? scalar[1..^1] : scalar;
+
+    private static T? TryDeserialize<T>(string scalar)
+        where T : struct
+        => YamlSerializer.TryDeserialize<T>(scalar, out var value) ? value : null;
+
     private static T? Deserialize<T>(string yaml, bool useSourceGeneration)
         => useSourceGeneration
             ? YamlSerializer.Deserialize<T>(yaml, ScalarYamlContext.Default)

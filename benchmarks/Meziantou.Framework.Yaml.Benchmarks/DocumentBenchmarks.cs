@@ -18,8 +18,6 @@ public class DocumentBenchmarks : IDisposable
 {
     private static readonly YamlSerializerOptions Options = new();
 
-    private static readonly System.Text.Yaml.YamlSerializerOptions StymlOptions = new() { PropertyNameCaseInsensitive = true };
-
     private Collection<Order> _orders = null!;
     private string _yaml = null!;
     private byte[] _utf8Yaml = null!;
@@ -38,13 +36,8 @@ public class DocumentBenchmarks : IDisposable
         var context = new BenchmarkYamlContext();
         _typeInfo = (YamlTypeInfo<Collection<Order>>)context.GetTypeInfo(typeof(Collection<Order>), context.Options)!;
 
-        // Both serializers must read the same orders, or the comparison is meaningless
-        var expected = YamlSerializer.Serialize(Deserialize(), Options);
-        var actual = YamlSerializer.Serialize(Styml_DeserializeFromUtf8(), Options);
-        if (!string.Equals(expected, actual, StringComparison.Ordinal))
-            throw new InvalidOperationException("Styml does not read the same orders:\n" + actual[..Math.Min(actual.Length, 2000)]);
-
         // The source-generated metadata reads and writes the same YAML as reflection
+        var expected = YamlSerializer.Serialize(Deserialize(), Options);
         if (!string.Equals(expected, YamlSerializer.Serialize(Deserialize_SourceGenerated(), Options), StringComparison.Ordinal) || !string.Equals(_yaml, Serialize_SourceGenerated(), StringComparison.Ordinal))
             throw new InvalidOperationException("The source-generated metadata does not read or write the same orders");
     }
@@ -61,18 +54,13 @@ public class DocumentBenchmarks : IDisposable
     }
 
     [Benchmark]
-    public string Styml_Serialize() => System.Text.Yaml.YamlSerializer.Serialize(_orders, StymlOptions);
-
-    [Benchmark]
-    public long Styml_SerializeToStream()
-    {
-        _stream.SetLength(0);
-        System.Text.Yaml.YamlSerializer.Serialize(_stream, _orders, StymlOptions);
-        return _stream.Length;
-    }
+    public byte[] SerializeToUtf8Bytes() => YamlSerializer.SerializeToUtf8Bytes(_orders, Options);
 
     [Benchmark]
     public string Serialize_SourceGenerated() => YamlSerializer.Serialize(_orders, _typeInfo);
+
+    [Benchmark]
+    public byte[] SerializeToUtf8Bytes_SourceGenerated() => YamlSerializer.SerializeToUtf8Bytes(_orders, _typeInfo);
 
     [Benchmark]
     public Collection<Order>? Deserialize_SourceGenerated() => YamlSerializer.Deserialize(_utf8Yaml.AsSpan(), _typeInfo);
@@ -93,10 +81,6 @@ public class DocumentBenchmarks : IDisposable
 
     [Benchmark]
     public Collection<Order>? DeserializeFromUtf8() => YamlSerializer.Deserialize<Collection<Order>>(_utf8Yaml.AsSpan(), Options);
-
-    // Styml's serializer, from the same UTF-8 bytes
-    [Benchmark]
-    public Collection<Order>? Styml_DeserializeFromUtf8() => System.Text.Yaml.YamlSerializer.Deserialize<Collection<Order>>(_utf8Yaml.AsSpan(), StymlOptions);
 
     [Benchmark]
     public int Parse()

@@ -233,10 +233,11 @@ internal sealed class YamlObjectConverter<T> : YamlConverter<T?>, IYamlUnionCase
 
         if (reader.ReferenceReader is not null && reader.Anchor is not null)
         {
-            reader.ReferenceReader.Register(reader.Anchor, instance!);
+            reader.ReferenceReader.Register(reader.Anchor, instance);
         }
 
-        if (instance is IYamlOnDeserializing onDeserializing)
+        // The instance has the type of the contract: whether it implements the callbacks is known once
+        if (contract.HasOnDeserializing && instance is IYamlOnDeserializing onDeserializing)
         {
             try
             {
@@ -256,10 +257,17 @@ internal sealed class YamlObjectConverter<T> : YamlConverter<T?>, IYamlUnionCase
         var mergeEnabled = YamlMergeKey.IsEnabled(options);
         // The keys of the mapping, for its duplicates and its merge keys. The keys that a merge key must not replace only get
         // a set of their own when the mapping has a merge key.
-        HashSet<string>? seenKeys = mergeEnabled || options.DuplicateKeyHandling != YamlDuplicateKeyHandling.LastWins ? reader.RentPropertyNameKeySet() : null;
+        var seenKeys = new MappingKeys(mergeEnabled || options.DuplicateKeyHandling != YamlDuplicateKeyHandling.LastWins);
         HashSet<string>? explicitKeys = null;
-        var mappingLocation = reader.CurrentLocation;
+
+        // The location of the mapping is only reported for a missing required member
+        var mappingLocation = contract.RequiredMembers.Length == 0 ? default : reader.CurrentLocation;
         var requiredSeen = contract.RequiredMembers.Length == 0 ? null : new bool[contract.RequiredMembers.Length];
+
+        // The keys usually come in the order the serializer writes the members: the member after the one of the previous
+        // key is compared first
+        var memberOrder = contract.GetReadOrder(options);
+        var expectedMember = 0;
 
         reader.Read();
         while (reader.TokenType != YamlTokenType.EndMapping)
@@ -275,7 +283,7 @@ internal sealed class YamlObjectConverter<T> : YamlConverter<T?>, IYamlUnionCase
             // is neither decoded nor allocated. "<<" may be the merge key, which the other path recognizes.
             bool isMergeKey;
             string key;
-            if (contract.TryGetMemberFromUtf8(reader, out var matchedMember))
+            if (contract.TryGetMemberFromUtf8(reader, memberOrder, ref expectedMember, out var matchedMember))
             {
                 isMergeKey = false;
                 key = matchedMember.Name;
@@ -290,16 +298,23 @@ internal sealed class YamlObjectConverter<T> : YamlConverter<T?>, IYamlUnionCase
 
             if (isMergeKey)
             {
-                explicitKeys ??= reader.CopyPropertyNameKeySet(seenKeys!);
-                ReadAndApplyMergeToInstance(reader, instance!, contract, explicitKeys, requiredSeen);
+                explicitKeys ??= seenKeys.CopyToSet(reader, contract);
+                ReadAndApplyMergeToInstance(reader, instance, contract, explicitKeys, requiredSeen);
                 continue;
             }
 
             explicitKeys?.Add(key);
 
+            var member = matchedMember;
+            if (member is null && contract.TryGetMember(key, out var namedMember))
+            {
+                member = namedMember;
+                expectedMember = contract.GetReadOrderIndex(memberOrder, member) + 1;
+            }
+
             // A duplicate key is detected whether it maps to a member, to the extension data, or to nothing, as for a
             // type deserialized through its constructor.
-            var wasSeen = seenKeys is not null && !seenKeys.Add(key);
+            var wasSeen = !seenKeys.Add(reader, contract, member, key);
             if (wasSeen && options.DuplicateKeyHandling == YamlDuplicateKeyHandling.Error)
             {
                 throw new YamlException(reader.SourceName, keyLocation.Start, keyLocation.End, $"Duplicate mapping key '{key}'.");
@@ -311,8 +326,7 @@ internal sealed class YamlObjectConverter<T> : YamlConverter<T?>, IYamlUnionCase
                 continue;
             }
 
-            var member = matchedMember;
-            if (member is null && !contract.TryGetMember(key, out member))
+            if (member is null)
             {
                 if (contract.ExtensionData is null)
                 {
@@ -320,7 +334,7 @@ internal sealed class YamlObjectConverter<T> : YamlConverter<T?>, IYamlUnionCase
                     continue;
                 }
 
-                ReadExtensionData(reader, instance!, contract.ExtensionData, key, keyLocation);
+                ReadExtensionData(reader, instance, contract.ExtensionData, key, keyLocation);
                 continue;
             }
 
@@ -335,10 +349,18 @@ internal sealed class YamlObjectConverter<T> : YamlConverter<T?>, IYamlUnionCase
                 continue;
             }
 
-            ReadAndApplyMemberValue(reader, instance!, contract, member, key, keyLocation);
+            // Most members are assigned the value that their typed converter reads
+            if (member.GetDirectSetter(reader, contract) is { } directSetter &&
+                (!member.ReadsNullScalarAsNull || reader.TokenType != YamlTokenType.Scalar || !YamlScalar.IsNull(reader)))
+            {
+                directSetter.ReadAndSet(reader, instance, in keyLocation);
+                continue;
+            }
+
+            ReadAndApplyMemberValue(reader, instance, contract, member, key, keyLocation);
         }
 
-        reader.ReturnPropertyNameKeySet(seenKeys);
+        seenKeys.Return(reader);
         reader.ReturnPropertyNameKeySet(explicitKeys);
 
         if (requiredSeen is not null)
@@ -359,7 +381,7 @@ internal sealed class YamlObjectConverter<T> : YamlConverter<T?>, IYamlUnionCase
             }
         }
 
-        if (instance is IYamlOnDeserialized onDeserialized)
+        if (contract.HasOnDeserialized && instance is IYamlOnDeserialized onDeserialized)
         {
             try
             {
@@ -749,7 +771,7 @@ internal sealed class YamlObjectConverter<T> : YamlConverter<T?>, IYamlUnionCase
             }
         }
 
-        if (instance is IYamlOnDeserialized onDeserialized)
+        if (contract.HasOnDeserialized && instance is IYamlOnDeserialized onDeserialized)
         {
             try
             {
@@ -1028,7 +1050,7 @@ internal sealed class YamlObjectConverter<T> : YamlConverter<T?>, IYamlUnionCase
         reader.Read();
     }
 
-    private static void ReadAndApplyMemberValue(YamlReader reader, object instance, Contract contract, Member member, string key, YamlLocation keyLocation)
+    private static void ReadAndApplyMemberValue(YamlReader reader, object instance, Contract contract, Member member, string key, in YamlLocation keyLocation)
     {
         ArgumentNullException.ThrowIfNull(reader);
         ArgumentNullException.ThrowIfNull(instance);
@@ -1038,12 +1060,13 @@ internal sealed class YamlObjectConverter<T> : YamlConverter<T?>, IYamlUnionCase
         var effectiveHandling = member.GetEffectiveObjectCreationHandling(contract.PreferredObjectCreationHandling);
         var preferPopulate = effectiveHandling == YamlObjectCreationHandling.Populate;
 
-        // A member that is assigned, and that a null scalar does not set to null, such as a number: the checks below only
-        // lead to its typed setter
-        if (!preferPopulate && member.CanWrite && !member.ReadsNullScalarAsNull &&
-            member.GetTypedSetter(member.Converter ??= reader.GetConverter(member.MemberType), contract.DeclaringType) is { } directSetter)
+        // A member that is assigned, such as a number or a string: unless a null scalar sets it to null without its
+        // converter, the checks below only lead to its typed setter
+        if (!preferPopulate && member.CanWrite &&
+            member.GetTypedSetter(member.Converter ??= reader.GetConverter(member.MemberType), contract.DeclaringType) is { } directSetter &&
+            (!member.ReadsNullScalarAsNull || reader.TokenType != YamlTokenType.Scalar || !YamlScalar.IsNull(reader)))
         {
-            directSetter.ReadAndSet(reader, instance, keyLocation);
+            directSetter.ReadAndSet(reader, instance, in keyLocation);
             return;
         }
 
@@ -1172,7 +1195,7 @@ internal sealed class YamlObjectConverter<T> : YamlConverter<T?>, IYamlUnionCase
         // The value is read by the typed converter and assigned without being boxed
         if (member.GetTypedSetter(converter, contract.DeclaringType) is { } typedSetter)
         {
-            typedSetter.ReadAndSet(reader, instance, keyLocation);
+            typedSetter.ReadAndSet(reader, instance, in keyLocation);
             return;
         }
 
@@ -1387,6 +1410,13 @@ internal sealed class YamlObjectConverter<T> : YamlConverter<T?>, IYamlUnionCase
                 continue;
             }
 
+            // Once the converter of the member is known, the value is written by its typed converter without being boxed
+            if (member.Converter is { } memberConverter && member.GetTypedWriter(memberConverter, contract.DeclaringType) is { } typedWriter)
+            {
+                typedWriter.Write(writer, value);
+                continue;
+            }
+
             var memberValue = member.GetValue(value);
             ThrowIfNullForNonNullableMember(writer.Options, contract.DeclaringType, member, memberValue);
             if (member.ShouldIgnoreOnWrite(memberValue, options))
@@ -1590,6 +1620,77 @@ internal sealed class YamlObjectConverter<T> : YamlConverter<T?>, IYamlUnionCase
         writer.WriteEndMapping();
     }
 
+    /// <summary>
+    /// The keys of a mapping that were read, to find its duplicate keys and the keys that a merge key must not replace. A
+    /// key that names a member is the index of the member, which is neither hashed nor stored; the other keys are kept in a
+    /// set of the reader, when <paramref name="tracksOtherKeys"/> is set.
+    /// </summary>
+    private struct MappingKeys(bool tracksOtherKeys)
+    {
+        private ulong _members;
+        private bool[]? _moreMembers;
+        private HashSet<string>? _otherKeys;
+
+        /// <summary>Adds a key, which names <paramref name="member"/> when it is not <see langword="null"/>.</summary>
+        /// <returns><see langword="false"/> when the mapping already has the key.</returns>
+        public bool Add(YamlReader reader, Contract contract, Member? member, string key)
+        {
+            if (member is not null)
+            {
+                var index = member.Index;
+                if (index < 64)
+                {
+                    var bit = 1UL << index;
+                    if ((_members & bit) != 0)
+                        return false;
+
+                    _members |= bit;
+                    return true;
+                }
+
+                _moreMembers ??= new bool[contract.MembersDeclaration.Length];
+                if (_moreMembers[index])
+                    return false;
+
+                _moreMembers[index] = true;
+                return true;
+            }
+
+            if (!tracksOtherKeys)
+                return true;
+
+            return (_otherKeys ??= reader.RentPropertyNameKeySet()).Add(key);
+        }
+
+        /// <summary>Gets a set of the reader that contains the keys.</summary>
+        public readonly HashSet<string> CopyToSet(YamlReader reader, Contract contract)
+        {
+            var set = reader.RentPropertyNameKeySet();
+            foreach (var member in contract.MembersDeclaration)
+            {
+                var index = member.Index;
+                if (index < 64 ? (_members & (1UL << index)) != 0 : _moreMembers is not null && _moreMembers[index])
+                {
+                    set.Add(member.Name);
+                }
+            }
+
+            if (_otherKeys is not null)
+            {
+                set.UnionWith(_otherKeys);
+            }
+
+            return set;
+        }
+
+        /// <summary>Gives back the set of the reader. The keys must not be used afterward.</summary>
+        public void Return(YamlReader reader)
+        {
+            reader.ReturnPropertyNameKeySet(_otherKeys);
+            _otherKeys = null;
+        }
+    }
+
     private sealed class Contract
     {
         private readonly Dictionary<string, Member> _membersByName;
@@ -1613,9 +1714,21 @@ internal sealed class YamlObjectConverter<T> : YamlConverter<T?>, IYamlUnionCase
             YamlObjectCreationHandling preferredObjectCreationHandling)
         {
             DeclaringType = declaringType;
+            HasOnDeserializing = typeof(IYamlOnDeserializing).IsAssignableFrom(declaringType);
+            HasOnDeserialized = typeof(IYamlOnDeserialized).IsAssignableFrom(declaringType);
             _resolveConstructor = resolveConstructor;
             MembersDeclaration = membersDeclaration;
             MembersSorted = membersSorted;
+            for (var i = 0; i < membersDeclaration.Length; i++)
+            {
+                membersDeclaration[i].Index = i;
+            }
+
+            for (var i = 0; i < membersSorted.Length; i++)
+            {
+                membersSorted[i].SortedIndex = i;
+            }
+
             _membersByName = membersByName;
             _canMatchUtf8Keys = ReferenceEquals(membersByName.Comparer, StringComparer.Ordinal)
                 ? membersByName.TryGetAlternateLookup(out _membersByChars)
@@ -1628,6 +1741,12 @@ internal sealed class YamlObjectConverter<T> : YamlConverter<T?>, IYamlUnionCase
         }
 
         public Type DeclaringType { get; }
+
+        /// <summary>Gets a value indicating whether an instance of the type, created by the contract, implements <see cref="IYamlOnDeserializing"/>.</summary>
+        public bool HasOnDeserializing { get; }
+
+        /// <summary>Gets a value indicating whether an instance of the type, created by the contract, implements <see cref="IYamlOnDeserialized"/>.</summary>
+        public bool HasOnDeserialized { get; }
 
         public Func<object> CreateInstance => GetConstructorResolution().CreateInstance;
 
@@ -1947,16 +2066,47 @@ internal sealed class YamlObjectConverter<T> : YamlConverter<T?>, IYamlUnionCase
         /// <summary>Finds the member that the current scalar names, from its bytes, when it is not "&lt;&lt;".</summary>
         public bool TryGetMemberFromUtf8(YamlReader reader, [NotNullWhen(true)] out Member? member)
         {
+            var expected = -1;
+            return TryGetMemberFromUtf8(reader, MembersDeclaration, ref expected, out member);
+        }
+
+        /// <summary>
+        /// Finds the member that the current scalar names, from its bytes, when it is not "&lt;&lt;". The member of
+        /// <paramref name="order"/> at <paramref name="expected"/> is compared first; <paramref name="expected"/> is then
+        /// the index of the member that follows the one found.
+        /// </summary>
+        public bool TryGetMemberFromUtf8(YamlReader reader, Member[] order, ref int expected, [NotNullWhen(true)] out Member? member)
+        {
             member = null;
-            if (!_canMatchUtf8Keys || !reader.TryGetRawUtf8Scalar(out var utf8) || utf8.Length > 128 || utf8.SequenceEqual("<<"u8))
+            if (!_canMatchUtf8Keys || !reader.TryGetRawUtf8Scalar(out var utf8))
+                return false;
+
+            if ((uint)expected < (uint)order.Length && order[expected].Utf8Name is { } expectedName && utf8.SequenceEqual(expectedName))
+            {
+                member = order[expected];
+                expected++;
+                return true;
+            }
+
+            if (utf8.Length > 128 || utf8.SequenceEqual("<<"u8))
                 return false;
 
             Span<char> chars = stackalloc char[128];
             if (System.Text.Unicode.Utf8.ToUtf16(utf8, chars, out _, out var length, replaceInvalidSequences: false) is not System.Buffers.OperationStatus.Done)
                 return false;
 
-            return _membersByChars.TryGetValue(chars[..length], out member);
+            if (!_membersByChars.TryGetValue(chars[..length], out member))
+                return false;
+
+            expected = GetReadOrderIndex(order, member) + 1;
+            return true;
         }
+
+        /// <summary>Gets the members in the order the serializer writes them with <paramref name="options"/>.</summary>
+        public Member[] GetReadOrder(YamlSerializerOptions options) => options.MappingOrder == YamlMappingOrderPolicy.Sorted ? MembersSorted : MembersDeclaration;
+
+        /// <summary>Gets the index of <paramref name="member"/> in <paramref name="order"/>, which <see cref="GetReadOrder"/> returned.</summary>
+        public int GetReadOrderIndex(Member[] order, Member member) => ReferenceEquals(order, MembersSorted) ? member.SortedIndex : member.Index;
 
         /// <summary>Selects the deserialization constructor, which <see cref="CreateInstance"/> and <see cref="Constructor"/> use.</summary>
         /// <remarks>
@@ -2614,6 +2764,14 @@ internal sealed class YamlObjectConverter<T> : YamlConverter<T?>, IYamlUnionCase
         private bool _getterResolved;
         private bool _setterResolved;
 
+        // The typed setter of the value that GetDirectSetter resolved
+        private YamlTypedMemberSetter? _directSetter;
+        private bool _directSetterResolved;
+
+        // The typed read and write of the value, for the converter it was compiled for
+        private YamlTypedMemberWriter? _typedWriter;
+        private YamlConverter? _typedWriterConverter;
+
         // The typed read and assignment of the value, for the converter it was compiled for
         private YamlTypedMemberSetter? _typedSetter;
         private YamlConverter? _typedSetterConverter;
@@ -2637,6 +2795,7 @@ internal sealed class YamlObjectConverter<T> : YamlConverter<T?>, IYamlUnionCase
         {
             ClrName = property.Name;
             Name = name;
+            Utf8Name = name == "<<" ? null : System.Text.Encoding.UTF8.GetBytes(name);
             Order = order;
             DeclarationOrder = declarationOrder;
             MemberType = memberType;
@@ -2673,6 +2832,7 @@ internal sealed class YamlObjectConverter<T> : YamlConverter<T?>, IYamlUnionCase
         {
             ClrName = field.Name;
             Name = name;
+            Utf8Name = name == "<<" ? null : System.Text.Encoding.UTF8.GetBytes(name);
             Order = order;
             DeclarationOrder = declarationOrder;
             MemberType = memberType;
@@ -2717,6 +2877,18 @@ internal sealed class YamlObjectConverter<T> : YamlConverter<T?>, IYamlUnionCase
         public bool IsRequired { get; }
 
         public int RequiredIndex { get; set; } = -1;
+
+        /// <summary>Gets or sets the index of the member in <see cref="Contract.MembersDeclaration"/>, which identifies it among the keys of a mapping.</summary>
+        public int Index { get; set; } = -1;
+
+        /// <summary>Gets or sets the index of the member in <see cref="Contract.MembersSorted"/>.</summary>
+        public int SortedIndex { get; set; } = -1;
+
+        /// <summary>
+        /// Gets the UTF-8 bytes of <see cref="Name"/>, which a key is compared with; <see langword="null"/> for "&lt;&lt;",
+        /// which may be the merge key.
+        /// </summary>
+        public byte[]? Utf8Name { get; }
 
         public bool ShouldIgnoreOnRead => IgnoreCondition == YamlIgnoreCondition.WhenReading;
 
@@ -2763,6 +2935,37 @@ internal sealed class YamlObjectConverter<T> : YamlConverter<T?>, IYamlUnionCase
             }
 
             return _field!.GetValue(instance);
+        }
+
+        /// <summary>
+        /// Gets the typed setter of a member that is assigned, instead of populated, or <see langword="null"/> when the value
+        /// of the member is not read by a typed converter. A null scalar is not read by it when <see cref="ReadsNullScalarAsNull"/> is set.
+        /// </summary>
+        /// <remarks>The setter is resolved once: the member belongs to one contract, whose converters do not change.</remarks>
+        public YamlTypedMemberSetter? GetDirectSetter(YamlReader reader, Contract contract)
+        {
+            if (!_directSetterResolved)
+            {
+                _directSetter = GetEffectiveObjectCreationHandling(contract.PreferredObjectCreationHandling) != YamlObjectCreationHandling.Populate && CanWrite
+                    ? GetTypedSetter(Converter ??= reader.GetConverter(MemberType), contract.DeclaringType)
+                    : null;
+                _directSetterResolved = true;
+            }
+
+            return _directSetter;
+        }
+
+        /// <summary>Gets the typed read and write of the value with <paramref name="converter"/>, or <see langword="null"/> when it cannot be compiled.</summary>
+        public YamlTypedMemberWriter? GetTypedWriter(YamlConverter converter, Type declaringType)
+        {
+            if (!ReferenceEquals(_typedWriterConverter, converter))
+            {
+                var info = new YamlMemberWriteInfo(Name, declaringType, IgnoreCondition, DisallowNullOnSerialize, BlockSequenceMappingStyle, BlockSequenceSequenceStyle, StringStyle);
+                _typedWriter = YamlTypedMemberWriter.Create(converter, (MemberInfo?)_property ?? _field!, MemberType, in info);
+                _typedWriterConverter = converter;
+            }
+
+            return _typedWriter;
         }
 
         /// <summary>Gets the typed read and assignment of the value with <paramref name="converter"/>, or <see langword="null"/> when it cannot be compiled.</summary>

@@ -54,6 +54,7 @@ public static class YamlFuzzTargets
         new("yaml-utf8-reader", Utf8Reader) { Seeds = GetSeeds, Dictionary = Tokens },
         new("yaml-model-preserving-formatting", ModelPreservingFormatting) { Seeds = GetSeeds, Dictionary = Tokens },
         new("yaml-utf8-writer", Utf8Writer) { Seeds = GetSeeds, Dictionary = Tokens },
+        new("yaml-deserialize-typed", YamlTypedFuzzTarget.Run) { Seeds = YamlTypedFuzzTarget.GetSeeds, Dictionary = YamlTypedFuzzTarget.Tokens },
     ];
 
     /// <summary>
@@ -901,6 +902,16 @@ public static class YamlFuzzTargets
 
         // ReferenceHandling.Preserve writes an anchor on every collection, which AllowAnchors would reject
         var serialized = YamlSerializer.Serialize(fromString.Value, options);
+
+        // The UTF-8 overloads write the UTF-8 bytes of the text, and report a lone surrogate, which UTF-8 cannot encode
+        AssertSameUtf8(serialized, () => YamlSerializer.SerializeToUtf8Bytes(fromString.Value, options), "SerializeToUtf8Bytes");
+        AssertSameUtf8(serialized, () =>
+        {
+            using var stream = new MemoryStream();
+            YamlSerializer.Serialize(stream, fromString.Value, options);
+            return stream.ToArray();
+        }, "The Stream overload");
+
         object? reloaded;
         try
         {
@@ -917,6 +928,33 @@ public static class YamlFuzzTargets
         {
             FuzzAssert.True(StructuralEquals(fromString.Value, reloaded, new(ReferenceEqualityComparer.Instance)), $"The serialized value deserializes to a different value: {FuzzAssert.Format(serialized)} {Describe(fromString.Value)} != {Describe(reloaded)}");
         }
+    }
+
+    private static void AssertSameUtf8(string text, Func<byte[]> serialize, string name)
+    {
+        var strictUtf8 = new UTF8Encoding(encoderShouldEmitUTF8Identifier: false, throwOnInvalidBytes: true);
+        byte[]? expected;
+        try
+        {
+            expected = strictUtf8.GetBytes(text);
+        }
+        catch (EncoderFallbackException)
+        {
+            expected = null;
+        }
+
+        byte[]? actual;
+        try
+        {
+            actual = serialize();
+        }
+        catch (EncoderFallbackException)
+        {
+            actual = null;
+        }
+
+        FuzzAssert.Equal(expected is null, actual is null, $"{name} and the encoding of the text disagree on whether it is valid: {FuzzAssert.Format(text)}");
+        FuzzAssert.True(expected is null || expected.AsSpan().SequenceEqual(actual), $"{name} does not write the UTF-8 bytes of the text: {FuzzAssert.Format(text)}");
     }
 
     /// <summary>

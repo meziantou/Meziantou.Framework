@@ -4884,12 +4884,11 @@ public sealed partial class YamlSerializerContextGenerator : IIncrementalGenerat
     private static bool DiscriminatorStyleReadsProperty(int style)
         => style is DiscriminatorStyleProperty or DiscriminatorStyleBoth;
 
-    private static void EmitDuplicateKeyHandling(
-        StringBuilder builder,
-        string? duplicateKeyHandlingOverride,
-        string duplicateKeyExpression,
-        string lastWinsAssignment,
-        string indent)
+    /// <summary>
+    /// Emits the handling of a duplicate key of a dictionary before its value is read: the error is reported at the key,
+    /// and the value of a key that keeps its first value is skipped. The last value is assigned after it is read.
+    /// </summary>
+    private static void EmitDuplicateKeyHandlingBeforeValue(StringBuilder builder, string? duplicateKeyHandlingOverride, string duplicateKeyExpression, string indent)
     {
         switch (duplicateKeyHandlingOverride)
         {
@@ -4897,22 +4896,23 @@ public sealed partial class YamlSerializerContextGenerator : IIncrementalGenerat
                 builder.Append(indent).Append("throw global::Meziantou.Framework.Yaml.Serialization.YamlThrowHelper.ThrowDuplicateMappingKey(reader, ").Append(duplicateKeyExpression).AppendLine(");");
                 return;
             case "FirstWins":
-                builder.Append(indent).AppendLine("// Keep the first value for a duplicate key.");
+                builder.Append(indent).AppendLine("reader.Skip();");
+                builder.Append(indent).AppendLine("continue;");
                 return;
             case "LastWins":
-                builder.Append(indent).Append(lastWinsAssignment).AppendLine(";");
+                builder.Append(indent).AppendLine("// The last value replaces the first one");
                 return;
         }
 
-        builder.Append(indent).AppendLine("switch (options.DuplicateKeyHandling)");
+        builder.Append(indent).AppendLine("if (options.DuplicateKeyHandling == global::Meziantou.Framework.Yaml.YamlDuplicateKeyHandling.Error)");
         builder.Append(indent).AppendLine("{");
-        builder.Append(indent).AppendLine("    case global::Meziantou.Framework.Yaml.YamlDuplicateKeyHandling.Error:");
-        builder.Append(indent).Append("        throw global::Meziantou.Framework.Yaml.Serialization.YamlThrowHelper.ThrowDuplicateMappingKey(reader, ").Append(duplicateKeyExpression).AppendLine(");");
-        builder.Append(indent).AppendLine("    case global::Meziantou.Framework.Yaml.YamlDuplicateKeyHandling.FirstWins:");
-        builder.Append(indent).AppendLine("        break;");
-        builder.Append(indent).AppendLine("    case global::Meziantou.Framework.Yaml.YamlDuplicateKeyHandling.LastWins:");
-        builder.Append(indent).Append("        ").Append(lastWinsAssignment).AppendLine(";");
-        builder.Append(indent).AppendLine("        break;");
+        builder.Append(indent).Append("    throw global::Meziantou.Framework.Yaml.Serialization.YamlThrowHelper.ThrowDuplicateMappingKey(reader, ").Append(duplicateKeyExpression).AppendLine(");");
+        builder.Append(indent).AppendLine("}");
+        builder.AppendLine();
+        builder.Append(indent).AppendLine("if (options.DuplicateKeyHandling == global::Meziantou.Framework.Yaml.YamlDuplicateKeyHandling.FirstWins)");
+        builder.Append(indent).AppendLine("{");
+        builder.Append(indent).AppendLine("    reader.Skip();");
+        builder.Append(indent).AppendLine("    continue;");
         builder.Append(indent).AppendLine("}");
     }
 

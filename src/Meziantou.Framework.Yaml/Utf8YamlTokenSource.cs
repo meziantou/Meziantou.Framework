@@ -5,6 +5,7 @@ using System.Runtime.ExceptionServices;
 using System.Runtime.InteropServices;
 using System.Text;
 using Meziantou.Framework.Yaml.Events;
+using Meziantou.Framework.Yaml.Serialization;
 using TagDirective = Meziantou.Framework.Yaml.Tokens.TagDirective;
 using VersionDirective = Meziantou.Framework.Yaml.Tokens.VersionDirective;
 
@@ -30,6 +31,9 @@ internal sealed class Utf8YamlTokenSource
 
     // A reader is created from the saved state, and the state saved again, once per batch of tokens instead of once per token
     private const int BatchSize = 64;
+
+    // The stack is probed when a collection starts at the first nesting level, then once every this many levels
+    private const int StackProbeInterval = 8;
 
     private static readonly UTF8Encoding StrictUtf8 = new(encoderShouldEmitUTF8Identifier: false, throwOnInvalidBytes: true);
 
@@ -60,15 +64,25 @@ internal sealed class Utf8YamlTokenSource
     // The error the reader found after the tokens of the batch: thrown when the next token is asked for
     private ExceptionDispatchInfo? _batchError;
 
-    // The current token, relative to the buffer at _start
+    // The current token, relative to the buffer at _start: the entry of the batch at _current, or _token once the batch is
+    // read again or at the end of the input. The entry is not copied, as most tokens are only looked at once.
     private Utf8YamlReader.TokenData _token;
+    private int _current = -1;
+    private string? _anchor;
+    private string? _tag;
+
+    // The number of collections that started and did not end, for the stack probe
+    private int _nesting;
     private long _tokenBufferOffset;
     private int _tokenBufferIndex;
     private int _tokenLineNumber;
     private long _tokenCharOffset;
     private string? _value;
-    private Mark? _startMark;
-    private Mark? _endMark;
+    private Mark _startMark;
+    private Mark _endMark;
+
+    // The locations of the current token that were computed: they are kept until the next token
+    private MarkKinds _marks;
 
     // Directives of the next document
     private VersionDirective? _pendingVersion;
@@ -231,23 +245,45 @@ internal sealed class Utf8YamlTokenSource
     {
         get
         {
-            var start = _token.Start;
-            if (_token.Properties.AnchorStart >= 0)
+            ref var token = ref Token;
+            var start = token.Start;
+            if (token.Properties.AnchorStart >= 0)
             {
-                start = Math.Min(start, _token.Properties.AnchorStart);
+                start = Math.Min(start, token.Properties.AnchorStart);
             }
 
-            if (_token.Properties.TagStart >= 0)
+            if (token.Properties.TagStart >= 0)
             {
-                start = Math.Min(start, _token.Properties.TagStart);
+                start = Math.Min(start, token.Properties.TagStart);
             }
 
             return _tokenBufferOffset + start;
         }
     }
 
+    /// <summary>Gets the location of the current token, computed from its offsets when it is asked for: the source must keep the whole input.</summary>
+    public YamlLocation TokenLocation
+    {
+        get
+        {
+            ref var token = ref Token;
+            var start = token.Start;
+            if (token.Properties.AnchorStart >= 0)
+            {
+                start = Math.Min(start, token.Properties.AnchorStart);
+            }
+
+            if (token.Properties.TagStart >= 0)
+            {
+                start = Math.Min(start, token.Properties.TagStart);
+            }
+
+            return new YamlLocation(this, _tokenBufferOffset + start, _tokenBufferOffset + token.Start + token.Length);
+        }
+    }
+
     /// <summary>Gets the offset of the end of the current token in the input.</summary>
-    public long TokenEndOffset => _tokenBufferOffset + _token.Start + _token.Length;
+    public long TokenEndOffset => _tokenBufferOffset + Token.Start + Token.Length;
 
     /// <summary>Computes the location of an offset of the input. When the source does not keep the whole input, only the offsets of the current buffer are known.</summary>
     /// <exception cref="InvalidOperationException">The bytes of the input were given back by <see cref="ReturnPooledBuffer"/>.</exception>
@@ -290,18 +326,18 @@ internal sealed class Utf8YamlTokenSource
     /// <summary>Gets the kind of the current token: a document start or end, a collection start or end, a scalar or an alias; <see cref="Utf8YamlTokenKind.None"/> at the end.</summary>
     public Utf8YamlTokenKind Kind { get; private set; }
 
-    public bool IsFlow => (_token.Flags & Utf8YamlTokenFlags.Flow) != Utf8YamlTokenFlags.None;
+    public bool IsFlow => (Token.Flags & Utf8YamlTokenFlags.Flow) != Utf8YamlTokenFlags.None;
 
     /// <summary>Gets a value indicating whether the current document start or end has no marker.</summary>
-    public bool IsImplicit => _token.Length == 0;
+    public bool IsImplicit => Token.Length == 0;
 
-    public ScalarStyle ScalarStyle => (ScalarStyle)(_token.Flags & Utf8YamlTokenFlags.ScalarStyleMask);
+    public ScalarStyle ScalarStyle => (ScalarStyle)(Token.Flags & Utf8YamlTokenFlags.ScalarStyleMask);
 
     /// <summary>Gets the anchor of the current node, or the name of the current alias.</summary>
-    public string? Anchor { get; private set; }
+    public string? Anchor => _current >= 0 ? (_batch[_current].HasStrings ? _batch[_current].Anchor : null) : _anchor;
 
     /// <summary>Gets the resolved tag of the current node.</summary>
-    public string? Tag { get; private set; }
+    public string? Tag => _current >= 0 ? (_batch[_current].HasStrings ? _batch[_current].Tag : null) : _tag;
 
     /// <summary>Gets the %YAML directive of the current document start.</summary>
     public VersionDirective? Version { get; private set; }
@@ -312,18 +348,20 @@ internal sealed class Utf8YamlTokenSource
     /// <summary>Gets the bytes of the current scalar when they are its value: a plain scalar on one line, or a quoted scalar without escapes or line breaks.</summary>
     public bool TryGetRawScalar(out ReadOnlySpan<byte> value)
     {
-        if (Kind is not Utf8YamlTokenKind.Scalar || (_token.Flags & Utf8YamlTokenFlags.RawValue) == Utf8YamlTokenFlags.None)
+        if (Kind is not Utf8YamlTokenKind.Scalar || (Token.Flags & Utf8YamlTokenFlags.RawValue) == Utf8YamlTokenFlags.None)
         {
             value = default;
             return false;
         }
 
-        value = _token.ValueLength == 0 ? default : TokenBuffer.Slice(_token.ValueStart, _token.ValueLength);
+        value = Token.ValueLength == 0 ? default : TokenBuffer.Slice(Token.ValueStart, Token.ValueLength);
         return true;
     }
 
     /// <summary>Gets the value of the current scalar.</summary>
-    public string ScalarValue => _value ??= Utf8YamlReader.DecodeString(TokenBuffer, in _token);
+    public string ScalarValue => _value ??= Utf8YamlReader.DecodeString(TokenBuffer, in Token);
+
+    private ref Utf8YamlReader.TokenData Token => ref _current >= 0 ? ref _batch[_current].Token : ref _token;
 
     // The buffer of the current token: the bytes stay in place until the next read
     private ReadOnlySpan<byte> TokenBuffer => _buffer.AsSpan(_tokenBufferIndex, _start + _length - _tokenBufferIndex);
@@ -333,32 +371,93 @@ internal sealed class Utf8YamlTokenSource
     {
         get
         {
-            if (_startMark is null)
+            if ((_marks & MarkKinds.Start) == MarkKinds.None)
             {
-                var start = _token.Start;
-                if (_token.Properties.AnchorStart >= 0)
+                var start = Token.Start;
+                if (Token.Properties.AnchorStart >= 0)
                 {
-                    start = Math.Min(start, _token.Properties.AnchorStart);
+                    start = Math.Min(start, Token.Properties.AnchorStart);
                 }
 
-                if (_token.Properties.TagStart >= 0)
+                if (Token.Properties.TagStart >= 0)
                 {
-                    start = Math.Min(start, _token.Properties.TagStart);
+                    start = Math.Min(start, Token.Properties.TagStart);
                 }
 
                 _startMark = GetMark(_tokenBufferOffset + start);
+                _marks |= MarkKinds.Start;
             }
 
-            return _startMark.Value;
+            return _startMark;
         }
     }
 
     /// <summary>Gets the end of the current token.</summary>
-    public Mark End => _endMark ??= GetMark(_tokenBufferOffset + _token.Start + _token.Length);
+    public Mark End
+    {
+        get
+        {
+            if ((_marks & MarkKinds.End) == MarkKinds.None)
+            {
+                _endMark = GetMark(_tokenBufferOffset + Token.Start + Token.Length);
+                _marks |= MarkKinds.End;
+            }
+
+            return _endMark;
+        }
+    }
 
     /// <summary>Reads the next node token, or document start or end.</summary>
     /// <returns><see langword="false"/> at the end of the input.</returns>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public bool Read()
+    {
+        // Most tokens are already in the batch: the loop that reads the next batch is only called when it is consumed
+        if (_batchIndex < _batchCount)
+        {
+            ReadFromBatch();
+            return true;
+        }
+
+        return ReadBatch();
+    }
+
+    // The token stays valid until the next read: the buffer moves only when the batch is consumed
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private void ReadFromBatch()
+    {
+        _current = _batchIndex++;
+        ref var entry = ref _batch[_current];
+        Kind = entry.Kind;
+        if (entry.Kind is Utf8YamlTokenKind.DocumentStart)
+        {
+            Version = entry.Version;
+            TagDirectives = entry.TagDirectives;
+        }
+
+        // The tokens of a batch share their buffer
+        if (_current == 0)
+        {
+            _tokenBufferOffset = _batchBufferOffset;
+            _tokenBufferIndex = _batchBufferIndex;
+            _tokenLineNumber = _batchLineNumber;
+            _tokenCharOffset = _batchCharOffset;
+        }
+
+        _value = null;
+        _marks = MarkKinds.None;
+        if (Kind is Utf8YamlTokenKind.MappingEnd or Utf8YamlTokenKind.SequenceEnd)
+        {
+            _nesting--;
+        }
+        else if (Kind is Utf8YamlTokenKind.MappingStart or Utf8YamlTokenKind.SequenceStart && (++_nesting & (StackProbeInterval - 1)) == 1)
+        {
+            EnsureSufficientExecutionStack();
+        }
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private bool ReadBatch()
     {
         if (_pendingError is not null)
             throw _pendingError;
@@ -367,46 +466,22 @@ internal sealed class Utf8YamlTokenSource
         {
             if (_batchIndex < _batchCount)
             {
-                // The token stays valid until the next read: the buffer moves only when the batch is consumed
-                ref var entry = ref _batch[_batchIndex++];
-                _token = entry.Token;
-                Kind = entry.Kind;
-                Anchor = entry.Anchor;
-                Tag = entry.Tag;
-                if (entry.Kind is Utf8YamlTokenKind.DocumentStart)
-                {
-                    Version = entry.Version;
-                    TagDirectives = entry.TagDirectives;
-                }
-
-                entry = default;
-                _tokenBufferOffset = _batchBufferOffset;
-                _tokenBufferIndex = _batchBufferIndex;
-                _tokenLineNumber = _batchLineNumber;
-                _tokenCharOffset = _batchCharOffset;
-                _value = null;
-                _startMark = null;
-                _endMark = null;
-                if (Kind is Utf8YamlTokenKind.MappingStart or Utf8YamlTokenKind.SequenceStart)
-                {
-                    // Consumers such as converters and the document object model recurse once per nesting level, so a
-                    // large MaxDepth can exhaust the stack before the depth limit is reached. Probing the stack at every
-                    // collection start turns an uncatchable crash into a YamlException.
-                    try
-                    {
-                        RuntimeHelpers.EnsureSufficientExecutionStack();
-                    }
-                    catch (InsufficientExecutionStackException exception)
-                    {
-                        throw YamlDepthHelper.CreateInsufficientStackException(_state._data.Depth, Start, End, SourceName, exception);
-                    }
-                }
-
+                ReadFromBatch();
                 return true;
             }
 
             // The error comes after the tokens that the batch handed out, like when the tokens are read one at a time
             _batchError?.Throw();
+
+            // The entries of the batch are read again: the current token is kept apart
+            if (_current >= 0)
+            {
+                ref var current = ref _batch[_current];
+                _token = current.Token;
+                _anchor = current.HasStrings ? current.Anchor : null;
+                _tag = current.HasStrings ? current.Tag : null;
+                _current = -1;
+            }
 
             var bufferIndex = _start;
             var lineNumber = _state._data.LineNumber;
@@ -476,8 +551,7 @@ internal sealed class Utf8YamlTokenSource
                 _tokenBufferIndex = bufferIndex;
                 _tokenLineNumber = lineNumber;
                 _tokenCharOffset = charOffset;
-                _startMark = null;
-                _endMark = null;
+                _marks = MarkKinds.None;
                 return false;
             }
 
@@ -491,7 +565,24 @@ internal sealed class Utf8YamlTokenSource
         }
     }
 
+    // Consumers such as converters and the document object model recurse once per nesting level, so a large MaxDepth can
+    // exhaust the stack before the depth limit is reached. Probing the stack turns an uncatchable crash into a YamlException.
+    // The probe leaves room for more than the levels until the next one, so it runs at the first level and then every few
+    // levels, instead of at every collection start.
+    private void EnsureSufficientExecutionStack()
+    {
+        try
+        {
+            RuntimeHelpers.EnsureSufficientExecutionStack();
+        }
+        catch (InsufficientExecutionStackException exception)
+        {
+            throw YamlDepthHelper.CreateInsufficientStackException(_state._data.Depth, Start, End, SourceName, exception);
+        }
+    }
+
     // Reads the next node token, with the strings that it needs while the state of the reader is the one of the token
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private bool ReadToken(ref Utf8YamlReader reader, ref BatchedToken entry)
     {
         while (reader.Read())
@@ -522,16 +613,27 @@ internal sealed class Utf8YamlTokenSource
                     _pendingTags = null;
                     entry.Anchor = null;
                     entry.Tag = null;
+                    entry.HasStrings = true;
                     break;
 
                 case Utf8YamlTokenKind.Alias:
                     entry.Anchor = Encoding.UTF8.GetString(reader.AnchorName);
                     entry.Tag = null;
+                    entry.HasStrings = true;
                     break;
 
                 default:
-                    entry.Anchor = reader.AnchorStart < 0 ? null : Encoding.UTF8.GetString(reader.AnchorName);
-                    entry.Tag = reader.GetTag();
+                    // Most nodes have neither anchor nor tag: the strings of the entry, which may be the ones of an earlier
+                    // token, are then left as they are, without the cost of storing references
+                    var anchor = reader.AnchorStart < 0 ? null : Encoding.UTF8.GetString(reader.AnchorName);
+                    var tag = reader.TagStart < 0 ? null : reader.GetTag();
+                    entry.HasStrings = anchor is not null || tag is not null;
+                    if (entry.HasStrings)
+                    {
+                        entry.Anchor = anchor;
+                        entry.Tag = tag;
+                    }
+
                     break;
             }
 
@@ -820,11 +922,22 @@ internal sealed class Utf8YamlTokenSource
         }
     }
 
+    [Flags]
+    private enum MarkKinds : byte
+    {
+        None = 0,
+        Start = 1,
+        End = 2,
+    }
+
     [StructLayout(LayoutKind.Auto)]
     private struct BatchedToken
     {
         public Utf8YamlReader.TokenData Token;
         public Utf8YamlTokenKind Kind;
+
+        // Anchor and Tag are the ones of the token; otherwise they are null, whatever the fields hold
+        public bool HasStrings;
         public string? Anchor;
         public string? Tag;
         public VersionDirective? Version;

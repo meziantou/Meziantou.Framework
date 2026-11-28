@@ -47,6 +47,9 @@ public class DocumentBenchmarks : IDisposable
         // The source-generated metadata reads and writes the same YAML as reflection
         if (!string.Equals(expected, YamlSerializer.Serialize(Deserialize_SourceGenerated(), Options), StringComparison.Ordinal) || !string.Equals(_yaml, Serialize_SourceGenerated(), StringComparison.Ordinal))
             throw new InvalidOperationException("The source-generated metadata does not read or write the same orders");
+
+        if (!string.Equals(expected, YamlSerializer.Serialize(Styml_Deserialize_SourceGenerated(), Options), StringComparison.Ordinal))
+            throw new InvalidOperationException("Styml's source-generated metadata does not read the same orders");
     }
 
     [Benchmark]
@@ -61,7 +64,13 @@ public class DocumentBenchmarks : IDisposable
     }
 
     [Benchmark]
+    public byte[] SerializeToUtf8Bytes() => YamlSerializer.SerializeToUtf8Bytes(_orders, Options);
+
+    [Benchmark]
     public string Styml_Serialize() => System.Text.Yaml.YamlSerializer.Serialize(_orders, StymlOptions);
+
+    [Benchmark]
+    public byte[] Styml_SerializeToUtf8Bytes() => System.Text.Yaml.YamlSerializer.SerializeToUtf8Bytes(_orders, StymlOptions);
 
     [Benchmark]
     public long Styml_SerializeToStream()
@@ -73,6 +82,18 @@ public class DocumentBenchmarks : IDisposable
 
     [Benchmark]
     public string Serialize_SourceGenerated() => YamlSerializer.Serialize(_orders, _typeInfo);
+
+    [Benchmark]
+    public byte[] SerializeToUtf8Bytes_SourceGenerated() => YamlSerializer.SerializeToUtf8Bytes(_orders, _typeInfo);
+
+    [Benchmark]
+    public string Styml_Serialize_SourceGenerated() => System.Text.Yaml.YamlSerializer.Serialize(_orders, StymlBenchmarkYamlContext.Default.CollectionOrder);
+
+    [Benchmark]
+    public byte[] Styml_SerializeToUtf8Bytes_SourceGenerated() => System.Text.Yaml.YamlSerializer.SerializeToUtf8Bytes(_orders, StymlBenchmarkYamlContext.Default.CollectionOrder);
+
+    [Benchmark]
+    public Collection<Order>? Styml_Deserialize_SourceGenerated() => System.Text.Yaml.YamlSerializer.Deserialize(_utf8Yaml.AsSpan(), StymlBenchmarkYamlContext.Default.CollectionOrder);
 
     [Benchmark]
     public Collection<Order>? Deserialize_SourceGenerated() => YamlSerializer.Deserialize(_utf8Yaml.AsSpan(), _typeInfo);

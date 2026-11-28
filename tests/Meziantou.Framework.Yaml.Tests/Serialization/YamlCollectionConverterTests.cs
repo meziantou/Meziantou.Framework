@@ -11,6 +11,33 @@ public sealed class YamlCollectionConverterTests
         public IEnumerable<int> Values { get; set; } = Array.Empty<int>();
     }
 
+    // A Collection<T> is filled through its list, while a type that derives from it gets its items through InsertItem
+    [Fact]
+    public void Collection_RoundTripAndDerivedCollectionsGetTheirItems()
+    {
+        var collection = YamlSerializer.Deserialize<System.Collections.ObjectModel.Collection<int>>("[1, 2, 3]");
+        var counting = YamlSerializer.Deserialize<CountingCollection>("[1, 2, 3]");
+        var observable = YamlSerializer.Deserialize<System.Collections.ObjectModel.ObservableCollection<int>>("[1, 2, 3]");
+
+        Assert.Equal([1, 2, 3], collection!);
+        Assert.Equal([1, 2, 3], counting!);
+        Assert.Equal(3, counting!.InsertCount);
+        Assert.Equal([1, 2, 3], observable!);
+        Assert.Equal("- 1\n- 2\n- 3\n", YamlSerializer.Serialize(collection));
+        Assert.Equal("- 1\n- 2\n- 3\n", YamlSerializer.Serialize(counting));
+    }
+
+    private sealed class CountingCollection : System.Collections.ObjectModel.Collection<int>
+    {
+        public int InsertCount { get; private set; }
+
+        protected override void InsertItem(int index, int item)
+        {
+            InsertCount++;
+            base.InsertItem(index, item);
+        }
+    }
+
     [Fact]
     public void Array_RoundTrip()
     {

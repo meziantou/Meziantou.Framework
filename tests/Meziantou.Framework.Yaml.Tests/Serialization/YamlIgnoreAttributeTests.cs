@@ -200,9 +200,64 @@ public sealed class YamlIgnoreAttributeTests
 
         Assert.Equal("{}", yaml.Trim(), ignoreLineEndingDifferences: true);
     }
+
+    // The members of a type are written through their boxed value the first time, then by their typed converter: every
+    // call writes the same YAML
+    [Theory]
+    [InlineData(YamlIgnoreCondition.Never, "Count: 0\nPrice: 0.0\nCreatedAt: 0001-01-01T00:00:00.0000000\nOptional: null\nName: null\nTags: null\nFlag: false\n")]
+    [InlineData(YamlIgnoreCondition.WhenWritingNull, "Count: 0\nPrice: 0.0\nCreatedAt: 0001-01-01T00:00:00.0000000\nFlag: false\n")]
+    [InlineData(YamlIgnoreCondition.WhenWritingDefault, "{}\n")]
+    public void IgnoreConditions_WriteTheSameYamlOnEveryCall(YamlIgnoreCondition condition, string expectedDefaults)
+    {
+        var options = new YamlSerializerOptions { DefaultIgnoreCondition = condition };
+        var defaults = new TypedWriterIgnoreModel { Price = 0.0m };
+        var values = new TypedWriterIgnoreModel { Count = 1, Price = 2.5m, CreatedAt = new DateTime(2024, 1, 1, 0, 0, 0, DateTimeKind.Utc), Optional = 0, Name = "a", Tags = ["b"], Flag = true };
+        const string ExpectedValues = "Count: 1\nPrice: 2.5\nCreatedAt: 2024-01-01T00:00:00.0000000Z\nOptional: 0\nName: a\nTags:\n  - b\nFlag: true\n";
+
+        for (var i = 0; i < 3; i++)
+        {
+            Assert.Equal(expectedDefaults, YamlSerializer.Serialize(defaults, options));
+            Assert.Equal(ExpectedValues, YamlSerializer.Serialize(values, options));
+        }
+    }
+
+    // A null value of a member that does not accept it is reported before its ignore condition, on every call
+    [Fact]
+    public void NonNullableMember_IsReportedOnEveryCall()
+    {
+        var options = new YamlSerializerOptions { RespectNullableAnnotations = true, DefaultIgnoreCondition = YamlIgnoreCondition.WhenWritingNull };
+
+        for (var i = 0; i < 3; i++)
+        {
+            Assert.Equal("Name: a\n", YamlSerializer.Serialize(new NonNullableWriterModel { Name = "a" }, options));
+            Assert.Throws<YamlException>(() => YamlSerializer.Serialize(new NonNullableWriterModel { Name = null! }, options));
+        }
+    }
 }
 
 #pragma warning disable MA0048 // File name must match type name
+internal sealed class TypedWriterIgnoreModel
+{
+    public int Count { get; set; }
+
+    public decimal Price { get; set; }
+
+    public DateTime CreatedAt { get; set; }
+
+    public int? Optional { get; set; }
+
+    public string? Name { get; set; }
+
+    public List<string>? Tags { get; set; }
+
+    public bool Flag { get; set; }
+}
+
+internal sealed class NonNullableWriterModel
+{
+    public string Name { get; set; } = "";
+}
+
 [YamlIgnore(Condition = YamlIgnoreCondition.WhenWritingNull)]
 internal sealed class TypeIgnoreModel
 {

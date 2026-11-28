@@ -16,7 +16,7 @@ internal abstract class YamlTypedMemberSetter
     /// Like the boxed path, an exception other than a <see cref="YamlException"/> is reported at the location of the key,
     /// and a null value is rejected for a member that does not accept it.
     /// </remarks>
-    public abstract void ReadAndSet(YamlReader reader, object instance, YamlLocation keyLocation);
+    public abstract void ReadAndSet(YamlReader reader, object instance, in YamlLocation keyLocation);
 
     /// <summary>Compiles the setter of a member whose converter is typed for its exact type, or returns <see langword="null"/>.</summary>
     [UnconditionalSuppressMessage("Trimming", "IL2060", Justification = "The generic argument is the type of a member of a type the reflection-based contract already keeps.")]
@@ -80,7 +80,7 @@ internal abstract class YamlTypedMemberSetter
 
 internal sealed class YamlTypedMemberSetter<TValue>(YamlConverter<TValue> converter, Action<object, TValue?> setter, Type declaringType, string memberName, bool disallowNull) : YamlTypedMemberSetter
 {
-    public override void ReadAndSet(YamlReader reader, object instance, YamlLocation keyLocation)
+    public override void ReadAndSet(YamlReader reader, object instance, in YamlLocation keyLocation)
     {
         TValue? value;
         try

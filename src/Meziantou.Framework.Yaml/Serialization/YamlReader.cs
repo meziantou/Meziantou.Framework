@@ -220,29 +220,35 @@ public sealed class YamlReader : YamlReaderWriterBase
     /// <returns><see langword="true"/> when the current token is an alias and reference handling is enabled; otherwise <see langword="false"/>.</returns>
     public bool TryReadAlias(out object? value)
     {
-        if (TokenType == YamlTokenType.Alias && _state.ReferenceReader is not null)
+        // Most nodes are not aliases: the check stays small enough to be inlined in the converters
+        if (TokenType != YamlTokenType.Alias || _state.ReferenceReader is null)
         {
-            var alias = Alias;
-            if (alias is null)
-            {
-                throw new YamlException(SourceName, Start, End, "Alias token did not provide an alias value.");
-            }
-
-            try
-            {
-                value = _state.ReferenceReader.Resolve(alias);
-            }
-            catch (Exception exception) when (exception is InvalidOperationException or KeyNotFoundException)
-            {
-                throw new YamlException(SourceName, Start, End, exception.Message, exception);
-            }
-
-            Read();
-            return true;
+            value = null;
+            return false;
         }
 
-        value = null;
-        return false;
+        return TryReadAliasCore(out value);
+    }
+
+    private bool TryReadAliasCore(out object? value)
+    {
+        var alias = Alias;
+        if (alias is null)
+        {
+            throw new YamlException(SourceName, Start, End, "Alias token did not provide an alias value.");
+        }
+
+        try
+        {
+            value = _state.ReferenceReader!.Resolve(alias);
+        }
+        catch (Exception exception) when (exception is InvalidOperationException or KeyNotFoundException)
+        {
+            throw new YamlException(SourceName, Start, End, exception.Message, exception);
+        }
+
+        Read();
+        return true;
     }
 
     /// <summary>Replays the mapping node the current alias refers to, so that it can be read again as a new node.</summary>
@@ -622,7 +628,8 @@ public sealed class YamlReader : YamlReaderWriterBase
 
         public YamlTokenType TokenType { get; private set; }
 
-        public string? ScalarValue => _fromSource && _scalarValue is null && TokenType is YamlTokenType.Scalar ? _scalarValue = _source.ScalarValue : _scalarValue;
+        // The source keeps the value of its current scalar: it is not cached again here
+        public string? ScalarValue => _fromSource ? (TokenType is YamlTokenType.Scalar ? _source.ScalarValue : null) : _scalarValue;
 
         public ScalarStyle ScalarStyle { get; private set; } = ScalarStyle.Any;
 
@@ -648,7 +655,7 @@ public sealed class YamlReader : YamlReaderWriterBase
         // The line and column of a key are only needed for an error: when the source keeps the whole input, they are
         // computed then, from the offsets of the token
         public YamlLocation CurrentLocation => _fromSource && _source.KeepsWholeInput
-            ? new YamlLocation(_source, _source.TokenStartOffset, _source.TokenEndOffset)
+            ? _source.TokenLocation
             : new YamlLocation(Start, End);
 
         public ParsingEvent? CurrentEvent => _fromSource && _currentEvent is null && TokenType is not YamlTokenType.None ? _currentEvent = _source.CreateEvent() : _currentEvent;
@@ -660,6 +667,23 @@ public sealed class YamlReader : YamlReaderWriterBase
         public string? SourceName { get; }
 
         public bool Read()
+        {
+            // Most readers neither replay nor record nodes: the tokens of the source are read as they are
+            if (_replays is null && !_recordMappings)
+            {
+                while (_source.Read())
+                {
+                    if (ReadSourceToken())
+                        return true;
+                }
+
+                return ReadEnd();
+            }
+
+            return ReadReplayedOrRecorded();
+        }
+
+        private bool ReadReplayedOrRecorded()
         {
             while (true)
             {
@@ -689,6 +713,11 @@ public sealed class YamlReader : YamlReaderWriterBase
                     return true;
             }
 
+            return ReadEnd();
+        }
+
+        private bool ReadEnd()
+        {
             _fromSource = false;
             TokenType = YamlTokenType.None;
             _scalarValue = null;
@@ -720,9 +749,7 @@ public sealed class YamlReader : YamlReaderWriterBase
             {
                 case Utf8YamlTokenKind.MappingStart:
                     TokenType = YamlTokenType.StartMapping;
-                    Tag = _source.Tag;
-                    Anchor = _source.Anchor;
-                    ThrowIfAnchorNotAllowed();
+                    ReadSourceProperties();
                     return true;
 
                 case Utf8YamlTokenKind.MappingEnd:
@@ -731,9 +758,7 @@ public sealed class YamlReader : YamlReaderWriterBase
 
                 case Utf8YamlTokenKind.SequenceStart:
                     TokenType = YamlTokenType.StartSequence;
-                    Tag = _source.Tag;
-                    Anchor = _source.Anchor;
-                    ThrowIfAnchorNotAllowed();
+                    ReadSourceProperties();
                     return true;
 
                 case Utf8YamlTokenKind.SequenceEnd:
@@ -743,9 +768,7 @@ public sealed class YamlReader : YamlReaderWriterBase
                 case Utf8YamlTokenKind.Scalar:
                     TokenType = YamlTokenType.Scalar;
                     ScalarStyle = _source.ScalarStyle;
-                    Tag = _source.Tag;
-                    Anchor = _source.Anchor;
-                    ThrowIfAnchorNotAllowed();
+                    ReadSourceProperties();
                     ThrowIfInvalidJsonSchemaScalar();
                     if (Anchor is not null)
                     {
@@ -757,6 +780,21 @@ public sealed class YamlReader : YamlReaderWriterBase
                 default:
                     TokenType = YamlTokenType.Alias;
                     return ReadAlias(_source.Anchor!);
+            }
+        }
+
+        // Most nodes have neither tag nor anchor: the properties, which are null, are then not assigned again
+        private void ReadSourceProperties()
+        {
+            if (_source.Tag is { } tag)
+            {
+                Tag = tag;
+            }
+
+            if (_source.Anchor is { } anchor)
+            {
+                Anchor = anchor;
+                ThrowIfAnchorNotAllowed();
             }
         }
 

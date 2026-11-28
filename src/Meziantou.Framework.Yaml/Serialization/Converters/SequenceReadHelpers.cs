@@ -1,3 +1,5 @@
+using System.Collections.ObjectModel;
+
 namespace Meziantou.Framework.Yaml.Serialization.Converters;
 
 internal static class SequenceReadHelpers
@@ -10,6 +12,13 @@ internal static class SequenceReadHelpers
 
         return (TElement)converter.Read(reader, typeof(TElement))!;
     }
+
+    /// <summary>
+    /// Reads an element with <paramref name="typedConverter"/>, which is <paramref name="converter"/> when it is typed: the
+    /// loops that read the elements of a sequence cast the converter once, instead of once per element.
+    /// </summary>
+    public static TElement ReadElement<TElement>(YamlReader reader, YamlConverter<TElement>? typedConverter, YamlConverter converter)
+        => typedConverter is not null ? typedConverter.Read(reader)! : (TElement)converter.Read(reader, typeof(TElement))!;
 
     /// <summary>Reads a sequence into a new <see cref="List{T}"/> exposed as <typeparamref name="TCollection"/>.</summary>
     /// <remarks>
@@ -51,9 +60,10 @@ internal static class SequenceReadHelpers
             reader.ReferenceReader.Register(anchor, list);
         }
 
+        var typedElementConverter = elementConverter as YamlConverter<TElement>;
         while (reader.TokenType != YamlTokenType.EndSequence)
         {
-            list.Add(SequenceReadHelpers.ReadElement<TElement>(reader, elementConverter));
+            list.Add(ReadElement(reader, typedElementConverter, elementConverter));
         }
 
         reader.Read();
@@ -77,11 +87,59 @@ internal static class SequenceReadHelpers
         }
 
         writer.WriteStartSequence();
-        foreach (var item in value)
+
+        // The common collections are enumerated without boxing their enumerator, and the elements are written by the typed
+        // converter without being boxed
+        var typedElementConverter = elementConverter as YamlConverter<TElement>;
+        switch (value)
         {
-            elementConverter.Write(writer, item);
+            case List<TElement> list:
+                foreach (var item in list)
+                {
+                    WriteElement(writer, typedElementConverter, elementConverter, item);
+                }
+
+                break;
+
+            case TElement[] array:
+                foreach (var item in array)
+                {
+                    WriteElement(writer, typedElementConverter, elementConverter, item);
+                }
+
+                break;
+
+            case Collection<TElement> collection:
+                for (var i = 0; i < collection.Count; i++)
+                {
+                    WriteElement(writer, typedElementConverter, elementConverter, collection[i]);
+                }
+
+                break;
+
+            default:
+                foreach (var item in value)
+                {
+                    WriteElement(writer, typedElementConverter, elementConverter, item);
+                }
+
+                break;
         }
+
         writer.WriteEndSequence();
+    }
+
+    /// <summary>Writes an element with <paramref name="typedConverter"/>, which is <paramref name="converter"/> when it is typed.</summary>
+    public static void WriteElement<TElement>(YamlWriter writer, YamlConverter<TElement>? typedConverter, YamlConverter converter, TElement value)
+    {
+        if (typedConverter is not null)
+        {
+            typedConverter.Write(writer, value);
+        }
+        else
+        {
+            converter.Write(writer, value);
+        }
     }
 
     public static ICollection<TElement>? PopulateCollection<TElement>(YamlReader reader, ICollection<TElement> collection, ref YamlConverter? elementConverter, string typeDisplayName)
@@ -118,9 +176,10 @@ internal static class SequenceReadHelpers
         elementConverter ??= reader.GetConverter(typeof(TElement));
         reader.Read();
 
+        var typedElementConverter = elementConverter as YamlConverter<TElement>;
         while (reader.TokenType != YamlTokenType.EndSequence)
         {
-            collection.Add(SequenceReadHelpers.ReadElement<TElement>(reader, elementConverter));
+            collection.Add(ReadElement(reader, typedElementConverter, elementConverter));
         }
 
         reader.Read();

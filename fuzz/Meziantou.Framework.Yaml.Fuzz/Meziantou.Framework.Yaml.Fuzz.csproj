@@ -14,5 +14,7 @@
   <ItemGroup>
     <ProjectReference Include="..\Meziantou.Framework.Fuzzing\Meziantou.Framework.Fuzzing.csproj" />
     <ProjectReference Include="..\..\src\Meziantou.Framework.Yaml\Meziantou.Framework.Yaml.csproj" />
+    <!-- The source generator of the package, for the target that compares the generated metadata with reflection -->
+    <ProjectReference Include="..\..\src\Meziantou.Framework.Yaml.SourceGenerator\Meziantou.Framework.Yaml.SourceGenerator.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false" SetTargetFramework="TargetFramework=netstandard2.0" />
   </ItemGroup>
 </Project>

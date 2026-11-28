@@ -681,6 +681,143 @@ public class YamlSerializerApiTests
     }
 
     [Fact]
+    public void SerializeToUtf8Bytes_Usage()
+    {
+        #region YamlSerializer_SerializeToUtf8Bytes
+        var utf8Yaml = YamlSerializer.SerializeToUtf8Bytes(new Product
+        {
+            Id = 1,
+            DisplayName = "Café",
+            Tags = ["new"],
+        });
+
+        Assert.Equal("""
+            Id: 1
+            name: Café
+            Tags:
+              - new
+
+            """u8.ToArray(), utf8Yaml);
+
+        var product = YamlSerializer.Deserialize<Product>(utf8Yaml);
+        Assert.Equal("Café", product!.DisplayName);
+        #endregion
+    }
+
+    [Fact]
+    public void SerializeToUtf8Bytes_OverloadsWriteTheBytesOfTheStreamOverloads()
+    {
+        var options = new YamlSerializerOptions();
+        var typeInfo = new StringTypeInfo(options);
+        var context = new CollectionConverterYamlContext();
+        List<int?> values = [1, null, 3];
+
+        Assert.Equal(SerializeToStream(stream => YamlSerializer.Serialize(stream, values, options)), YamlSerializer.SerializeToUtf8Bytes(values, options));
+        Assert.Equal(SerializeToStream(stream => YamlSerializer.Serialize(stream, values, context)), YamlSerializer.SerializeToUtf8Bytes(values, context));
+        Assert.Equal(SerializeToStream(stream => YamlSerializer.Serialize(stream, (object)values, typeof(List<int?>), options)), YamlSerializer.SerializeToUtf8Bytes(values, typeof(List<int?>), options));
+        Assert.Equal(SerializeToStream(stream => YamlSerializer.Serialize(stream, (object)values, typeof(List<int?>), context)), YamlSerializer.SerializeToUtf8Bytes(values, typeof(List<int?>), context));
+        Assert.Equal(SerializeToStream(stream => YamlSerializer.Serialize(stream, "hello", typeInfo)), YamlSerializer.SerializeToUtf8Bytes("hello", typeInfo));
+        Assert.Equal(SerializeToStream(stream => YamlSerializer.Serialize(stream, (object)"hello", (YamlTypeInfo)typeInfo)), YamlSerializer.SerializeToUtf8Bytes((object)"hello", (YamlTypeInfo)typeInfo));
+        Assert.Equal("value: hello\n"u8.ToArray(), YamlSerializer.SerializeToUtf8Bytes("hello", typeInfo));
+
+        static byte[] SerializeToStream(Action<Stream> serialize)
+        {
+            using var stream = new MemoryStream();
+            serialize(stream);
+            return stream.ToArray();
+        }
+    }
+
+    [Fact]
+    public void SerializeToUtf8Bytes_ValidatesArguments()
+    {
+        Assert.Throws<ArgumentNullException>(() => YamlSerializer.SerializeToUtf8Bytes(1, (YamlSerializerContext)null!));
+        Assert.Throws<ArgumentNullException>(() => YamlSerializer.SerializeToUtf8Bytes(1, null!, (YamlSerializerOptions?)null));
+        Assert.Throws<ArgumentNullException>(() => YamlSerializer.SerializeToUtf8Bytes(1, null!, new CollectionConverterYamlContext()));
+        Assert.Throws<ArgumentNullException>(() => YamlSerializer.SerializeToUtf8Bytes(1, typeof(int), (YamlSerializerContext)null!));
+        Assert.Throws<ArgumentNullException>(() => YamlSerializer.SerializeToUtf8Bytes("hello", (YamlTypeInfo<string>)null!));
+        Assert.Throws<ArgumentNullException>(() => YamlSerializer.SerializeToUtf8Bytes((object)"hello", (YamlTypeInfo)null!));
+    }
+
+    // The text is encoded by blocks: a character of several bytes, or a surrogate pair, can be split between two blocks
+    [Theory]
+    [InlineData("é")]
+    [InlineData("€")]
+    [InlineData("😀")]
+    public void SerializeToUtf8Bytes_EncodesTheTextSplitBetweenBlocks(string character)
+    {
+        var values = new List<string>();
+        for (var i = 0; i < 3000; i++)
+        {
+            values.Add(new string('a', i % 7) + character);
+        }
+
+        var expected = System.Text.Encoding.UTF8.GetBytes(YamlSerializer.Serialize(values));
+        Assert.Equal(expected, YamlSerializer.SerializeToUtf8Bytes(values));
+
+        using var stream = new MemoryStream();
+        YamlSerializer.Serialize(stream, values);
+        Assert.Equal(expected, stream.ToArray());
+        Assert.Equal(values, YamlSerializer.Deserialize<List<string>>(expected));
+    }
+
+    // A lone surrogate is not text: the writer reports it, whatever the output
+    [Fact]
+    public void SerializeToUtf8Bytes_RejectsLoneSurrogatesLikeSerialize()
+    {
+        Assert.Throws<YamlException>(() => YamlSerializer.Serialize("a\uD800b"));
+        Assert.Throws<YamlException>(() => YamlSerializer.SerializeToUtf8Bytes("a\uD800b"));
+
+        using var stream = new MemoryStream();
+        Assert.Throws<YamlException>(() => YamlSerializer.Serialize(stream, "a\uD800b"));
+    }
+
+    [Fact]
+    public void SerializeToStream_FlushesTheStream()
+    {
+        using var stream = new FlushCountingStream();
+        YamlSerializer.Serialize(stream, new List<int> { 1, 2 });
+
+        Assert.Equal(1, stream.FlushCount);
+        Assert.Equal("- 1\n- 2\n"u8.ToArray(), stream.ToArray());
+    }
+
+    // A converter that serializes while it is serialized gets a writer of its own
+    [Fact]
+    public void SerializeToUtf8Bytes_SupportsNestedCalls()
+    {
+        var options = new YamlSerializerOptions { Converters = [new NestedSerializationConverter()] };
+
+        var utf8Yaml = YamlSerializer.SerializeToUtf8Bytes(new List<NestedSerializationValue> { new("a"), new("b") }, options);
+
+        Assert.Equal("- \"a: 1\\n\"\n- \"b: 1\\n\"\n"u8.ToArray(), utf8Yaml);
+    }
+
+    private sealed record NestedSerializationValue(string Name);
+
+    private sealed class NestedSerializationConverter : YamlConverter<NestedSerializationValue>
+    {
+        public override NestedSerializationValue? Read(YamlReader reader) => throw new NotSupportedException();
+
+        public override void Write(YamlWriter writer, NestedSerializationValue value)
+        {
+            var nested = YamlSerializer.SerializeToUtf8Bytes(new Dictionary<string, int>(StringComparer.Ordinal) { [value.Name] = 1 });
+            writer.WriteScalar(System.Text.Encoding.UTF8.GetString(nested));
+        }
+    }
+
+    private sealed class FlushCountingStream : MemoryStream
+    {
+        public int FlushCount { get; private set; }
+
+        public override void Flush()
+        {
+            FlushCount++;
+            base.Flush();
+        }
+    }
+
+    [Fact]
     public void NonGenericTypeInfoOverloadsSerializeAndDeserializePayload()
     {
         YamlTypeInfo typeInfo = new StringTypeInfo(new YamlSerializerOptions());

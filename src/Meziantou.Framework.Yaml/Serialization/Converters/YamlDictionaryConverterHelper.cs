@@ -21,11 +21,24 @@ internal static class YamlDictionaryConverterHelper
         ArgumentNullException.ThrowIfNull(valueConverter);
 
         writer.WriteStartMapping();
-        foreach (var pair in entries)
+
+        // A dictionary is enumerated without boxing its enumerator, and the values are written by the typed converter
+        var typedValueConverter = valueConverter as YamlConverter<TValue>;
+        if (entries is Dictionary<string, TValue> dictionary)
         {
-            var key = writer.ConvertDictionaryKey(pair.Key);
-            writer.WritePropertyName(key);
-            valueConverter.Write(writer, pair.Value);
+            foreach (var pair in dictionary)
+            {
+                writer.WritePropertyName(writer.ConvertDictionaryKey(pair.Key));
+                SequenceReadHelpers.WriteElement(writer, typedValueConverter, valueConverter, pair.Value);
+            }
+        }
+        else
+        {
+            foreach (var pair in entries)
+            {
+                writer.WritePropertyName(writer.ConvertDictionaryKey(pair.Key));
+                SequenceReadHelpers.WriteElement(writer, typedValueConverter, valueConverter, pair.Value);
+            }
         }
 
         writer.WriteEndMapping();
@@ -39,10 +52,11 @@ internal static class YamlDictionaryConverterHelper
         EnsureSupportedKeyType(writer, typeof(TKey));
 
         writer.WriteStartMapping();
+        var typedValueConverter = valueConverter as YamlConverter<TValue>;
         foreach (var pair in entries)
         {
             WriteKey(writer, pair.Key);
-            valueConverter.Write(writer, pair.Value);
+            SequenceReadHelpers.WriteElement(writer, typedValueConverter, valueConverter, pair.Value);
         }
 
         writer.WriteEndMapping();
@@ -279,6 +293,7 @@ internal static class YamlDictionaryConverterHelper
         }
 
         valueConverter ??= reader.GetConverter(typeof(TValue));
+        var typedValueConverter = valueConverter as YamlConverter<TValue>;
 
         var options = reader.Options;
         dictionary ??= createDictionary(options);
@@ -326,7 +341,7 @@ internal static class YamlDictionaryConverterHelper
             }
 
             Debug.Assert(valueConverter is not null);
-            dictionary[key] = SequenceReadHelpers.ReadElement<TValue>(reader, valueConverter);
+            dictionary[key] = SequenceReadHelpers.ReadElement(reader, typedValueConverter, valueConverter);
         }
 
         reader.ReturnPropertyNameKeySet(seenKeys);

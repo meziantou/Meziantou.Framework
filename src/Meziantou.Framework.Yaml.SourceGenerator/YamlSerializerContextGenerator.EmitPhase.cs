@@ -557,7 +557,7 @@ public sealed partial class YamlSerializerContextGenerator
             builder.AppendLine("        if (writer.TryWriteReference(value)) { return; }");
             builder.AppendLine();
             builder.AppendLine("        writer.WriteStartSequence();");
-            if (sequenceKind == SequenceKind.List)
+            if (sequenceKind == SequenceKind.List || IsObjectModelCollection(typeSymbol))
             {
                 builder.AppendLine("        for (var i = 0; i < value.Count; i++)");
                 builder.AppendLine("        {");
@@ -1437,6 +1437,113 @@ public sealed partial class YamlSerializerContextGenerator
     /// Emits the detection of a duplicate mapping key while reading an object. Like the reflection-based contract, the key
     /// is compared using the property name comparer, whether it maps to a member, to the extension data, or to nothing.
     /// </summary>
+    /// <summary>
+    /// Determines whether <paramref name="type"/> is or derives from <see cref="System.Collections.ObjectModel.Collection{T}"/>,
+    /// whose enumerator is boxed: its elements are written by index instead.
+    /// </summary>
+    private static bool IsObjectModelCollection(ITypeSymbol type)
+    {
+        for (var current = type as INamedTypeSymbol; current is not null; current = current.BaseType)
+        {
+            if (current.IsGenericType && string.Equals(current.ConstructedFrom.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat), "global::System.Collections.ObjectModel.Collection<T>", StringComparison.Ordinal))
+                return true;
+        }
+
+        return false;
+    }
+
+    /// <summary>
+    /// Emits the detection of a duplicate key that names no member, or a member after the first 64, while reading an
+    /// object whose other keys are bits of <c>seenMembers</c>. The set of the keys is rented when the first of these keys
+    /// is read, and only when the duplicates or the merge keys need it.
+    /// </summary>
+    private static void EmitObjectDuplicateKeyCheckWithLazySet(StringBuilder builder, string? duplicateKeyHandlingOverride, string propertyNameComparerExpression)
+    {
+        var addExpression = "(seenKeys ??= reader.RentKeySet(" + propertyNameComparerExpression + ")).Add(key)";
+        if (string.Equals(duplicateKeyHandlingOverride, "LastWins", StringComparison.Ordinal))
+        {
+            builder.AppendLine("                if (mergeEnabled)");
+            builder.AppendLine("                {");
+            builder.Append("                    ").Append(addExpression).AppendLine(";");
+            builder.AppendLine("                }");
+            return;
+        }
+
+        if (duplicateKeyHandlingOverride is null)
+        {
+            builder.Append("                if ((mergeEnabled || options.DuplicateKeyHandling != global::Meziantou.Framework.Yaml.YamlDuplicateKeyHandling.LastWins) && !").Append(addExpression)
+                .AppendLine(" && options.DuplicateKeyHandling != global::Meziantou.Framework.Yaml.YamlDuplicateKeyHandling.LastWins)");
+            builder.AppendLine("                {");
+            builder.AppendLine("                    if (options.DuplicateKeyHandling == global::Meziantou.Framework.Yaml.YamlDuplicateKeyHandling.Error)");
+            builder.AppendLine("                    {");
+            builder.AppendLine("                        throw new global::Meziantou.Framework.Yaml.YamlException(reader.SourceName, keyLocation.Start, keyLocation.End, \"Duplicate mapping key '\" + key + \"'.\");");
+            builder.AppendLine("                    }");
+            builder.AppendLine();
+            builder.AppendLine("                    reader.Skip();");
+            builder.AppendLine("                    continue;");
+            builder.AppendLine("                }");
+            return;
+        }
+
+        builder.Append("                if (!").Append(addExpression).AppendLine(")");
+        builder.AppendLine("                {");
+        if (string.Equals(duplicateKeyHandlingOverride, "Error", StringComparison.Ordinal))
+        {
+            builder.AppendLine("                    throw new global::Meziantou.Framework.Yaml.YamlException(reader.SourceName, keyLocation.Start, keyLocation.End, \"Duplicate mapping key '\" + key + \"'.\");");
+        }
+        else
+        {
+            builder.AppendLine("                    reader.Skip();");
+            builder.AppendLine("                    continue;");
+        }
+
+        builder.AppendLine("                }");
+    }
+
+    /// <summary>
+    /// Emits the detection of a duplicate key that names the member at <paramref name="memberIndex"/>, one of the first 64
+    /// members, while reading an object: the member is a bit of <c>seenMembers</c>. Like with the set of the keys, two keys
+    /// that name the same member are duplicates.
+    /// </summary>
+    private static void EmitObjectDuplicateMemberCheck(StringBuilder builder, string? duplicateKeyHandlingOverride, int memberIndex)
+    {
+        var bit = "(1UL << " + memberIndex.ToString(CultureInfo.InvariantCulture) + ")";
+        if (!string.Equals(duplicateKeyHandlingOverride, "LastWins", StringComparison.Ordinal))
+        {
+            builder.Append("                if ((seenMembers & ").Append(bit).Append(") != 0");
+            if (duplicateKeyHandlingOverride is null)
+            {
+                builder.Append(" && options.DuplicateKeyHandling != global::Meziantou.Framework.Yaml.YamlDuplicateKeyHandling.LastWins");
+            }
+
+            builder.AppendLine(")");
+            builder.AppendLine("                {");
+            if (duplicateKeyHandlingOverride is null)
+            {
+                builder.AppendLine("                    if (options.DuplicateKeyHandling == global::Meziantou.Framework.Yaml.YamlDuplicateKeyHandling.Error)");
+                builder.AppendLine("                    {");
+                builder.AppendLine("                        throw new global::Meziantou.Framework.Yaml.YamlException(reader.SourceName, keyLocation.Start, keyLocation.End, \"Duplicate mapping key '\" + key + \"'.\");");
+                builder.AppendLine("                    }");
+                builder.AppendLine();
+                builder.AppendLine("                    reader.Skip();");
+                builder.AppendLine("                    continue;");
+            }
+            else if (string.Equals(duplicateKeyHandlingOverride, "Error", StringComparison.Ordinal))
+            {
+                builder.AppendLine("                    throw new global::Meziantou.Framework.Yaml.YamlException(reader.SourceName, keyLocation.Start, keyLocation.End, \"Duplicate mapping key '\" + key + \"'.\");");
+            }
+            else
+            {
+                builder.AppendLine("                    reader.Skip();");
+                builder.AppendLine("                    continue;");
+            }
+
+            builder.AppendLine("                }");
+        }
+
+        builder.Append("                seenMembers |= ").Append(bit).AppendLine(";");
+    }
+
     private static void EmitObjectDuplicateKeyCheck(StringBuilder builder, string? duplicateKeyHandlingOverride, string propertyNameComparerExpression)
     {
         // The set of the keys exists from the start when the merge keys need it
@@ -2151,9 +2258,11 @@ public sealed partial class YamlSerializerContextGenerator
         }
 
         builder.Append("        var mergeEnabled = ").Append(mergeEnabledExpression).AppendLine(";");
-        // The keys of the mapping, for its duplicates and its merge keys. The keys that a merge key must not replace only
-        // get a set of their own when the mapping has a merge key.
-        builder.Append("        global::System.Collections.Generic.HashSet<string>? seenKeys = mergeEnabled ? reader.RentKeySet(").Append(propertyNameComparerExpression).AppendLine(") : null;");
+        // The keys of the mapping, for its duplicates and its merge keys. A key that names one of the first 64 members is a
+        // bit of seenMembers, which is neither hashed nor stored; the other keys get a set when they are read. The keys that
+        // a merge key must not replace only get a set of their own when the mapping has a merge key.
+        builder.AppendLine("        global::System.Collections.Generic.HashSet<string>? seenKeys = null;");
+        builder.AppendLine("        var seenMembers = 0UL;");
         builder.AppendLine("        global::System.Collections.Generic.HashSet<string>? explicitKeys = null;");
         builder.AppendLine();
         builder.AppendLine("        void ReadAndApplyMerge()");
@@ -2166,7 +2275,17 @@ public sealed partial class YamlSerializerContextGenerator
         builder.AppendLine("            if (explicitKeys is null)");
         builder.AppendLine("            {");
         builder.Append("                explicitKeys = reader.RentKeySet(").Append(propertyNameComparerExpression).AppendLine(");");
-        builder.AppendLine("                explicitKeys.UnionWith(seenKeys!);");
+        builder.AppendLine("                if (seenKeys is not null)");
+        builder.AppendLine("                {");
+        builder.AppendLine("                    explicitKeys.UnionWith(seenKeys);");
+        builder.AppendLine("                }");
+        builder.Append("                for (var memberIndex = 0; memberIndex < __memberNames").Append(index).AppendLine(".Length && memberIndex < 64; memberIndex++)");
+        builder.AppendLine("                {");
+        builder.AppendLine("                    if ((seenMembers & (1UL << memberIndex)) != 0)");
+        builder.AppendLine("                    {");
+        builder.Append("                        explicitKeys.Add(__memberNames").Append(index).AppendLine("[memberIndex]);");
+        builder.AppendLine("                    }");
+        builder.AppendLine("                }");
         builder.AppendLine("            }");
         builder.AppendLine("            if (reader.TokenType == global::Meziantou.Framework.Yaml.Serialization.YamlTokenType.Scalar && global::Meziantou.Framework.Yaml.Serialization.YamlScalar.IsNull(reader))");
         builder.AppendLine("            {");
@@ -2284,8 +2403,10 @@ public sealed partial class YamlSerializerContextGenerator
         builder.AppendLine("            {");
         builder.AppendLine("                throw global::Meziantou.Framework.Yaml.Serialization.YamlThrowHelper.ThrowExpectedScalarKey(reader);");
         builder.AppendLine("            }");
-        builder.AppendLine("            var isMergeKey = mergeEnabled && global::Meziantou.Framework.Yaml.Serialization.Converters.YamlMergeKey.IsMergeKeyScalar(reader);");
         builder.Append("            var key = reader.GetScalarValue(__memberNames").Append(index).AppendLine(");");
+
+        // The key is the name of its member when it names one, which is not decoded: the merge key is recognized from it
+        builder.AppendLine("            var isMergeKey = mergeEnabled && global::System.String.Equals(key, \"<<\", global::System.StringComparison.Ordinal) && global::Meziantou.Framework.Yaml.Serialization.Converters.YamlMergeKey.IsMergeKeyScalar(reader);");
         builder.AppendLine("            var keyLocation = reader.CurrentLocation;");
         builder.AppendLine("            reader.Read();");
         builder.AppendLine();
@@ -2296,16 +2417,26 @@ public sealed partial class YamlSerializerContextGenerator
         builder.AppendLine("            }");
         builder.AppendLine();
         builder.AppendLine("            explicitKeys?.Add(key);");
-        EmitObjectDuplicateKeyCheck(builder, GetDuplicateKeyHandling(sourceGenerationOptions), propertyNameComparerExpression);
 
+        // A duplicate key is detected once the key is matched: in the block of its member, or with the keys that name no member
         builder.AppendLine("            var matched = false;");
-        foreach (var member in readCandidates)
+        for (var memberIndex = 0; memberIndex < readCandidates.Length; memberIndex++)
         {
+            var member = readCandidates[memberIndex];
             builder.Append("            if (!matched && ").Append(GetShouldReadMemberExpression(member, sourceGenerationOptions)).Append(" && global::System.String.Equals(key, ").Append(member.SerializedNameExpressionForRead)
                 .Append(", " + propertyNameComparisonExpression + "))");
             builder.AppendLine();
             builder.AppendLine("            {");
             builder.AppendLine("                matched = true;");
+            if (memberIndex < 64)
+            {
+                EmitObjectDuplicateMemberCheck(builder, duplicateKeyHandling, memberIndex);
+            }
+            else
+            {
+                EmitObjectDuplicateKeyCheckWithLazySet(builder, duplicateKeyHandling, propertyNameComparerExpression);
+            }
+
             if (member.IsIgnoredOnRead)
             {
                 builder.AppendLine("                reader.Skip();");
@@ -2333,6 +2464,7 @@ public sealed partial class YamlSerializerContextGenerator
 
         builder.AppendLine("            if (!matched)");
         builder.AppendLine("            {");
+        EmitObjectDuplicateKeyCheckWithLazySet(builder, duplicateKeyHandling, propertyNameComparerExpression);
         if (extensionData is not null)
         {
             builder.AppendLine("                ReadAndStoreExtensionData(key, keyLocation.Start, keyLocation.End);");
@@ -2819,8 +2951,10 @@ public sealed partial class YamlSerializerContextGenerator
         builder.AppendLine("            {");
         builder.AppendLine("                throw global::Meziantou.Framework.Yaml.Serialization.YamlThrowHelper.ThrowExpectedScalarKey(reader);");
         builder.AppendLine("            }");
-        builder.AppendLine("            var isMergeKey = mergeEnabled && global::Meziantou.Framework.Yaml.Serialization.Converters.YamlMergeKey.IsMergeKeyScalar(reader);");
         builder.Append("            var key = reader.GetScalarValue(__memberNames").Append(index).AppendLine(");");
+
+        // The key is the name of its member when it names one, which is not decoded: the merge key is recognized from it
+        builder.AppendLine("            var isMergeKey = mergeEnabled && global::System.String.Equals(key, \"<<\", global::System.StringComparison.Ordinal) && global::Meziantou.Framework.Yaml.Serialization.Converters.YamlMergeKey.IsMergeKeyScalar(reader);");
         builder.AppendLine("            var keyLocation = reader.CurrentLocation;");
         builder.AppendLine("            reader.Read();");
         builder.AppendLine();
@@ -3871,29 +4005,25 @@ public sealed partial class YamlSerializerContextGenerator
                 builder.AppendLine("            explicitKeys?.Add(key);");
             }
 
-            EmitReadKnownType(builder, sourceGenerationOptions, dictionaryValueType, indexByType, "value", indent: "            ");
+            // A duplicate key is handled before its value is read, like the reflection-based converter does: the value of a
+            // key that is skipped is not read, so it can be a value that the converter rejects
             if (dictionaryKeyIsString)
             {
                 builder.AppendLine("            if (seenKeys is not null && !seenKeys.Add(key))");
                 builder.AppendLine("            {");
-                EmitDuplicateKeyHandling(builder, duplicateKeyHandling, "key", $"dictionary[key] = {GetNonNullableValueExpression(dictionaryValueType, "value")}", "                ");
-                builder.AppendLine("            }");
-                builder.AppendLine("            else");
-                builder.AppendLine("            {");
-                builder.Append("                dictionary[key] = ").Append(GetNonNullableValueExpression(dictionaryValueType, "value")).AppendLine(";");
+                EmitDuplicateKeyHandlingBeforeValue(builder, duplicateKeyHandling, "key", "                ");
                 builder.AppendLine("            }");
             }
             else
             {
                 builder.AppendLine("            if (dictionary.ContainsKey(key))");
                 builder.AppendLine("            {");
-                EmitDuplicateKeyHandling(builder, duplicateKeyHandling, "key.ToString() ?? string.Empty", $"dictionary[key] = {GetNonNullableValueExpression(dictionaryValueType, "value")}", "                ");
-                builder.AppendLine("            }");
-                builder.AppendLine("            else");
-                builder.AppendLine("            {");
-                builder.Append("                dictionary[key] = ").Append(GetNonNullableValueExpression(dictionaryValueType, "value")).AppendLine(";");
+                EmitDuplicateKeyHandlingBeforeValue(builder, duplicateKeyHandling, "key.ToString() ?? string.Empty", "                ");
                 builder.AppendLine("            }");
             }
+
+            EmitReadKnownType(builder, sourceGenerationOptions, dictionaryValueType, indexByType, "value", indent: "            ");
+            builder.Append("            dictionary[key] = ").Append(GetNonNullableValueExpression(dictionaryValueType, "value")).AppendLine(";");
             builder.AppendLine("        }");
             if (dictionaryKeyIsString)
             {
@@ -4528,7 +4658,7 @@ public sealed partial class YamlSerializerContextGenerator
             builder.Append(innerIndent).AppendLine("else");
             builder.Append(innerIndent).AppendLine("{");
             builder.Append(innerIndent + "    ").AppendLine("writer.WriteStartSequence();");
-            if (sequenceKind == SequenceKind.List)
+            if (sequenceKind == SequenceKind.List || IsObjectModelCollection(member.Type))
             {
                 builder.Append(innerIndent + "    ").Append("for (var i = 0; i < ").Append(valueExpression).AppendLine(".Count; i++)");
                 builder.Append(innerIndent + "    ").AppendLine("{");
@@ -5517,29 +5647,25 @@ public sealed partial class YamlSerializerContextGenerator
                 builder.AppendLine("                        dictionaryExplicitKeys?.Add(entryKey);");
             }
 
-            EmitReadKnownType(builder, sourceGenerationOptions, dictionaryValueType, indexByType, "value", indent: "                        ");
+            // A duplicate key is handled before its value is read, like the reflection-based converter does: the value of a
+            // key that is skipped is not read, so it can be a value that the converter rejects
             if (dictionaryKeyType.SpecialType == SpecialType.System_String)
             {
                 builder.AppendLine("                        if (dictionarySeenKeys is not null && !dictionarySeenKeys.Add(entryKey))");
                 builder.AppendLine("                        {");
-                EmitDuplicateKeyHandling(builder, duplicateKeyHandling, "entryKey", $"dictionary[entryKey] = {GetNonNullableValueExpression(dictionaryValueType, "value")}", "                            ");
-                builder.AppendLine("                        }");
-                builder.AppendLine("                        else");
-                builder.AppendLine("                        {");
-                builder.Append("                            dictionary[entryKey] = ").Append(GetNonNullableValueExpression(dictionaryValueType, "value")).AppendLine(";");
+                EmitDuplicateKeyHandlingBeforeValue(builder, duplicateKeyHandling, "entryKey", "                            ");
                 builder.AppendLine("                        }");
             }
             else
             {
                 builder.AppendLine("                        if (dictionary.ContainsKey(entryKey))");
                 builder.AppendLine("                        {");
-                EmitDuplicateKeyHandling(builder, duplicateKeyHandling, "entryKey.ToString() ?? string.Empty", $"dictionary[entryKey] = {GetNonNullableValueExpression(dictionaryValueType, "value")}", "                            ");
-                builder.AppendLine("                        }");
-                builder.AppendLine("                        else");
-                builder.AppendLine("                        {");
-                builder.Append("                            dictionary[entryKey] = ").Append(GetNonNullableValueExpression(dictionaryValueType, "value")).AppendLine(";");
+                EmitDuplicateKeyHandlingBeforeValue(builder, duplicateKeyHandling, "entryKey.ToString() ?? string.Empty", "                            ");
                 builder.AppendLine("                        }");
             }
+
+            EmitReadKnownType(builder, sourceGenerationOptions, dictionaryValueType, indexByType, "value", indent: "                        ");
+            builder.Append("                        dictionary[entryKey] = ").Append(GetNonNullableValueExpression(dictionaryValueType, "value")).AppendLine(";");
             builder.AppendLine("                    }");
             if (dictionaryKeyType.SpecialType == SpecialType.System_String)
             {

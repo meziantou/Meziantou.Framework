@@ -519,6 +519,12 @@ namespace Meziantou.Framework.Yaml
         public static void Serialize<T>(System.IO.TextWriter writer, T value, Meziantou.Framework.Yaml.Serialization.YamlSerializerContext context) { }
         public static void Serialize<T>(System.IO.TextWriter writer, T value, Meziantou.Framework.Yaml.YamlSerializerOptions? options = null) { }
         public static void Serialize<T>(System.IO.TextWriter writer, T value, Meziantou.Framework.Yaml.YamlTypeInfo<T> typeInfo) { }
+        public static byte[] SerializeToUtf8Bytes(object? value, Meziantou.Framework.Yaml.YamlTypeInfo typeInfo) => throw null;
+        public static byte[] SerializeToUtf8Bytes(object? value, System.Type inputType, Meziantou.Framework.Yaml.Serialization.YamlSerializerContext context) => throw null;
+        public static byte[] SerializeToUtf8Bytes(object? value, System.Type inputType, Meziantou.Framework.Yaml.YamlSerializerOptions? options = null) => throw null;
+        public static byte[] SerializeToUtf8Bytes<T>(T value, Meziantou.Framework.Yaml.Serialization.YamlSerializerContext context) => throw null;
+        public static byte[] SerializeToUtf8Bytes<T>(T value, Meziantou.Framework.Yaml.YamlSerializerOptions? options = null) => throw null;
+        public static byte[] SerializeToUtf8Bytes<T>(T value, Meziantou.Framework.Yaml.YamlTypeInfo<T> typeInfo) => throw null;
         public static bool TryDeserialize(System.IO.Stream utf8Stream, System.Type returnType, Meziantou.Framework.Yaml.Serialization.YamlSerializerContext context, out object? value) => throw null;
         public static bool TryDeserialize(System.IO.Stream utf8Stream, System.Type returnType, out object? value, Meziantou.Framework.Yaml.YamlSerializerOptions? options = null) => throw null;
         public static bool TryDeserialize(System.IO.TextReader reader, System.Type returnType, Meziantou.Framework.Yaml.Serialization.YamlSerializerContext context, out object? value) => throw null;

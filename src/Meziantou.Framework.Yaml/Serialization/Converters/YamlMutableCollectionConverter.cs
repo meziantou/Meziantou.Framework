@@ -1,3 +1,5 @@
+using System.Collections.ObjectModel;
+
 namespace Meziantou.Framework.Yaml.Serialization.Converters;
 
 internal sealed class YamlMutableCollectionConverter<TCollection, TElement> : YamlConverter<TCollection?>
@@ -45,15 +47,37 @@ internal sealed class YamlMutableCollectionConverter<TCollection, TElement> : Ya
         var anchor = reader.Anchor;
         reader.Read();
 
-        var collection = new TCollection();
+        // A Collection<T> adds an item to its list through two virtual calls: the list is filled instead. A type that derives
+        // from it can override how an item is added, so it is given its items one at a time.
+        TCollection collection;
+        List<TElement>? list = null;
+        if (typeof(TCollection) == typeof(Collection<TElement>))
+        {
+            list = [];
+            collection = (TCollection)(object)new Collection<TElement>(list);
+        }
+        else
+        {
+            collection = new TCollection();
+        }
+
         if (reader.ReferenceReader is not null && anchor is not null)
         {
             reader.ReferenceReader.Register(anchor, collection);
         }
 
+        var typedElementConverter = _elementConverter as YamlConverter<TElement>;
         while (reader.TokenType != YamlTokenType.EndSequence)
         {
-            collection.Add(SequenceReadHelpers.ReadElement<TElement>(reader, _elementConverter));
+            var element = SequenceReadHelpers.ReadElement(reader, typedElementConverter, _elementConverter);
+            if (list is not null)
+            {
+                list.Add(element);
+            }
+            else
+            {
+                collection.Add(element);
+            }
         }
 
         reader.Read();

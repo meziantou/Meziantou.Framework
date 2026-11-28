@@ -91,6 +91,15 @@ internal readonly record struct ConstraintSpace
     public bool MeasuresAutomaticBlockSize { get; init; }
 
     /// <summary>
+    /// Whether only the size of the fragment of the box is used (the block-axis contribution of a grid item to the rows of its
+    /// grid): the fragment is not placed, and a grid container does not lay out its items, whose layouts do not change its size.
+    /// The box is sized as without it (unlike <see cref="MeasuresIntrinsicBlockSize"/>). A grid item that is a grid container is
+    /// laid out once to measure its contribution and once in its grid area, and each of these layouts lays out its own items
+    /// twice: without it, the cost of nested grids doubles with each level.
+    /// </summary>
+    public bool MeasuresContribution { get; init; }
+
+    /// <summary>
     /// With <see cref="MeasuresIntrinsicBlockSize"/>: whether the preferred aspect ratio of the box does not give its block size
     /// (the measured size is the block size of its contents): the content size suggestion of a non-replaced flex item
     /// (https://drafts.csswg.org/css-flexbox-1/#content-size-suggestion), which has no transferred size suggestion.

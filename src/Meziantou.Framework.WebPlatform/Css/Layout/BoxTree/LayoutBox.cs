@@ -348,6 +348,13 @@ internal sealed class ContainerBox : LayoutBox
         set => GetCaches(value is not null)?.IntrinsicBlockSize = value;
     }
 
+    /// <summary>The last measure of the contribution of the box in the layout pass (see <see cref="LayoutContext.MeasureContribution"/>), or null.</summary>
+    internal ContributionCache? ContributionCache
+    {
+        get => _caches?.Contribution;
+        set => GetCaches(value is not null)?.Contribution = value;
+    }
+
     /// <summary>The result of the last layout of the box, used again by the next layout passes that lay it out in the same constraint space (see <see cref="LayoutResultCache"/>), or null.</summary>
     internal LayoutResultCacheEntry? LayoutResult
     {
@@ -469,6 +476,7 @@ internal sealed class ContainerBox : LayoutBox
     {
         public IntrinsicSizesCache? IntrinsicSizes;
         public IntrinsicBlockSizeCache? IntrinsicBlockSize;
+        public ContributionCache? Contribution;
         public LayoutResultCacheEntry? LayoutResult;
         public LayoutResultCacheEntry? MeasureLayoutResult;
     }

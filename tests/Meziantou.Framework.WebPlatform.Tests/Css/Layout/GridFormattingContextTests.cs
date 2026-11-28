@@ -528,4 +528,25 @@ public sealed class GridFormattingContextTests : IDisposable
             """);
         Assert.Equal("120px 80px", GetComputed(document, "g", "grid-template-rows"));
     }
+
+    [Fact]
+    public void NestedGrids_InSubgrid_WithSizeContainer()
+    {
+        // WPT css/css-grid/subgrid/nested-grid-subgrid-resize.html with 24 levels: each grid measures the contribution of its item
+        // (a grid) to its rows, then lays it out in its area; without the measures that skip the layout of the items and the cache
+        // of the intrinsic sizes of the last two inputs, the layout doubles with each level (2^24 layouts)
+        const int Depth = 24;
+        var document = Parse("<style>.grid { display: grid } #subgrid { display: grid; grid-template-columns: subgrid } #box { width: 100px; height: 20px } #container { container-type: inline-size; width: 100% } #panel { height: 10px } @container (width < 150px) { #panel { display: none } }</style>"
+            + "<div id=grid class=grid style='width: 100px'><div id=subgrid>" + string.Concat(Enumerable.Repeat("<div class=grid>", Depth))
+            + "<div id=box></div><div id=container><div id=panel></div></div>" + string.Concat(Enumerable.Repeat("</div>", Depth)) + "</div></div>");
+        var grid = (HtmlElement)document.GetElementById("grid")!;
+        Assert.Equal(Rect(0, 20, 100, 0), GetRect(document, "container"));
+
+        grid.Style.SetProperty("width", "200px");
+        Assert.Equal(Rect(0, 20, 200, 10), GetRect(document, "container"));
+        Assert.Equal(Rect(0, 20, 200, 10), GetRect(document, "panel"));
+
+        grid.Style.SetProperty("width", "100px");
+        Assert.Equal(Rect(0, 20, 100, 0), GetRect(document, "container"));
+    }
 }

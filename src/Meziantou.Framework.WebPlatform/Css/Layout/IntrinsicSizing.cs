@@ -51,7 +51,7 @@ internal sealed class ColumnSpannerIntrinsicSizes
     public double MaxContent { get; set; }
 }
 
-/// <summary>The cache of the intrinsic inline sizes of a box (<see cref="ContainerBox.IntrinsicSizesCache"/>): valid during one layout pass (and the next ones, see <see cref="LayoutContext.IsCacheOfPreviousPassValid"/>), for one input.</summary>
+/// <summary>The cache of the intrinsic inline sizes of a box (<see cref="ContainerBox.IntrinsicSizesCache"/>): valid during one layout pass (and the next ones, see <see cref="LayoutContext.IsCacheOfPreviousPassValid"/>), for the last two inputs (the most recent first).</summary>
 internal sealed class IntrinsicSizesCache
 {
     public int Pass;
@@ -62,6 +62,9 @@ internal sealed class IntrinsicSizesCache
     public int Generation;
 
     public PhysicalSize InitialContainingBlockSize;
+
+    /// <summary>The sizes of the input before this one, or null.</summary>
+    public IntrinsicSizesCache? Previous;
 }
 
 /// <summary>The cache of the intrinsic block size of a box (<see cref="ContainerBox.IntrinsicBlockSizeCache"/>): valid during one layout pass (and the next ones, see <see cref="LayoutContext.IsCacheOfPreviousPassValid"/>), for one constraint space.</summary>
@@ -75,6 +78,23 @@ internal sealed class IntrinsicBlockSizeCache
     public int Generation;
 
     /// <summary>The layout of the strip of the pages the size is valid for (see <see cref="LayoutContext.StripLayoutCount"/>).</summary>
+    public int StripLayout;
+
+    public PhysicalSize InitialContainingBlockSize;
+}
+
+/// <summary>The cache of the measure of the contribution of a box (<see cref="ContainerBox.ContributionCache"/>, <see cref="LayoutContext.MeasureContribution"/>): valid during one layout pass (and the next ones, see <see cref="LayoutContext.IsCacheOfPreviousPassValid"/>), for one constraint space.</summary>
+internal sealed class ContributionCache
+{
+    public int Pass;
+    public ConstraintSpace Space;
+    public PhysicalSize Size;
+    public double IntrinsicBlockSize;
+
+    /// <summary>The generation of the layout engine the measure is valid for in the next passes, or -1 (see <see cref="LayoutContext.IsCacheOfPreviousPassValid"/>).</summary>
+    public int Generation;
+
+    /// <summary>The layout of the strip of the pages the measure is valid for (see <see cref="LayoutContext.StripLayoutCount"/>).</summary>
     public int StripLayout;
 
     public PhysicalSize InitialContainingBlockSize;
@@ -171,14 +191,29 @@ internal static class IntrinsicSizing
             }
         }
 
-        var cache = box.IntrinsicSizesCache;
-        if (cache is not null && cache.Input == input && (cache.Pass == context.Pass || context.IsCacheOfPreviousPassValid(cache.Generation, cache.InitialContainingBlockSize)))
-            return cache.Sizes;
+        // (the sizes of the last two inputs are kept: a grid computes the contributions of its items with and without a definite
+        // block size, see GridLayoutAlgorithm.DependsOnRows, and a nested grid does the same for its own items in both)
+        var head = box.IntrinsicSizesCache;
+        for (var entry = head; entry is not null; entry = entry.Previous)
+        {
+            if (entry.Input == input && (entry.Pass == context.Pass || context.IsCacheOfPreviousPassValid(entry.Generation, entry.InitialContainingBlockSize)))
+                return entry.Sizes;
+        }
 
         var preventionCount = context.LayoutCachingPreventionCount;
         var sizes = FormattingContext.For(box).ComputeIntrinsicInlineSizes(context, box, input);
         sizes = new IntrinsicSizes(Math.Max(0, sizes.MinContent), Math.Max(Math.Max(0, sizes.MinContent), sizes.MaxContent));
-        cache ??= box.IntrinsicSizesCache = new IntrinsicSizesCache();
+
+        // (the computation may have dropped the caches of the box: its box tree changed)
+        head = box.IntrinsicSizesCache;
+        var cache = head?.Previous ?? new IntrinsicSizesCache();
+        if (head is not null && !ReferenceEquals(cache, head))
+        {
+            head.Previous = null;
+            cache.Previous = head;
+        }
+
+        box.IntrinsicSizesCache = cache;
         cache.Pass = context.Pass;
         cache.Input = input;
         cache.Sizes = sizes;

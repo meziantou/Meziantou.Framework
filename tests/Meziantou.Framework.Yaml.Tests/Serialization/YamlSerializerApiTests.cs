@@ -761,6 +761,22 @@ public class YamlSerializerApiTests
         Assert.Equal(values, YamlSerializer.Deserialize<List<string>>(expected));
     }
 
+    // The bytes are kept in pooled segments that grow: a text of several segments is copied once, and the next call, which
+    // reuses the writer of the thread, starts from an empty text
+    [Fact]
+    public void SerializeToUtf8Bytes_WritesTextsOfSeveralSegments()
+    {
+        var large = Enumerable.Range(0, 40_000).Select(i => "value " + i.ToString(System.Globalization.CultureInfo.InvariantCulture) + " é😀").ToList();
+        var small = new List<string> { "a", "b" };
+
+        var expectedLarge = System.Text.Encoding.UTF8.GetBytes(YamlSerializer.Serialize(large));
+        Assert.HasCountGreaterThan(512 * 1024, expectedLarge);
+        Assert.Equal(expectedLarge, YamlSerializer.SerializeToUtf8Bytes(large));
+        Assert.Equal("- a\n- b\n"u8.ToArray(), YamlSerializer.SerializeToUtf8Bytes(small));
+        Assert.Equal(expectedLarge, YamlSerializer.SerializeToUtf8Bytes(large));
+        Assert.Equal("- a\n- b\n"u8.ToArray(), YamlSerializer.SerializeToUtf8Bytes(small));
+    }
+
     // The serializer buffers the text by blocks: the values that cross a block, and the strings longer than a block, are
     // written as they are, to every output
     [Fact]

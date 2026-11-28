@@ -37,6 +37,10 @@ internal sealed class Utf8YamlTokenSource
 
     private static readonly UTF8Encoding StrictUtf8 = new(encoderShouldEmitUTF8Identifier: false, throwOnInvalidBytes: true);
 
+    // The batch of the last source of the thread that was given back: the serializer creates a source per call
+    [ThreadStatic]
+    private static BatchedToken[]? s_cachedBatch;
+
     private readonly TextReader? _textReader;
     private readonly Encoder? _encoder;
     private readonly char[]? _chars;
@@ -53,7 +57,7 @@ internal sealed class Utf8YamlTokenSource
     private Utf8YamlReaderState _state;
 
     // The tokens read by the last reader, handed out one at a time. They are relative to the buffer at _batchBufferIndex.
-    private readonly BatchedToken[] _batch = new BatchedToken[BatchSize];
+    private BatchedToken[] _batch = RentBatch();
     private int _batchCount;
     private int _batchIndex;
     private int _batchBufferIndex;
@@ -152,7 +156,7 @@ internal sealed class Utf8YamlTokenSource
         SourceName = sourceName;
         _state = new Utf8YamlReaderState(new Utf8YamlReaderOptions { MaxDepth = maxDepth });
 
-        // The source is a class, which cannot keep a span: the bytes are copied to a pooled buffer, given back by ReturnPooledBuffer
+        // The source is a class, which cannot keep a span: the bytes are copied to a pooled buffer, given back by ReturnPooledBuffers
         _buffer = ArrayPool<byte>.Shared.Rent(Math.Max(utf8Yaml.Length, 1));
         _isPooledBuffer = true;
         utf8Yaml.CopyTo(_buffer);
@@ -286,7 +290,7 @@ internal sealed class Utf8YamlTokenSource
     public long TokenEndOffset => _tokenBufferOffset + Token.Start + Token.Length;
 
     /// <summary>Computes the location of an offset of the input. When the source does not keep the whole input, only the offsets of the current buffer are known.</summary>
-    /// <exception cref="InvalidOperationException">The bytes of the input were given back by <see cref="ReturnPooledBuffer"/>.</exception>
+    /// <exception cref="InvalidOperationException">The bytes of the input were given back by <see cref="ReturnPooledBuffers"/>.</exception>
     public Mark GetMarkAt(long offset)
     {
         if (_bufferReturned)
@@ -295,9 +299,34 @@ internal sealed class Utf8YamlTokenSource
         return GetMark(offset);
     }
 
-    /// <summary>Gives back the pooled copy of the bytes of a span. The source must not be read afterward.</summary>
-    public void ReturnPooledBuffer()
+    /// <summary>
+    /// Gives back the batch of tokens, for the next source of the thread, and the pooled copy of the bytes of a span. The
+    /// source must not be read afterward.
+    /// </summary>
+    public void ReturnPooledBuffers()
     {
+        var batch = _batch;
+        if (batch.Length > 0)
+        {
+            // The current token stays available, like when the batch is read again
+            if (_current >= 0)
+            {
+                ref var current = ref batch[_current];
+                _token = current.Token;
+                _anchor = current.HasStrings ? current.Anchor : null;
+                _tag = current.HasStrings ? current.Tag : null;
+                _current = -1;
+            }
+
+            _batch = [];
+            _batchCount = 0;
+            _batchIndex = 0;
+
+            // The strings of the tokens are not kept alive by the cache
+            Array.Clear(batch);
+            s_cachedBatch = batch;
+        }
+
         if (_isPooledBuffer)
         {
             _isPooledBuffer = false;
@@ -308,6 +337,17 @@ internal sealed class Utf8YamlTokenSource
             _length = 0;
             ArrayPool<byte>.Shared.Return(buffer);
         }
+    }
+
+    private static BatchedToken[] RentBatch()
+    {
+        // A source created while another one is read, such as by a converter that deserializes, gets a batch of its own
+        var batch = s_cachedBatch;
+        if (batch is null)
+            return new BatchedToken[BatchSize];
+
+        s_cachedBatch = null;
+        return batch;
     }
 
     // The byte order mark of the stream is a character, but not a column of the first line

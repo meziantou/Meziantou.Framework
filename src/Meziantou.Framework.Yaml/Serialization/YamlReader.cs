@@ -16,8 +16,14 @@ public sealed class YamlReader : YamlReaderWriterBase
     // A set that grew this large is not kept: clearing it costs as much as its capacity, and most mappings are small.
     private const int MaxPooledKeySetCount = 64;
 
+    // The keys of the mappings that are read as strings, such as the keys of an untyped mapping, by their bytes: the
+    // mappings of a document often repeat the same keys, which are then allocated once
+    private const int KeyStringCacheSize = 64;
+    private const int MaxCachedKeyStringLength = 32;
+
     private readonly YamlReaderState _state;
     private Stack<HashSet<string>>? _keySets;
+    private string[]? _keyStrings;
 
     internal YamlReader(YamlReaderState state, YamlSerializerOptions options)
         : base(options)
@@ -179,6 +185,34 @@ public sealed class YamlReader : YamlReaderWriterBase
 
     /// <summary>Gets the UTF-8 bytes of the current scalar, when they are its value, without decoding it.</summary>
     internal bool TryGetRawUtf8Scalar(out ReadOnlySpan<byte> value) => _state.TryGetRawUtf8Scalar(out value);
+
+    /// <summary>
+    /// Determines whether the current scalar is known not to be a merge key from its bytes, when they are its value: such a
+    /// key is not decoded to be compared with <c>&lt;&lt;</c>.
+    /// </summary>
+    internal bool IsNotMergeKeyText() => _state.TryGetRawUtf8Scalar(out var utf8) && !utf8.SequenceEqual("<<"u8);
+
+    /// <summary>
+    /// Gets the value of the current scalar, a mapping key, as a string that is shared with the earlier keys of the same
+    /// bytes when the bytes are its value and are a short ASCII text.
+    /// </summary>
+    internal string GetKeyString()
+    {
+        if (!_state.TryGetRawUtf8Scalar(out var utf8) || utf8.Length is 0 or > MaxCachedKeyStringLength)
+            return ScalarValue ?? string.Empty;
+
+        // The keys of a document usually differ by their length or by one of these bytes. A key that is not ASCII is never
+        // equal to an entry, so it is decoded each time.
+        var hash = (uint)utf8.Length * 31u + utf8[0] + ((uint)utf8[^1] << 2) + ((uint)utf8[utf8.Length >> 1] << 4);
+        hash ^= hash >> 5;
+
+        _keyStrings ??= new string[KeyStringCacheSize];
+        ref var entry = ref _keyStrings[hash & (KeyStringCacheSize - 1)];
+        if (entry is not null && entry.Length == utf8.Length && System.Text.Ascii.Equals(utf8, entry))
+            return entry;
+
+        return entry = System.Text.Encoding.UTF8.GetString(utf8);
+    }
 
     internal ParsingEvent? CurrentEvent => _state.CurrentEvent;
 

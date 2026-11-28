@@ -1497,7 +1497,7 @@ public static class YamlSerializer
         }
         finally
         {
-            source.ReturnPooledBuffer();
+            source.ReturnPooledBuffers();
         }
     }
 
@@ -1519,7 +1519,7 @@ public static class YamlSerializer
         }
         finally
         {
-            source.ReturnPooledBuffer();
+            source.ReturnPooledBuffers();
         }
     }
 

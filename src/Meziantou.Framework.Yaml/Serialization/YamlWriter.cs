@@ -1614,16 +1614,29 @@ public sealed class YamlWriter : YamlReaderWriterBase
         if (style is not ScalarStyle.Any || _pendingTag is not null)
             return GetKeyStyle(name, style);
 
+        // A name has two entries it can be kept in, so the names of a type that share an entry do not replace each other
         _keyStyles ??= new KeyStyle[KeyStyleCacheSize];
-        ref var entry = ref _keyStyles[RuntimeHelpers.GetHashCode(name) & (KeyStyleCacheSize - 1)];
+        var index = RuntimeHelpers.GetHashCode(name) & (KeyStyleCacheSize - 1);
+        ref var entry = ref _keyStyles[index];
         var isFlow = IsFlow;
         if (ReferenceEquals(entry.Name, name) && entry.IsFlow == isFlow)
             return entry.Style;
 
+        ref var otherEntry = ref _keyStyles[index ^ 1];
+        if (ReferenceEquals(otherEntry.Name, name) && otherEntry.IsFlow == isFlow)
+            return otherEntry.Style;
+
         var resolved = GetKeyStyle(name, style);
         if (!StartsWithDocumentMarker(name))
         {
-            entry = new KeyStyle(name, isFlow, resolved);
+            if (entry.Name is not null && otherEntry.Name is null)
+            {
+                otherEntry = new KeyStyle(name, isFlow, resolved);
+            }
+            else
+            {
+                entry = new KeyStyle(name, isFlow, resolved);
+            }
         }
 
         return resolved;
@@ -1974,14 +1987,28 @@ public sealed class YamlWriter : YamlReaderWriterBase
             return false;
         }
 
+        // The parsers ignore the white space around the text, and no other: a text without it keeps its length and its
+        // inner spaces
+        var hasNoSurroundingWhiteSpace = !char.IsWhiteSpace(value[0]) && !char.IsWhiteSpace(value[^1]);
+
         // An integer or a floating-point number starts with a digit, a sign or '.': the number parsers are not run for a
         // text that starts with a letter, whose other readings are checked below
         if (char.IsAsciiLetter(value[0]))
         {
+            // The longest of these readings is "Infinity": a longer word, such as most names, is a string
+            if (hasNoSurroundingWhiteSpace && value.Length > MaxNonStringWordLength)
+                return false;
+
             return YamlScalar.TryParseBool(value, out _) ||
                    YamlScalar.ResolvesToNonString(value, Options.Schema) ||
                    IsNamedFloatingPointLiteral(value);
         }
+
+        // A boolean or a number has no inner space, such as the one of an address: only the values of the schema, such as
+        // a timestamp of the extended schema, can have one. The number parsers remove the underscores first, which can leave
+        // a space at the end of the text ("1 _" is 1).
+        if (hasNoSurroundingWhiteSpace && value.Contains(' ') && !value.Contains('_'))
+            return YamlScalar.ResolvesToNonString(value, Options.Schema);
 
         return YamlScalar.TryParseBool(value, out _) ||
                YamlScalar.TryParseInt64(value, out _) ||
@@ -2031,6 +2058,10 @@ public sealed class YamlWriter : YamlReaderWriterBase
     }
 
     private static readonly SearchValues<char> NonStringScalarStarts = SearchValues.Create("0123456789+-._~<tTfFyYnNoOiI");
+
+    // The length of "Infinity", the longest word that reads as a value other than a string: the keywords of the schemas,
+    // such as "false", are shorter
+    private const int MaxNonStringWordLength = 8;
 
     // The printable ASCII characters that a double-quoted scalar contains as is: all but the quote and the backslash
     private static readonly SearchValues<char> EscapeFreeCharacters = SearchValues.Create(" !#$%&'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[]^_`abcdefghijklmnopqrstuvwxyz{|}~");
@@ -2494,7 +2525,7 @@ public sealed class YamlWriter : YamlReaderWriterBase
         public int Indent;
     }
 
-    private const int KeyStyleCacheSize = 32;
+    private const int KeyStyleCacheSize = 64;
 
     [StructLayout(LayoutKind.Auto)]
     private readonly record struct KeyStyle(string? Name, bool IsFlow, ScalarStyle Style);

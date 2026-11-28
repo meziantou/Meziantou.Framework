@@ -494,7 +494,9 @@ public static class MarkdownEscaper
             var builder = new StringBuilder(escaped.Length + 8);
             foreach (var c in escaped)
             {
-                if (char.IsControl(c) && c is not '\t')
+                // U+0000 is kept: its entity (&#x0;) is decoded as U+FFFD, while the parser keeps the character in the destination in
+                // angle brackets (fuzz regression)
+                if (char.IsControl(c) && c is not ('\t' or '\0'))
                 {
                     // A backslash before the line ending is text, which would escape the ampersand of the entity
                     if (builder.Length > 0 && builder[^1] == '\\')

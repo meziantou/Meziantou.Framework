@@ -3468,6 +3468,7 @@ public sealed class MarkdownSyntaxTreeTests
     [InlineData("a&amp;b")]
     [InlineData("a\"b'c")]
     [InlineData("a\nb")]
+    [InlineData("a\0b\\")]
     [InlineData("é ✓")]
     public void LinkDestinationIsParsedBackToTheUrl(string url)
     {
